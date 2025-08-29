@@ -52,15 +52,24 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// 2) Seed Admin user
-using (var scope = app.Services.CreateScope())
+// 2) Seed Admin user (only in development)
+if (app.Environment.IsDevelopment())
 {
-    // Database service is already configured
-    var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
-
-    if (db.GetUserByUsername("admin") == null)
+    using (var scope = app.Services.CreateScope())
     {
-        db.CreateUser("admin", "123", "Admin");
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+            if (db.GetUserByUsername("admin") == null)
+            {
+                db.CreateUser("admin", "123", "Admin");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't crash the application
+            Console.WriteLine($"Warning: Could not seed admin user: {ex.Message}");
+        }
     }
 }
 
