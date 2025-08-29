@@ -100,9 +100,10 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
                                 _logger.LogInformation("Weekly report sent successfully at: {time}", DateTimeOffset.Now);
                             }
                         }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error sending weekly report.");
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error sending weekly report.");
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -127,7 +128,6 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
             _logger.LogInformation("PerformLicenseExpiryCheck completed from manual trigger.");
         }
 
-
         // دالة فحص الرخص المنتهية وإرسال الإشعارات الفردية
         // تم تعديلها لجلب مثيل SqlServerDb داخليًا
         public async Task PerformLicenseExpiryCheck()
@@ -140,22 +140,22 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
 
                     try
                     {
-                    // تفريغ جدول notifications قبل إضافة التنبيهات الجديدة
-                    try
-                    {
-                        db.ExecuteNonQuery("DELETE FROM notifications");
-                        _logger.LogInformation("Notifications table cleared successfully.");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error clearing notifications table.");
-                    }
+                        // تفريغ جدول notifications قبل إضافة التنبيهات الجديدة
+                        try
+                        {
+                            db.ExecuteNonQuery("DELETE FROM notifications");
+                            _logger.LogInformation("Notifications table cleared successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error clearing notifications table.");
+                        }
 
-                    DataTable dt = new DataTable();
-                    using (var connection = db.GetConnection())
-                    {
-                        connection.Open();
-                        using (var cmd = new SqlCommand(@"
+                        DataTable dt = new DataTable();
+                        using (var connection = db.GetConnection())
+                        {
+                            connection.Open();
+                            using (var cmd = new SqlCommand(@"
                    -- القسم الأول: جلب الرخص التي ستنتهي للمراقبين
                  SELECT
     l.licenseid,
@@ -199,100 +199,79 @@ UNION ALL
          WHERE
              l.expirydate <= DATEADD(day, 90, GETDATE());
                     ", connection))
-                        {
-                            using (var adapter = new SqlDataAdapter(cmd))
                             {
-                                adapter.Fill(dt);
+                                using (var adapter = new SqlDataAdapter(cmd))
+                                {
+                                    adapter.Fill(dt);
+                                }
                             }
                         }
-                    }
 
-                    if (dt.Rows.Count > 0)
-                    {
-                        _logger.LogInformation("Found {count} licenses expiring soon or expired.", dt.Rows.Count);
-
-                        foreach (DataRow row in dt.Rows)
+                        if (dt.Rows.Count > 0)
                         {
-                            // التعامل الآمن مع القيم التي قد تكون NULL
-                            int? userId = row.Field<int?>("userid");
-                            int? controllerId = row.Field<int?>("controllerid");
-                            DateTime expiryDate = row.Field<DateTime>("expirydate");
-                            string licenseType = row.Field<string>("licensetype") ?? string.Empty;
-                            string fullname = row.Field<string>("fullname") ?? string.Empty;
-                            string toEmail = row.Field<string>("email") ?? string.Empty;
+                            _logger.LogInformation("Found {count} licenses expiring soon or expired.", dt.Rows.Count);
 
-                            string msg = $"Dear {fullname}, Your {licenseType} will expire : \n\n At {expiryDate:yyyy-MM-dd} :(.\n\n So, Please Update :). \n\nيرجى اتخاذ الإجراءات اللازمة لتجديدها.";
-
-                            // لا داعي للتحقق من وجود التنبيه إذا كنت تمسح الجدول في كل مرة
-                            // ولكن إذا قررت عدم مسح الجدول مستقبلاً، يمكنك إعادة تفعيل هذا الجزء:
-                            /*
-                            var exist = db.ExecuteQuery(
-                                "SELECT 1 FROM notifications WHERE userid = @userid AND controllerid = @controllerid AND licensetype = @licensetype AND licenseexpirydate = @expirydate",
-                                new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // التعامل مع NULL
-                                new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // التعامل مع NULL
-                                new Microsoft.Data.SqlClient.SqlParameter("@licensetype", SqlDbType.NVarChar, 255) { Value = licenseType },
-                                new Microsoft.Data.SqlClient.SqlParameter("@expirydate", SqlDbType.DateTime2) { Value = expiryDate }
-                            );
-
-                            if (exist.Rows.Count == 0)
+                            foreach (DataRow row in dt.Rows)
                             {
-                            */
+                                // التعامل الآمن مع القيم التي قد تكون NULL
+                                int? userId = row.Field<int?>("userid");
+                                int? controllerId = row.Field<int?>("controllerid");
+                                DateTime expiryDate = row.Field<DateTime>("expirydate");
+                                string licenseType = row.Field<string>("licensetype") ?? string.Empty;
+                                string fullname = row.Field<string>("fullname") ?? string.Empty;
+                                string toEmail = row.Field<string>("email") ?? string.Empty;
 
-                            // إدراج التنبيه الجديد
-                            db.ExecuteNonQuery(
-                                "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
-                                new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // التعامل مع NULL
-                                new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // التعامل مع NULL
-                                new Microsoft.Data.SqlClient.SqlParameter("@message", SqlDbType.NVarChar, -1) { Value = msg },
-                                new Microsoft.Data.SqlClient.SqlParameter("@licensetype", SqlDbType.NVarChar, 255) { Value = licenseType },
-                                new Microsoft.Data.SqlClient.SqlParameter("@expirydate", SqlDbType.DateTime2) { Value = expiryDate }
-                            );
-                            _logger.LogInformation("Inserted new notification for user {userId}, controller {controllerId}.", userId, controllerId);
+                                string msg = $"Dear {fullname}, Your {licenseType} will expire : \n\n At {expiryDate:yyyy-MM-dd} :(.\n\n So, Please Update :). \n\nيرجى اتخاذ الإجراءات اللازمة لتجديدها.";
 
-                            // إرسال البريد الإلكتروني
-                            if (!string.IsNullOrWhiteSpace(toEmail))
-                            {
-                                try
+                                // إدراج التنبيه الجديد
+                                db.ExecuteNonQuery(
+                                    "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
+                                    new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // التعامل مع NULL
+                                    new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // التعامل مع NULL
+                                    new Microsoft.Data.SqlClient.SqlParameter("@message", SqlDbType.NVarChar, -1) { Value = msg },
+                                    new Microsoft.Data.SqlClient.SqlParameter("@licensetype", SqlDbType.NVarChar, 255) { Value = licenseType },
+                                    new Microsoft.Data.SqlClient.SqlParameter("@expirydate", SqlDbType.DateTime2) { Value = expiryDate }
+                                );
+                                _logger.LogInformation("Inserted new notification for user {userId}, controller {controllerId}.", userId, controllerId);
+
+                                // إرسال البريد الإلكتروني
+                                if (!string.IsNullOrWhiteSpace(toEmail))
                                 {
-                                    using (var smtp = new SmtpClient(_smtpServer))
+                                    try
                                     {
-                                        smtp.Port = _smtpPort;
-                                        smtp.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
-                                        smtp.EnableSsl = true;
-
-                                        using (var mail = new MailMessage(_fromEmail, toEmail, "License Expiry Alert", msg))
+                                        using (var smtp = new SmtpClient(_smtpServer))
                                         {
-                                            // await smtp.SendMailAsync(mail);
-                                            _logger.LogInformation("Sent expiry email to {email}.", toEmail);
+                                            smtp.Port = _smtpPort;
+                                            smtp.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
+                                            smtp.EnableSsl = true;
+
+                                            using (var mail = new MailMessage(_fromEmail, toEmail, "License Expiry Alert", msg))
+                                            {
+                                                // await smtp.SendMailAsync(mail);
+                                                _logger.LogInformation("Sent expiry email to {email}.", toEmail);
+                                            }
                                         }
                                     }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogError(ex, "Error sending email notification to {email}.", toEmail);
+                                    }
                                 }
-                                catch (Exception ex)
+                                else
                                 {
-                                    _logger.LogError(ex, "Error sending email notification to {email}.", toEmail);
+                                    _logger.LogWarning("Email address is missing for {fullname}.", fullname);
                                 }
                             }
-                            else
-                            {
-                                _logger.LogWarning("Email address is missing for {fullname}.", fullname);
-                            }
-                            /*
-                            }
-                            else
-                            {
-                                _logger.LogInformation("Notification already exists for user {userId}, controller {controllerId}, license type {licenseType}, expiry date {expiryDate}.", userId, controllerId, licenseType, expiryDate.ToShortDateString());
-                            }
-                            */
+                        }
+                        else
+                        {
+                            _logger.LogInformation("No licenses expiring soon or expired found.");
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogInformation("No licenses expiring soon or expired found.");
+                        _logger.LogError(ex, "An unhandled error occurred during license expiry check.");
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "An unhandled error occurred during license expiry check.");
                 }
             }
             catch (Exception ex)
@@ -300,7 +279,6 @@ UNION ALL
                 _logger.LogError(ex, "Failed to create service scope or access database in PerformLicenseExpiryCheck.");
             }
         }
-
 
         // دالة إنشاء تقرير PDF (تحتاج لمكتبة QuestPDF)
         public byte[] GenerateWeeklyReportPDF(DataTable soonExpiringTable, int expiredCount, int soonExpiringCount) // <== تم تغيير الوصول إلى public
@@ -369,10 +347,7 @@ UNION ALL
             });
 
             return document.GeneratePdf();
-
-
         }
-
 
         // دالة إرسال البريد الإلكتروني مع ملف PDF وجدول HTML في جسم الرسالة
         public async Task SendWeeklyReportEmailWithPdfAndTable(byte[] pdfBytes, string recipientEmail, DataTable soonExpiringTable) // <== تم تغيير الوصول إلى public وتغيير الاسم
@@ -380,7 +355,6 @@ UNION ALL
             _logger.LogInformation("Sending weekly report email to {recipientEmail}...", recipientEmail);
             try
             {
-
                 var fromAddress = new MailAddress(_fromEmail, "ANS Management system \r\n");
                 var toAddress = new MailAddress(recipientEmail);
                 const string subject = "Weekly License Expiry Report";
