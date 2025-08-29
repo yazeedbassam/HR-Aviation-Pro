@@ -92,6 +92,9 @@ app.UseAuthorization();
 // Add health check endpoint
 app.MapGet("/health", () => "OK");
 
+// Add root endpoint for health check
+app.MapGet("/", () => "AVIATION HR PRO - System is running!");
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
