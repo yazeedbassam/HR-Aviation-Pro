@@ -62,46 +62,52 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
             // استخدم Task.Delay بدلاً من Timer لتجنب مشاكل Threading مع Scoped services
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Performing daily tasks at: {time}", DateTimeOffset.Now);
-
-                // لا حاجة لإنشاء نطاق هنا، لأن PerformLicenseExpiryCheck ستنشئ نطاقها الخاص الآن
-                await PerformLicenseExpiryCheck(); // <== تم تحديث الاستدعاء، لا تمرير db هنا
-                                                   //عند بداية التشغيل
-                                                   // إرسال التقرير الأسبوعي كل أحد فقط إذا لم يُرسل هذا الأسبوع
-                                                   // تأكد أن `GenerateWeeklyReportPDF` و `SendWeeklyReportEmailWithPdfAndTable` موجودين في هذه الفئة
-                if (DateTime.Now.DayOfWeek == DayOfWeek.Sunday &&
-                    (DateTime.Now.Date > _lastWeeklyReportSent.Date)) // مقارنة بالتاريخ فقط
+                try
                 {
-                    try
+                    _logger.LogInformation("Performing daily tasks at: {time}", DateTimeOffset.Now);
+
+                    // لا حاجة لإنشاء نطاق هنا، لأن PerformLicenseExpiryCheck ستنشئ نطاقها الخاص الآن
+                    await PerformLicenseExpiryCheck(); // <== تم تحديث الاستدعاء، لا تمرير db هنا
+                                                       //عند بداية التشغيل
+                                                       // إرسال التقرير الأسبوعي كل أحد فقط إذا لم يُرسل هذا الأسبوع
+                                                       // تأكد أن `GenerateWeeklyReportPDF` و `SendWeeklyReportEmailWithPdfAndTable` موجودين في هذه الفئة
+                    if (DateTime.Now.DayOfWeek == DayOfWeek.Sunday &&
+                        (DateTime.Now.Date > _lastWeeklyReportSent.Date)) // مقارنة بالتاريخ فقط
                     {
-                        _logger.LogInformation("Attempting to send weekly report...");
-
-                        // جلب البيانات اللازمة للتقرير من الداتا بيز
-                        // يجب جلب DB هنا لأن GetSoonExpiringLicensesTable() ليست جزءًا من PerformLicenseExpiryCheck
-                        using (var scope = _serviceProvider.CreateScope())
+                        try
                         {
-                            var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+                            _logger.LogInformation("Attempting to send weekly report...");
 
-                            // نفترض وجود هذه الدوال في SqlServerDb
-                            DataTable soonExpiringTable = db.GetSoonExpiringLicensesTable();
-                            int expiredCount = db.GetExpiredLicensesCount();
-                            int soonExpiringCount = db.GetSoonExpiringLicensesCount();
+                            // جلب البيانات اللازمة للتقرير من الداتا بيز
+                            // يجب جلب DB هنا لأن GetSoonExpiringLicensesTable() ليست جزءًا من PerformLicenseExpiryCheck
+                            using (var scope = _serviceProvider.CreateScope())
+                            {
+                                var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
 
-                            // توليد ملف PDF للتقرير
-                            byte[] pdfBytes = GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
+                                // نفترض وجود هذه الدوال في SqlServerDb
+                                DataTable soonExpiringTable = db.GetSoonExpiringLicensesTable();
+                                int expiredCount = db.GetExpiredLicensesCount();
+                                int soonExpiringCount = db.GetSoonExpiringLicensesCount();
 
-                            // إرسال البريد الإلكتروني مع ملف PDF وجدول HTML (الآن تم دمجها)
-                            // يمكنك تغيير "yazeedbassam@hotmail.com" ليكون بريد إلكتروني محدد للمسؤول الذي سيتلقى التقرير.
-                            //   التشغيل لاحقا   //  await SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
+                                // توليد ملف PDF للتقرير
+                                byte[] pdfBytes = GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
 
-                            _lastWeeklyReportSent = DateTime.Now.Date; // تحديث تاريخ آخر إرسال
-                            _logger.LogInformation("Weekly report sent successfully at: {time}", DateTimeOffset.Now);
+                                // إرسال البريد الإلكتروني مع ملف PDF وجدول HTML (الآن تم دمجها)
+                                // يمكنك تغيير "yazeedbassam@hotmail.com" ليكون بريد إلكتروني محدد للمسؤول الذي سيتلقى التقرير.
+                                //   التشغيل لاحقا   //  await SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
+
+                                _lastWeeklyReportSent = DateTime.Now.Date; // تحديث تاريخ آخر إرسال
+                                _logger.LogInformation("Weekly report sent successfully at: {time}", DateTimeOffset.Now);
+                            }
                         }
-                    }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error sending weekly report.");
                     }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An unhandled error occurred during license expiry check.");
                 }
 
                 // انتظار 24 ساعة قبل التشغيل التالي
@@ -126,12 +132,14 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
         // تم تعديلها لجلب مثيل SqlServerDb داخليًا
         public async Task PerformLicenseExpiryCheck()
         {
-            using (var scope = _serviceProvider.CreateScope())
+            try
             {
-                var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
-
-                try
+                using (var scope = _serviceProvider.CreateScope())
                 {
+                    var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+
+                    try
+                    {
                     // تفريغ جدول notifications قبل إضافة التنبيهات الجديدة
                     try
                     {
@@ -286,6 +294,10 @@ UNION ALL
                 {
                     _logger.LogError(ex, "An unhandled error occurred during license expiry check.");
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create service scope or access database in PerformLicenseExpiryCheck.");
             }
         }
 
