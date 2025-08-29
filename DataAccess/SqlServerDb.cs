@@ -27,7 +27,18 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         public SqlServerDb(IConfiguration configuration)
         {
             // Use a new connection string name for SQL Server
-            _connectionString = configuration.GetConnectionString("SqlServerDbConnection"); // Changed connection string name
+            _connectionString = configuration.GetConnectionString("SqlServerDbConnection") 
+                                ?? throw new ArgumentNullException("Connection string 'SqlServerDbConnection' not found.");
+            
+            // Log connection string (without sensitive data)
+            var connectionStringForLogging = _connectionString;
+            if (!string.IsNullOrEmpty(connectionStringForLogging))
+            {
+                var parts = connectionStringForLogging.Split(';');
+                var safeParts = parts.Where(p => !p.ToLower().Contains("password") && !p.ToLower().Contains("pwd"));
+                var safeConnectionString = string.Join(";", safeParts);
+                Console.WriteLine($"Database connection configured: {safeConnectionString}");
+            }
         }
         // Constructor لـ SqlServerDb
         public SqlServerDb(IConfiguration configuration, IPasswordHasher<ControllerUser> passwordHasher, ILogger<SqlServerDb> logger)
@@ -40,7 +51,19 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         // Return SqlConnection instead of OracleConnection
 
         public SqlConnection GetConnection()
-            => new SqlConnection(_connectionString); // Use SqlConnection
+        {
+            try
+            {
+                var connection = new SqlConnection(_connectionString);
+                Console.WriteLine("SQL Server connection created successfully");
+                return connection;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating SQL Server connection: {ex.Message}");
+                throw;
+            }
+        }
 
         // Use SqlParameter instead of OracleParameter
         public DataTable ExecuteQuery(string sql, params SqlParameter[] parameters)

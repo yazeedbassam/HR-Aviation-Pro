@@ -3,11 +3,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
-using Microsoft.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
-using System.Data;             // مطلوب لـ DataTable
 using WebApplication1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add logging
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 builder.Services.AddSingleton<SqlServerDb>();
 builder.Services.AddSingleton<IPasswordHasher<ControllerUser>, PasswordHasher<ControllerUser>>();
@@ -32,22 +37,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // مثال لمدة انتهاء الصلاحية
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Strict;
     });
 
-builder.Services.AddAuthorization();
-
 builder.Services.AddAuthorization(opt => {
-    opt.FallbackPolicy = new AuthorizationPolicyBuilder()
-                         .RequireAuthenticatedUser()
-                         .Build();
     opt.AddPolicy("RequireAdmin", p => p.RequireRole("Admin"));
     opt.AddPolicy("RequireController", p => p.RequireRole("Controller", "Admin"));
 });
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
@@ -59,7 +60,25 @@ app.Lifetime.ApplicationStarted.Register(() => {
     Console.WriteLine("Available endpoints: /, /health, /ping, /ready");
 });
 
-// 2) Seed Admin user (only in development)
+// Test database connection on startup
+app.Lifetime.ApplicationStarted.Register(async () => {
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+        var connection = db.GetConnection();
+        await connection.OpenAsync();
+        Console.WriteLine("Database connection successful!");
+        await connection.CloseAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Warning: Database connection failed: {ex.Message}");
+        Console.WriteLine("Application will continue without database functionality");
+    }
+});
+
+// Seed Admin user (only in development)
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -74,7 +93,6 @@ if (app.Environment.IsDevelopment())
         }
         catch (Exception ex)
         {
-            // Log the error but don't crash the application
             Console.WriteLine($"Warning: Could not seed admin user: {ex.Message}");
         }
     }
@@ -91,19 +109,22 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add health check endpoints - place them before routing
-app.MapGet("/health", () => "OK");
-app.MapGet("/ping", () => "pong");
-app.MapGet("/ready", () => "ready");
+// Map health check endpoints FIRST - before any other routing
+app.MapGet("/ping", () => Results.Text("pong", "text/plain"));
+app.MapGet("/ready", () => Results.Text("ready", "text/plain"));
+app.MapGet("/health", () => Results.Json(new { status = "healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/", () => Results.Text("AVIATION HR PRO - System is running!", "text/plain"));
 
-// Add root endpoint for health check - immediate response
-app.MapGet("/", () => "AVIATION HR PRO - System is running!");
+// Map controllers AFTER health check endpoints
+app.MapControllers();
 
+// Add MVC routing for traditional controllers
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
