@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -173,15 +173,15 @@ namespace WebApplication1.Controllers
 
             var parameters = new[]
             {
-                new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
-                new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
-                new MySqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
-                new MySqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
-                new MySqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)license.PDFPath ?? DBNull.Value },
-                new MySqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
-                new MySqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
-                new MySqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
-                new MySqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value }
+                                        new SqlParameter("@ControllerId", (object)license.ControllerId ?? DBNull.Value),
+                        new SqlParameter("@EmployeeId", (object)license.EmployeeId ?? DBNull.Value),
+                        new SqlParameter("@LicenseType", (object)license.LicenseType ?? DBNull.Value),
+                        new SqlParameter("@ExpiryDate", (object)license.ExpiryDate ?? DBNull.Value),
+                        new SqlParameter("@PDFPath", (object)license.PDFPath ?? DBNull.Value),
+                        new SqlParameter("@IssueDate", (object)license.IssueDate ?? DBNull.Value),
+                        new SqlParameter("@licensenumber", (object)license.licensenumber ?? DBNull.Value),
+                        new SqlParameter("@Note", (object)license.Note ?? DBNull.Value),
+                        new SqlParameter("@Range", (object)license.RANGE ?? DBNull.Value)
             };
 
             try
@@ -337,16 +337,16 @@ namespace WebApplication1.Controllers
 
             var parameters = new[]
             {
-        new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
-        new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
-        new MySqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
-        new MySqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
-        new MySqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)newPdfPath ?? DBNull.Value }, // ?????? newPdfPath ???
-        new MySqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
-        new MySqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
-        new MySqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
-        new MySqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value },
-        new MySqlParameter("@LicenseId", SqlDbType.Int) { Value = license.LicenseId } // ??? ???????
+                                new SqlParameter("@ControllerId", (object)license.ControllerId ?? DBNull.Value),
+                        new SqlParameter("@EmployeeId", (object)license.EmployeeId ?? DBNull.Value),
+                        new SqlParameter("@LicenseType", (object)license.LicenseType ?? DBNull.Value),
+                        new SqlParameter("@ExpiryDate", (object)license.ExpiryDate ?? DBNull.Value),
+                        new SqlParameter("@PDFPath", (object)newPdfPath ?? DBNull.Value), // ?????? newPdfPath ???
+                        new SqlParameter("@IssueDate", (object)license.IssueDate ?? DBNull.Value),
+                        new SqlParameter("@licensenumber", (object)license.licensenumber ?? DBNull.Value),
+                        new SqlParameter("@Note", (object)license.Note ?? DBNull.Value),
+                        new SqlParameter("@Range", (object)license.RANGE ?? DBNull.Value),
+                        new SqlParameter("@LicenseId", license.LicenseId) // ??? ???????
     };
 
             try

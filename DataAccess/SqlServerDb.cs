@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc; // Assuming this namespace remains the same
 using Microsoft.AspNetCore.Mvc.Rendering;
-using MySql.Data.MySqlClient;using System.Data;
+using Microsoft.Data.SqlClient;using System.Data;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -47,13 +47,13 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             _passwordHasher = passwordHasher;
             _logger = logger;
         }
-        // Return MySqlConnection instead of OracleConnection
+        // Return SqlConnection instead of OracleConnection
 
-        public MySqlConnection GetConnection()
+        public SqlConnection GetConnection()
         {
             try
             {
-                var connection = new MySqlConnection(_connectionString);
+                var connection = new SqlConnection(_connectionString);
                 Console.WriteLine("MySQL connection created successfully");
                 return connection;
             }
@@ -68,15 +68,15 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         {
             try
             {
-                Console.WriteLine("?? Testing database connection...");
-                Console.WriteLine($"?? Connection string: {_connectionString}");
+                Console.WriteLine("🔍 Testing database connection...");
+                Console.WriteLine($"🔍 Connection string: {_connectionString}");
                 
                 using var connection = GetConnection();
-                Console.WriteLine("?? Connection created, attempting to open...");
+                Console.WriteLine("🔍 Connection created, attempting to open...");
                 connection.Open();
-                Console.WriteLine("? Database connection opened successfully");
+                Console.WriteLine("✅ Database connection opened successfully");
                 connection.Close();
-                Console.WriteLine("? Database connection closed successfully");
+                Console.WriteLine("✅ Database connection closed successfully");
                 return true;
             }
             catch (Exception ex)
@@ -88,8 +88,8 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             }
         }
 
-        // Use MySqlParameter instead of SqlParameter
-        public DataTable ExecuteQuery(string sql, params MySqlParameter[] parameters)
+        // Use SqlParameter instead of SqlParameter
+        public DataTable ExecuteQuery(string sql, params SqlParameter[] parameters)
         {
             // Replace Oracle parameter placeholders (:) with MySQL placeholders (@)
             // Note: This simple replacement might fail if SQL contains colons in literals or comments.
@@ -98,18 +98,18 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
 
             using var conn = GetConnection(); // Uses updated GetConnection()
             conn.Open();
-            using var cmd = new MySqlCommand(sql, conn); // Use MySqlCommand
+            using var cmd = new SqlCommand(sql, conn); // Use SqlCommand
             if (parameters != null)
             {
-                cmd.Parameters.AddRange(parameters); // Add MySqlParameters
+                cmd.Parameters.AddRange(parameters); // Add SqlParameters
             }
-            using var adapter = new MySqlDataAdapter(cmd); // Use MySqlDataAdapter
+            using var adapter = new SqlDataAdapter(cmd); // Use SqlDataAdapter
             var dt = new DataTable();
             try
             {
                 adapter.Fill(dt);
             }
-            catch (MySqlException ex) // Catch MySqlException instead of MySqlException
+            catch (SqlException ex) // Catch SqlException instead of SqlException
             {
                 // Log MySQL error
                 Console.WriteLine($"MySQL Error: {ex.Message}");
@@ -119,32 +119,32 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             return dt;
         }
 
-        // Use MySqlParameter instead of SqlParameter
-        public object ExecuteScalar(string sql, params MySqlParameter[] parameters)
+        // Use SqlParameter instead of SqlParameter
+        public object ExecuteScalar(string sql, params SqlParameter[] parameters)
         {
             sql = sql.Replace(":", "@"); // Replace parameter placeholders
 
             using var conn = GetConnection();
             conn.Open();
-            using var cmd = new MySqlCommand(sql, conn); // Use MySqlCommand
+            using var cmd = new SqlCommand(sql, conn); // Use SqlCommand
             if (parameters != null)
             {
-                cmd.Parameters.AddRange(parameters); // Add MySqlParameters
+                cmd.Parameters.AddRange(parameters); // Add SqlParameters
             }
             return cmd.ExecuteScalar();
         }
 
-        // Use MySqlParameter instead of SqlParameter
-        public int ExecuteNonQuery(string sql, params MySqlParameter[] parameters)
+        // Use SqlParameter instead of SqlParameter
+        public int ExecuteNonQuery(string sql, params SqlParameter[] parameters)
         {
             sql = sql.Replace(":", "@"); // Replace parameter placeholders
 
             using var conn = GetConnection();
             conn.Open();
-            using var cmd = new MySqlCommand(sql, conn); // Use MySqlCommand
+            using var cmd = new SqlCommand(sql, conn); // Use SqlCommand
             if (parameters != null)
             {
-                cmd.Parameters.AddRange(parameters); // Add MySqlParameters
+                cmd.Parameters.AddRange(parameters); // Add SqlParameters
             }
             return cmd.ExecuteNonQuery();
         }
@@ -184,7 +184,7 @@ SELECT
   c.BankAccountNumber, c.BankName, c.TaxId, c.InsuranceNumber
 FROM controllers c
 WHERE c.controllerid = @ctrlId"; // Changed : to @
-            return ExecuteQuery(sql, new MySqlParameter("@ctrlId", controllerId)); // Use SqlParameter and @
+            return ExecuteQuery(sql, new SqlParameter("@ctrlId", controllerId)); // Use SqlParameter and @
         }
 
         // GetObservationById: Parameter syntax change (@ instead of :)
@@ -196,7 +196,7 @@ WHERE c.controllerid = @ctrlId"; // Changed : to @
         LEFT JOIN dbo.Controllers c ON o.ControllerId = c.ControllerId
         LEFT JOIN dbo.Employees e ON o.EmployeeId = e.EmployeeID
         WHERE o.ObservationId = @ObservationId";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@ObservationId", observationId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@ObservationId", observationId));
             return (dt.Rows.Count > 0) ? MapDataRowToObservation(dt.Rows[0]) : null;
         }
 
@@ -217,34 +217,34 @@ UPDATE controllers SET
   BankName = @bankName, TaxId = @taxId, InsuranceNumber = @insuranceNumber
 WHERE controllerid = @controllerid"; // Changed : to @
             return ExecuteNonQuery(sql,
-                new MySqlParameter("@fullname", u.FullName),
-                new MySqlParameter("@username", u.Username),
-                new MySqlParameter("@airportid", u.AirportId),
-                new MySqlParameter("@photopath", (object?)u.PhotoPath ?? DBNull.Value),
-                new MySqlParameter("@licensepath", (object?)u.LicensePath ?? DBNull.Value),
-                new MySqlParameter("@job_title", (object?)u.JobTitle ?? DBNull.Value),
-                new MySqlParameter("@education_level", (object?)u.EducationLevel ?? DBNull.Value),
-                new MySqlParameter("@date_of_birth", (object?)u.DateOfBirth ?? DBNull.Value),
-                new MySqlParameter("@marital_status", (object?)u.MaritalStatus ?? DBNull.Value),
-                new MySqlParameter("@phone_number", (object?)u.PhoneNumber ?? DBNull.Value),
-                new MySqlParameter("@email", (object?)u.Email ?? DBNull.Value),
-                new MySqlParameter("@address", (object?)u.Address ?? DBNull.Value),
-                new MySqlParameter("@hire_date", (object?)u.HireDate ?? DBNull.Value),
-                new MySqlParameter("@employment_status", (object?)u.EmploymentStatus ?? DBNull.Value),
-                new MySqlParameter("@current_department", (object?)u.CurrentDepartment ?? DBNull.Value),
-                new MySqlParameter("@transfer_date", (object?)u.TransferDate ?? DBNull.Value),
-                new MySqlParameter("@emergency_contact", (object?)u.EmergencyContact ?? DBNull.Value),
-                new MySqlParameter("@licenseNumber", (object?)u.LicenseNumber ?? DBNull.Value),
-                new MySqlParameter("@needLicense", u.NeedLicense),
-                new MySqlParameter("@isActive", u.IsActive),
-                new MySqlParameter("@currentSalary", (object?)u.CurrentSalary ?? DBNull.Value),
-                new MySqlParameter("@annualIncreasePercentage", (object?)u.AnnualIncreasePercentage ?? DBNull.Value),
-                new MySqlParameter("@salaryAfterAnnualIncrease", (object?)u.SalaryAfterAnnualIncrease ?? DBNull.Value),
-                new MySqlParameter("@bankAccountNumber", (object?)u.BankAccountNumber ?? DBNull.Value),
-                new MySqlParameter("@bankName", (object?)u.BankName ?? DBNull.Value),
-                new MySqlParameter("@taxId", (object?)u.TaxId ?? DBNull.Value),
-                new MySqlParameter("@insuranceNumber", (object?)u.InsuranceNumber ?? DBNull.Value),
-                new MySqlParameter("@controllerid", u.ControllerId)
+                new SqlParameter("@fullname", u.FullName),
+                new SqlParameter("@username", u.Username),
+                new SqlParameter("@airportid", u.AirportId),
+                new SqlParameter("@photopath", (object?)u.PhotoPath ?? DBNull.Value),
+                new SqlParameter("@licensepath", (object?)u.LicensePath ?? DBNull.Value),
+                new SqlParameter("@job_title", (object?)u.JobTitle ?? DBNull.Value),
+                new SqlParameter("@education_level", (object?)u.EducationLevel ?? DBNull.Value),
+                new SqlParameter("@date_of_birth", (object?)u.DateOfBirth ?? DBNull.Value),
+                new SqlParameter("@marital_status", (object?)u.MaritalStatus ?? DBNull.Value),
+                new SqlParameter("@phone_number", (object?)u.PhoneNumber ?? DBNull.Value),
+                new SqlParameter("@email", (object?)u.Email ?? DBNull.Value),
+                new SqlParameter("@address", (object?)u.Address ?? DBNull.Value),
+                new SqlParameter("@hire_date", (object?)u.HireDate ?? DBNull.Value),
+                new SqlParameter("@employment_status", (object?)u.EmploymentStatus ?? DBNull.Value),
+                new SqlParameter("@current_department", (object?)u.CurrentDepartment ?? DBNull.Value),
+                new SqlParameter("@transfer_date", (object?)u.TransferDate ?? DBNull.Value),
+                new SqlParameter("@emergency_contact", (object?)u.EmergencyContact ?? DBNull.Value),
+                new SqlParameter("@licenseNumber", (object?)u.LicenseNumber ?? DBNull.Value),
+                new SqlParameter("@needLicense", u.NeedLicense),
+                new SqlParameter("@isActive", u.IsActive),
+                new SqlParameter("@currentSalary", (object?)u.CurrentSalary ?? DBNull.Value),
+                new SqlParameter("@annualIncreasePercentage", (object?)u.AnnualIncreasePercentage ?? DBNull.Value),
+                new SqlParameter("@salaryAfterAnnualIncrease", (object?)u.SalaryAfterAnnualIncrease ?? DBNull.Value),
+                new SqlParameter("@bankAccountNumber", (object?)u.BankAccountNumber ?? DBNull.Value),
+                new SqlParameter("@bankName", (object?)u.BankName ?? DBNull.Value),
+                new SqlParameter("@taxId", (object?)u.TaxId ?? DBNull.Value),
+                new SqlParameter("@insuranceNumber", (object?)u.InsuranceNumber ?? DBNull.Value),
+                new SqlParameter("@controllerid", u.ControllerId)
             );
         }
 
@@ -253,7 +253,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         {
             var result = ExecuteScalar(
                 "SELECT COUNT(*) FROM licenses WHERE controllerid = @controllerId", // Changed : to @
-                new MySqlParameter("@controllerId", controllerId) // Use SqlParameter and @
+                new SqlParameter("@controllerId", controllerId) // Use SqlParameter and @
             );
             return result == DBNull.Value ? 0 : Convert.ToInt32(result);
         }
@@ -267,20 +267,20 @@ WHERE controllerid = @controllerid"; // Changed : to @
             try
             {
                 // Delete licenses first
-                using var cmd1 = new MySqlCommand(
+                using var cmd1 = new SqlCommand(
                     "DELETE FROM licenses WHERE controllerid = @controllerId", conn, tx); // Use SqlCommand, @, pass tx
-                cmd1.Parameters.Add(new MySqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
+                cmd1.Parameters.Add(new SqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
                 cmd1.ExecuteNonQuery();
 
                 // Then delete controller
-                using var cmd2 = new MySqlCommand(
+                using var cmd2 = new SqlCommand(
                     "DELETE FROM controllers WHERE controllerid = @controllerId", conn, tx); // Use SqlCommand, @, pass tx
-                cmd2.Parameters.Add(new MySqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
+                cmd2.Parameters.Add(new SqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
                 cmd2.ExecuteNonQuery();
 
                 tx.Commit();
             }
-            catch (MySqlException ex) // Catch MySqlException
+            catch (SqlException ex) // Catch SqlException
             {
                 Console.WriteLine($"SQL Server Error during DeleteController: {ex.Message}");
                 tx.Rollback();
@@ -293,7 +293,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         {
             var result = ExecuteScalar(
                 "SELECT COUNT(*) FROM controllers WHERE airportid = @id", // Changed : to @
-                new MySqlParameter("@id", airportId) // Use SqlParameter and @
+                new SqlParameter("@id", airportId) // Use SqlParameter and @
             );
             return result == DBNull.Value ? 0 : Convert.ToInt32(result);
         }
@@ -316,7 +316,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         public List<SelectListItem> GetAirportsByCountry(int countryId)
         {
             const string sql = "SELECT AirportId, AirportName FROM Airports WHERE CountryId = @CountryId ORDER BY AirportName";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@CountryId", countryId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@CountryId", countryId));
             var airports = new List<SelectListItem>();
             foreach (DataRow row in dt.Rows)
             {
@@ -331,7 +331,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         public int GetCountryIdForAirport(int airportId)
         {
             const string sql = "SELECT CountryId FROM Airports WHERE AirportId = @AirportId";
-            var result = ExecuteScalar(sql, new MySqlParameter("@AirportId", airportId));
+            var result = ExecuteScalar(sql, new SqlParameter("@AirportId", airportId));
             return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
         }
 
@@ -342,7 +342,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         {
             var dt = ExecuteQuery(
                 "SELECT userid, username, passwordhash, rolename FROM users WHERE username = @u", // Changed : to @
-                new MySqlParameter("@u", username)); // Use SqlParameter and @
+                new SqlParameter("@u", username)); // Use SqlParameter and @
             if (dt.Rows.Count == 0) return null;
             var r = dt.Rows[0];
             return (
@@ -365,17 +365,17 @@ WHERE controllerid = @controllerid"; // Changed : to @
 
             var parameters = new[]
             {
-                new MySqlParameter("@username", username),
-                new MySqlParameter("@passwordHash", passwordHash),
-                new MySqlParameter("@roleName", roleName) // <== ???? ?? ??? ?????? ?????? ?? ???? dbo.Roles
+                new SqlParameter("@username", username),
+                new SqlParameter("@passwordHash", passwordHash),
+                new SqlParameter("@roleName", roleName) // <== ???? ?? ??? ?????? ?????? ?? ???? dbo.Roles
             };
 
             try
             {
-                using (MySqlConnection conn = new MySqlConnection(_connectionString))
+                using (SqlConnection conn = new SqlConnection(_connectionString))
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new MySqlCommand(sql, conn))
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
                     {
                         cmd.Parameters.AddRange(parameters);
                         object result = cmd.ExecuteScalar(); // ??????? ExecuteScalar ?????? ??? ???? ????? (??? UserId)
@@ -386,7 +386,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
                     }
                 }
             }
-            catch (MySqlException ex)
+            catch (SqlException ex)
             {
                 _logger.LogError(ex, "Error creating user in Users table: {SQL}", sql);
                 throw; // ????? ??? ????????? ?????? ???????? ?? ????? ????
@@ -440,15 +440,15 @@ WHERE controllerid = @controllerid -- Changed : to @
 ORDER BY issuedate DESC";
             using var conn = GetConnection();
             conn.Open();
-            using var cmd = new MySqlCommand(sql, conn); // Use SqlCommand
-            cmd.Parameters.Add(new MySqlParameter("@controllerid", controllerId)); // Use SqlParameter and @
-            using var adapter = new MySqlDataAdapter(cmd); // Use SqlDataAdapter
+            using var cmd = new SqlCommand(sql, conn); // Use SqlCommand
+            cmd.Parameters.Add(new SqlParameter("@controllerid", controllerId)); // Use SqlParameter and @
+            using var adapter = new SqlDataAdapter(cmd); // Use SqlDataAdapter
             var dt = new DataTable();
             try
             {
                 adapter.Fill(dt);
             }
-            catch (MySqlException ex)
+            catch (SqlException ex)
             {
                 Console.WriteLine($"SQL Server Error in GetCertificatesByController: {ex.Message}");
                 throw;
@@ -460,7 +460,7 @@ ORDER BY issuedate DESC";
         public int DeleteCertificate(int certificateId)
         {
             const string sql = "DELETE FROM certificates WHERE certificateid = @certId"; // Changed : to @
-            return ExecuteNonQuery(sql, new MySqlParameter("@certId", certificateId)); // Use SqlParameter and @
+            return ExecuteNonQuery(sql, new SqlParameter("@certId", certificateId)); // Use SqlParameter and @
         }
 
         // --- Observations --- //
@@ -497,15 +497,15 @@ WHERE controllerid = @controllerid -- Changed : to @
 ORDER BY departdate DESC";
             using var conn = GetConnection();
             conn.Open();
-            using var cmd = new MySqlCommand(sql, conn); // Use SqlCommand
-            cmd.Parameters.Add(new MySqlParameter("@controllerid", controllerId)); // Use SqlParameter and @
-            using var adapter = new MySqlDataAdapter(cmd); // Use SqlDataAdapter
+            using var cmd = new SqlCommand(sql, conn); // Use SqlCommand
+            cmd.Parameters.Add(new SqlParameter("@controllerid", controllerId)); // Use SqlParameter and @
+            using var adapter = new SqlDataAdapter(cmd); // Use SqlDataAdapter
             var dt = new DataTable();
             try
             {
                 adapter.Fill(dt);
             }
-            catch (MySqlException ex)
+            catch (SqlException ex)
             {
                 Console.WriteLine($"SQL Server Error in GetObservationsByController: {ex.Message}");
                 throw;
@@ -525,16 +525,16 @@ ORDER BY departdate DESC";
                         @depart, @return, @licenseNo, @path, @notes)";
 
             return ExecuteNonQuery(sql,
-                new MySqlParameter("@ctrlId", obs.ControllerId), // ??? ????? ?? ???? null
-                new MySqlParameter("@obsNo", (object?)obs.ObservationNo ?? DBNull.Value),
-                //new MySqlParameter("@travelCount", (object?)obs.TravelCount ?? DBNull.Value),
-                new MySqlParameter("@duration", (object?)obs.DurationDays ?? DBNull.Value),
-                new MySqlParameter("@country", (object?)obs.TravelCountry ?? DBNull.Value),
-                new MySqlParameter("@depart", (object?)obs.DepartDate ?? DBNull.Value),
-                new MySqlParameter("@return", (object?)obs.ReturnDate ?? DBNull.Value),
-                new MySqlParameter("@licenseNo", (object?)obs.LicenseNumber ?? DBNull.Value),
-                new MySqlParameter("@path", (object?)obs.FilePath ?? DBNull.Value),
-                new MySqlParameter("@notes", (object?)obs.Notes ?? DBNull.Value)
+                new SqlParameter("@ctrlId", obs.ControllerId), // ??? ????? ?? ???? null
+                new SqlParameter("@obsNo", (object?)obs.ObservationNo ?? DBNull.Value),
+                //new SqlParameter("@travelCount", (object?)obs.TravelCount ?? DBNull.Value),
+                new SqlParameter("@duration", (object?)obs.DurationDays ?? DBNull.Value),
+                new SqlParameter("@country", (object?)obs.TravelCountry ?? DBNull.Value),
+                new SqlParameter("@depart", (object?)obs.DepartDate ?? DBNull.Value),
+                new SqlParameter("@return", (object?)obs.ReturnDate ?? DBNull.Value),
+                new SqlParameter("@licenseNo", (object?)obs.LicenseNumber ?? DBNull.Value),
+                new SqlParameter("@path", (object?)obs.FilePath ?? DBNull.Value),
+                new SqlParameter("@notes", (object?)obs.Notes ?? DBNull.Value)
             );
         }
 
@@ -547,14 +547,14 @@ ORDER BY departdate DESC";
                             returndate = @return, licensenumber = @licenseNo, filepath = @path, notes = @notes
                         WHERE observationid = @obsId"; // Changed : to @
             return ExecuteNonQuery(sql,
-                new MySqlParameter("@duration", obs.DurationDays),
-                new MySqlParameter("@country", obs.TravelCountry),
-                new MySqlParameter("@depart", obs.DepartDate),
-                new MySqlParameter("@return", obs.ReturnDate),
-                new MySqlParameter("@licenseNo", obs.LicenseNumber),
-                new MySqlParameter("@path", obs.FilePath ?? (object)DBNull.Value),
-                new MySqlParameter("@notes", obs.Notes ?? (object)DBNull.Value),
-                new MySqlParameter("@obsId", obs.ObservationId)
+                new SqlParameter("@duration", obs.DurationDays),
+                new SqlParameter("@country", obs.TravelCountry),
+                new SqlParameter("@depart", obs.DepartDate),
+                new SqlParameter("@return", obs.ReturnDate),
+                new SqlParameter("@licenseNo", obs.LicenseNumber),
+                new SqlParameter("@path", obs.FilePath ?? (object)DBNull.Value),
+                new SqlParameter("@notes", obs.Notes ?? (object)DBNull.Value),
+                new SqlParameter("@obsId", obs.ObservationId)
             );
         }
 
@@ -562,7 +562,7 @@ ORDER BY departdate DESC";
         public int DeleteObservation(int observationId)
         {
             const string sql = "DELETE FROM observations WHERE observationid = @obsId"; // Changed : to @
-            return ExecuteNonQuery(sql, new MySqlParameter("@obsId", observationId)); // Use SqlParameter and @
+            return ExecuteNonQuery(sql, new SqlParameter("@obsId", observationId)); // Use SqlParameter and @
         }
 
         // CreateCertificate: Parameter syntax change (@ instead of :), Sequence replacement (assuming IDENTITY)
@@ -577,17 +577,17 @@ VALUES
   (@controllerid, @typeId, @certificatetitle, @issuingauthority, @issuingcountry,
    @issueDate, @expiryDate, @status, @statusReason, @filePath, @notes)"; // Removed certificateid, changed : to @
             ExecuteNonQuery(sql,
-                new MySqlParameter("@controllerid", cert.ControllerId),
-                new MySqlParameter("@typeId", cert.TypeId),
-                new MySqlParameter("@certificatetitle", cert.CertificateTitle), // Use certificatetitle
-                new MySqlParameter("@issuingauthority", cert.IssuingAuthority ?? (object)DBNull.Value),
-                new MySqlParameter("@issuingcountry", cert.IssuingCountry ?? (object)DBNull.Value),
-                new MySqlParameter("@issueDate", cert.IssueDate),
-                new MySqlParameter("@expiryDate", cert.ExpiryDate),
-                new MySqlParameter("@status", cert.Status),
-                new MySqlParameter("@statusReason", cert.StatusReason ?? (object)DBNull.Value),
-                new MySqlParameter("@filePath", cert.FilePath ?? (object)DBNull.Value),
-                new MySqlParameter("@notes", cert.Notes ?? (object)DBNull.Value)
+                new SqlParameter("@controllerid", cert.ControllerId),
+                new SqlParameter("@typeId", cert.TypeId),
+                new SqlParameter("@certificatetitle", cert.CertificateTitle), // Use certificatetitle
+                new SqlParameter("@issuingauthority", cert.IssuingAuthority ?? (object)DBNull.Value),
+                new SqlParameter("@issuingcountry", cert.IssuingCountry ?? (object)DBNull.Value),
+                new SqlParameter("@issueDate", cert.IssueDate),
+                new SqlParameter("@expiryDate", cert.ExpiryDate),
+                new SqlParameter("@status", cert.Status),
+                new SqlParameter("@statusReason", cert.StatusReason ?? (object)DBNull.Value),
+                new SqlParameter("@filePath", cert.FilePath ?? (object)DBNull.Value),
+                new SqlParameter("@notes", cert.Notes ?? (object)DBNull.Value)
             );
         }
 
@@ -603,18 +603,18 @@ UPDATE certificates SET
 WHERE certificateid = @certificateId"; // Changed : to @
             // System.Diagnostics.Debug.WriteLine("-- UpdateCertificate SQL --\n" + sql);
             ExecuteNonQuery(sql,
-                new MySqlParameter("@controllerId", c.ControllerId),
-                new MySqlParameter("@typeId", c.TypeId),
-                new MySqlParameter("@certificatetitle", c.CertificateTitle), // Use certificatetitle
-                new MySqlParameter("@issuingAuthority", (object?)c.IssuingAuthority ?? DBNull.Value),
-                new MySqlParameter("@issuingCountry", (object?)c.IssuingCountry ?? DBNull.Value),
-                new MySqlParameter("@issueDate", c.IssueDate),
-                new MySqlParameter("@expiryDate", c.ExpiryDate),
-                new MySqlParameter("@status", c.Status),
-                new MySqlParameter("@statusReason", (object?)c.StatusReason ?? DBNull.Value),
-                new MySqlParameter("@filePath", (object?)c.FilePath ?? DBNull.Value),
-                new MySqlParameter("@notes", (object?)c.Notes ?? DBNull.Value),
-                new MySqlParameter("@certificateId", c.CertificateId)
+                new SqlParameter("@controllerId", c.ControllerId),
+                new SqlParameter("@typeId", c.TypeId),
+                new SqlParameter("@certificatetitle", c.CertificateTitle), // Use certificatetitle
+                new SqlParameter("@issuingAuthority", (object?)c.IssuingAuthority ?? DBNull.Value),
+                new SqlParameter("@issuingCountry", (object?)c.IssuingCountry ?? DBNull.Value),
+                new SqlParameter("@issueDate", c.IssueDate),
+                new SqlParameter("@expiryDate", c.ExpiryDate),
+                new SqlParameter("@status", c.Status),
+                new SqlParameter("@statusReason", (object?)c.StatusReason ?? DBNull.Value),
+                new SqlParameter("@filePath", (object?)c.FilePath ?? DBNull.Value),
+                new SqlParameter("@notes", (object?)c.Notes ?? DBNull.Value),
+                new SqlParameter("@certificateId", c.CertificateId)
             );
         }
 
@@ -625,7 +625,7 @@ WHERE certificateid = @certificateId"; // Changed : to @
         //SELECT *
         //FROM controllers
         //WHERE username = @username"; // Changed : to @
-        //            var dt = ExecuteQuery(sql, new MySqlParameter("@username", username)); // Use SqlParameter and @
+        //            var dt = ExecuteQuery(sql, new SqlParameter("@username", username)); // Use SqlParameter and @
         //            if (dt.Rows.Count > 0)
         //                return dt.Rows[0];
         //            return null;
@@ -633,7 +633,7 @@ WHERE certificateid = @certificateId"; // Changed : to @
         public DataRow GetControllerByUsername(string username)
         {
             const string sql = "SELECT * FROM controllers WHERE username = @username";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@username", username));
+            var dt = ExecuteQuery(sql, new SqlParameter("@username", username));
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
@@ -646,7 +646,7 @@ WHERE certificateid = @certificateId"; // Changed : to @
                 FROM licenses l
                 JOIN controllers c ON l.controllerid = c.controllerid
                 WHERE c.username = @username ORDER BY l.expirydate ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@username", username));
+            var dt = ExecuteQuery(sql, new SqlParameter("@username", username));
             var list = new List<License>();
             foreach (DataRow row in dt.Rows)
             {
@@ -672,7 +672,7 @@ WHERE certificateid = @certificateId"; // Changed : to @
                 JOIN controllers c ON cer.controllerid = c.controllerid
                 JOIN documenttypes t ON cer.typeid = t.typeid
                 WHERE c.username = @username ORDER BY cer.certificateid ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@username", username));
+            var dt = ExecuteQuery(sql, new SqlParameter("@username", username));
             var list = new List<CertificateViewModel>();
             foreach (DataRow row in dt.Rows)
             {
@@ -698,7 +698,7 @@ WHERE certificateid = @certificateId"; // Changed : to @
                 SELECT o.* FROM observations o
                 JOIN controllers c ON o.controllerid = c.controllerid
                 WHERE c.username = @username ORDER BY o.departdate ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@username", username));
+            var dt = ExecuteQuery(sql, new SqlParameter("@username", username));
             var list = new List<Observation>();
             foreach (DataRow row in dt.Rows)
             {
@@ -852,12 +852,12 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         // GetUserEmailById: Parameter syntax change (@ instead of :), direct execution converted
         public string GetUserEmailById(int userId)
         {
-            using (MySqlConnection connection = GetConnection()) // Use MySqlConnection
+            using (SqlConnection connection = GetConnection()) // Use SqlConnection
             {
                 connection.Open();
-                using (SqlCommand command = new MySqlCommand("SELECT email FROM CONTROLLERS WHERE controllerid = @userid", connection)) // Use SqlCommand, @userid
+                using (SqlCommand command = new SqlCommand("SELECT email FROM CONTROLLERS WHERE controllerid = @userid", connection)) // Use SqlCommand, @userid
                 {
-                    command.Parameters.Add(new MySqlParameter("@userid", userId)); // Use SqlParameter, @userid
+                    command.Parameters.Add(new SqlParameter("@userid", userId)); // Use SqlParameter, @userid
                     using (SqlDataReader reader = command.ExecuteReader()) // Use SqlDataReader
                     {
                         if (reader.Read())
@@ -894,47 +894,47 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             if (!string.IsNullOrEmpty(fullName))
             {
                 query += " AND LOWER(c.fullname) LIKE @fullName";
-                parameters.Add(new MySqlParameter("@fullName", $"%{fullName.ToLower()}%"));
+                parameters.Add(new SqlParameter("@fullName", $"%{fullName.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(username))
             {
                 query += " AND LOWER(c.username) LIKE @username";
-                parameters.Add(new MySqlParameter("@username", $"%{username.ToLower()}%"));
+                parameters.Add(new SqlParameter("@username", $"%{username.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(airportName))
             {
                 query += " AND LOWER(a.airportname) LIKE @airportName";
-                parameters.Add(new MySqlParameter("@airportName", $"%{airportName.ToLower()}%"));
+                parameters.Add(new SqlParameter("@airportName", $"%{airportName.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(jobTitle))
             {
                 query += " AND LOWER(c.job_title) LIKE @jobTitle";
-                parameters.Add(new MySqlParameter("@jobTitle", $"%{jobTitle.ToLower()}%"));
+                parameters.Add(new SqlParameter("@jobTitle", $"%{jobTitle.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(employmentStatus))
             {
                 query += " AND LOWER(c.employment_status) LIKE @employmentStatus";
-                parameters.Add(new MySqlParameter("@employmentStatus", $"%{employmentStatus.ToLower()}%"));
+                parameters.Add(new SqlParameter("@employmentStatus", $"%{employmentStatus.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(currentDepartment))
             {
                 query += " AND LOWER(c.current_department) LIKE @currentDepartment";
-                parameters.Add(new MySqlParameter("@currentDepartment", $"%{currentDepartment.ToLower()}%"));
+                parameters.Add(new SqlParameter("@currentDepartment", $"%{currentDepartment.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(icao_code))
             {
                 query += " AND LOWER(a.icao_code) LIKE @icao_code";
-                parameters.Add(new MySqlParameter("@icao_code", $"%{icao_code.ToLower()}%"));
+                parameters.Add(new SqlParameter("@icao_code", $"%{icao_code.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(educationLevel))
             {
                 query += " AND LOWER(c.education_level) LIKE @educationLevel";
-                parameters.Add(new MySqlParameter("@educationLevel", $"%{educationLevel.ToLower()}%"));
+                parameters.Add(new SqlParameter("@educationLevel", $"%{educationLevel.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(maritalStatus))
             {
                 query += " AND LOWER(c.marital_status) LIKE @maritalStatus";
-                parameters.Add(new MySqlParameter("@maritalStatus", $"%{maritalStatus.ToLower()}%"));
+                parameters.Add(new SqlParameter("@maritalStatus", $"%{maritalStatus.ToLower()}%"));
             }
             // =============================================================
             // ==> ?? ????? ????? ??? <==
@@ -942,18 +942,18 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             if (!string.IsNullOrEmpty(phoneNumber))
             {
                 query += " AND LOWER(c.phone_number) LIKE @phoneNumber";
-                parameters.Add(new MySqlParameter("@phoneNumber", $"%{phoneNumber.ToLower()}%"));
+                parameters.Add(new SqlParameter("@phoneNumber", $"%{phoneNumber.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(email))
             {
                 query += " AND LOWER(c.email) LIKE @email";
-                parameters.Add(new MySqlParameter("@email", $"%{email.ToLower()}%"));
+                parameters.Add(new SqlParameter("@email", $"%{email.ToLower()}%"));
             }
 
             using (var conn = GetConnection())
             {
                 conn.Open();
-                using (var cmd = new MySqlCommand(query, conn))
+                using (var cmd = new SqlCommand(query, conn))
                 {
                     if (parameters.Any())
                     {
@@ -1018,11 +1018,11 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
                                 OR LOWER(c.username) LIKE @filter)"; // Changed : to @
                 }
 
-                using (var cmd = new MySqlCommand(query, conn)) // Use SqlCommand
+                using (var cmd = new SqlCommand(query, conn)) // Use SqlCommand
                 {
                     if (!string.IsNullOrWhiteSpace(filter))
                     {
-                        cmd.Parameters.Add(new MySqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
+                        cmd.Parameters.Add(new SqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
                     }
 
                     using (var reader = cmd.ExecuteReader()) // Use SqlDataReader
@@ -1078,11 +1078,11 @@ AND (
 )"; // Changed : to @
                 }
 
-                using (var cmd = new MySqlCommand(query, conn)) // Use SqlCommand
+                using (var cmd = new SqlCommand(query, conn)) // Use SqlCommand
                 {
                     if (!string.IsNullOrWhiteSpace(filter))
                     {
-                        cmd.Parameters.Add(new MySqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
+                        cmd.Parameters.Add(new SqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
                     }
 
                     using (var reader = cmd.ExecuteReader()) // Use SqlDataReader
@@ -1138,11 +1138,11 @@ AND (
         //)"; // Changed : to @
         //                }
 
-        //                using (var cmd = new MySqlCommand(query, conn)) // Use SqlCommand
+        //                using (var cmd = new SqlCommand(query, conn)) // Use SqlCommand
         //                {
         //                    if (!string.IsNullOrWhiteSpace(filter))
         //                    {
-        //                        cmd.Parameters.Add(new MySqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
+        //                        cmd.Parameters.Add(new SqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
         //                    }
 
         //                    using (var reader = cmd.ExecuteReader()) // Use SqlDataReader
@@ -1211,11 +1211,11 @@ AND (
                           OR LOWER(COALESCE(c.current_department, e.department)) LIKE @filter)";
                 }
 
-                using (var cmd = new MySqlCommand(query, conn)) // Use SqlCommand
+                using (var cmd = new SqlCommand(query, conn)) // Use SqlCommand
                 {
                     if (!string.IsNullOrWhiteSpace(filter))
                     {
-                        cmd.Parameters.Add(new MySqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
+                        cmd.Parameters.Add(new SqlParameter("@filter", $"%{filter.ToLower()}%")); // Use SqlParameter and @
                     }
 
                     using (var reader = cmd.ExecuteReader()) // Use SqlDataReader
@@ -1251,23 +1251,23 @@ AND (
         // GetSoonExpiringLicensesTable: SYSDATE -> GETDATE(), SYSDATE + 30 -> DATEADD, direct execution converted
         public DataTable GetSoonExpiringLicensesTable()
         {
-            using (var connection = GetConnection()) // Use MySqlConnection
+            using (var connection = GetConnection()) // Use SqlConnection
             {
                 connection.Open();
-                using (var cmd = new MySqlCommand(@"
+                using (var cmd = new SqlCommand(@"
 SELECT c.fullname, l.licensetype, l.expirydate, c.phone_number, c.email
 FROM licenses l
 JOIN controllers c ON l.controllerid = c.controllerid
 WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETDATE() and DATEADD
 ", connection)) // Use SqlCommand
-                using (var adapter = new MySqlDataAdapter(cmd)) // Use SqlDataAdapter
+                using (var adapter = new SqlDataAdapter(cmd)) // Use SqlDataAdapter
                 {
                     DataTable dt = new DataTable();
                     try
                     {
                         adapter.Fill(dt);
                     }
-                    catch (MySqlException ex)
+                    catch (SqlException ex)
                     {
                         Console.WriteLine($"SQL Server Error in GetSoonExpiringLicensesTable: {ex.Message}");
                         throw;
@@ -1281,7 +1281,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         public string GetUserPasswordHashByUserId(int userId)
         {
             string sql = "SELECT username, passwordhash FROM users WHERE userid = @userId";
-            DataTable dt = ExecuteQuery(sql, new MySqlParameter("@userId", userId));
+            DataTable dt = ExecuteQuery(sql, new SqlParameter("@userId", userId));
             if (dt.Rows.Count > 0 && dt.Rows[0]["passwordhash"] != DBNull.Value)
             {
                 return dt.Rows[0]["passwordhash"].ToString();
@@ -1316,47 +1316,47 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             if (!string.IsNullOrEmpty(fullName))
             {
                 sql += " AND LOWER(e.FullName) LIKE @fullName";
-                parameters.Add(new MySqlParameter("@fullName", $"%{fullName.ToLower()}%"));
+                parameters.Add(new SqlParameter("@fullName", $"%{fullName.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(employeeOfficialID))
             {
                 sql += " AND LOWER(e.EmployeeOfficialID) LIKE @employeeOfficialID";
-                parameters.Add(new MySqlParameter("@employeeOfficialID", $"%{employeeOfficialID.ToLower()}%"));
+                parameters.Add(new SqlParameter("@employeeOfficialID", $"%{employeeOfficialID.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(jobTitle))
             {
                 sql += " AND LOWER(e.JobTitle) LIKE @jobTitle";
-                parameters.Add(new MySqlParameter("@jobTitle", $"%{jobTitle.ToLower()}%"));
+                parameters.Add(new SqlParameter("@jobTitle", $"%{jobTitle.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(department))
             {
                 sql += " AND LOWER(e.Department) LIKE @department";
-                parameters.Add(new MySqlParameter("@department", $"%{department.ToLower()}%"));
+                parameters.Add(new SqlParameter("@department", $"%{department.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(username))
             {
                 sql += " AND LOWER(u.Username) LIKE @username";
-                parameters.Add(new MySqlParameter("@username", $"%{username.ToLower()}%"));
+                parameters.Add(new SqlParameter("@username", $"%{username.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(phoneNumber))
             {
                 sql += " AND e.PhoneNumber LIKE @phoneNumber";
-                parameters.Add(new MySqlParameter("@phoneNumber", $"%{phoneNumber}%"));
+                parameters.Add(new SqlParameter("@phoneNumber", $"%{phoneNumber}%"));
             }
             if (!string.IsNullOrEmpty(email))
             {
                 sql += " AND LOWER(e.Email) LIKE @email";
-                parameters.Add(new MySqlParameter("@email", $"%{email.ToLower()}%"));
+                parameters.Add(new SqlParameter("@email", $"%{email.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(location))
             {
                 sql += " AND LOWER(e.Location) LIKE @location";
-                parameters.Add(new MySqlParameter("@location", $"%{location.ToLower()}%"));
+                parameters.Add(new SqlParameter("@location", $"%{location.ToLower()}%"));
             }
             if (!string.IsNullOrEmpty(Gender))
             {
                 sql += " AND LOWER(e.Location) LIKE @Gender";
-                parameters.Add(new MySqlParameter("@Gender", $"%{Gender.ToLower()}%"));
+                parameters.Add(new SqlParameter("@Gender", $"%{Gender.ToLower()}%"));
             }
             sql += " ORDER BY e.FullName";
 
@@ -1382,7 +1382,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         LEFT JOIN Users u ON e.UserID = u.UserID
         WHERE e.EmployeeID = @EmployeeID";
 
-            var parameters = new[] { new MySqlParameter("@EmployeeID", employeeId) };
+            var parameters = new[] { new SqlParameter("@EmployeeID", employeeId) };
             DataTable dt = ExecuteQuery(sql, parameters);
 
             if (dt.Rows.Count > 0)
@@ -1437,31 +1437,31 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
 
             var parameters = new[]
             {
-        new MySqlParameter("@EmployeeOfficialID", model.EmployeeOfficialID),
-        new MySqlParameter("@UserID", newUserId),
-        new MySqlParameter("@FullName", model.FullName),
-        new MySqlParameter("@JobTitle", (object)model.JobTitle ?? DBNull.Value),
-        new MySqlParameter("@Department", (object)model.Department ?? DBNull.Value),
-        new MySqlParameter("@PhoneNumber", (object)model.PhoneNumber ?? DBNull.Value),
-        new MySqlParameter("@Email", model.Email),
-        new MySqlParameter("@HireDate", (object)model.HireDate ?? DBNull.Value),
-        new MySqlParameter("@IsActive", model.IsActive),
-        new MySqlParameter("@Address", (object)model.Address ?? DBNull.Value),
-        new MySqlParameter("@Location", (object)model.Location ?? DBNull.Value),
-        new MySqlParameter("@EmergencyContactPhone", (object)model.EmergencyContactPhone ?? DBNull.Value),
-        new MySqlParameter("@Gender", (object)model.Gender ?? DBNull.Value),
-        new MySqlParameter("@DateOfBirth", (object)model.DateOfBirth ?? DBNull.Value),
-        new MySqlParameter("@MaritalStatus", (object)model.MaritalStatus ?? DBNull.Value),
-        new MySqlParameter("@EducationLevel", (object)model.EducationLevel ?? DBNull.Value),
-        new MySqlParameter("@CurrentSalary", (object)model.CurrentSalary ?? DBNull.Value),
-        new MySqlParameter("@AnnualIncreasePercentage", (object)model.AnnualIncreasePercentage ?? DBNull.Value),
-        new MySqlParameter("@SalaryAfterAnnualIncrease", (object)model.SalaryAfterAnnualIncrease ?? DBNull.Value),
-        new MySqlParameter("@BankAccountNumber", (object)model.BankAccountNumber ?? DBNull.Value),
-        new MySqlParameter("@BankName", (object)model.BankName ?? DBNull.Value),
-        new MySqlParameter("@TaxId", (object)model.TaxId ?? DBNull.Value),
-        new MySqlParameter("@InsuranceNumber", (object)model.InsuranceNumber ?? DBNull.Value),
-        new MySqlParameter("@PhotoPath", (object)model.PhotoPath ?? DBNull.Value),
-        new MySqlParameter("@NeedLicense", model.NeedLicense),
+        new SqlParameter("@EmployeeOfficialID", model.EmployeeOfficialID),
+        new SqlParameter("@UserID", newUserId),
+        new SqlParameter("@FullName", model.FullName),
+        new SqlParameter("@JobTitle", (object)model.JobTitle ?? DBNull.Value),
+        new SqlParameter("@Department", (object)model.Department ?? DBNull.Value),
+        new SqlParameter("@PhoneNumber", (object)model.PhoneNumber ?? DBNull.Value),
+        new SqlParameter("@Email", model.Email),
+        new SqlParameter("@HireDate", (object)model.HireDate ?? DBNull.Value),
+        new SqlParameter("@IsActive", model.IsActive),
+        new SqlParameter("@Address", (object)model.Address ?? DBNull.Value),
+        new SqlParameter("@Location", (object)model.Location ?? DBNull.Value),
+        new SqlParameter("@EmergencyContactPhone", (object)model.EmergencyContactPhone ?? DBNull.Value),
+        new SqlParameter("@Gender", (object)model.Gender ?? DBNull.Value),
+        new SqlParameter("@DateOfBirth", (object)model.DateOfBirth ?? DBNull.Value),
+        new SqlParameter("@MaritalStatus", (object)model.MaritalStatus ?? DBNull.Value),
+        new SqlParameter("@EducationLevel", (object)model.EducationLevel ?? DBNull.Value),
+        new SqlParameter("@CurrentSalary", (object)model.CurrentSalary ?? DBNull.Value),
+        new SqlParameter("@AnnualIncreasePercentage", (object)model.AnnualIncreasePercentage ?? DBNull.Value),
+        new SqlParameter("@SalaryAfterAnnualIncrease", (object)model.SalaryAfterAnnualIncrease ?? DBNull.Value),
+        new SqlParameter("@BankAccountNumber", (object)model.BankAccountNumber ?? DBNull.Value),
+        new SqlParameter("@BankName", (object)model.BankName ?? DBNull.Value),
+        new SqlParameter("@TaxId", (object)model.TaxId ?? DBNull.Value),
+        new SqlParameter("@InsuranceNumber", (object)model.InsuranceNumber ?? DBNull.Value),
+        new SqlParameter("@PhotoPath", (object)model.PhotoPath ?? DBNull.Value),
+        new SqlParameter("@NeedLicense", model.NeedLicense),
     };
 
             ExecuteNonQuery(sql, parameters);
@@ -1504,29 +1504,29 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
 
             var parameters = new[]
             {
-        new MySqlParameter("@EmployeeOfficialID", employee.EmployeeOfficialID),
-        new MySqlParameter("@FullName", employee.FullName),
-        new MySqlParameter("@JobTitle", (object)employee.JobTitle ?? DBNull.Value),
-        new MySqlParameter("@Department", (object)employee.Department ?? DBNull.Value),
-        new MySqlParameter("@PhoneNumber", (object)employee.PhoneNumber ?? DBNull.Value),
-        new MySqlParameter("@Email", employee.Email),
-        new MySqlParameter("@HireDate", (object)employee.HireDate ?? DBNull.Value),
-        new MySqlParameter("@IsActive", employee.IsActive),
-        new MySqlParameter("@Address", (object)employee.Address ?? DBNull.Value),
-        new MySqlParameter("@Location", (object)employee.Location ?? DBNull.Value),
-        new MySqlParameter("@EmergencyContactPhone", (object)employee.EmergencyContactPhone ?? DBNull.Value),
-        new MySqlParameter("@Gender", (object)employee.Gender ?? DBNull.Value),
-        new MySqlParameter("@DateOfBirth", (object)employee.DateOfBirth ?? DBNull.Value),
-        new MySqlParameter("@MaritalStatus", (object)employee.MaritalStatus ?? DBNull.Value),
-        new MySqlParameter("@EducationLevel", (object)employee.EducationLevel ?? DBNull.Value),
-        new MySqlParameter("@CurrentSalary", (object)employee.CurrentSalary ?? DBNull.Value),
-        new MySqlParameter("@AnnualIncreasePercentage", (object)employee.AnnualIncreasePercentage ?? DBNull.Value),
-        new MySqlParameter("@SalaryAfterAnnualIncrease", (object)employee.SalaryAfterAnnualIncrease ?? DBNull.Value),
-        new MySqlParameter("@BankAccountNumber", (object)employee.BankAccountNumber ?? DBNull.Value),
-        new MySqlParameter("@BankName", (object)employee.BankName ?? DBNull.Value),
-        new MySqlParameter("@TaxId", (object)employee.TaxId ?? DBNull.Value),
-        new MySqlParameter("@InsuranceNumber", (object)employee.InsuranceNumber ?? DBNull.Value),
-        new MySqlParameter("@EmployeeID", employee.EmployeeID)
+        new SqlParameter("@EmployeeOfficialID", employee.EmployeeOfficialID),
+        new SqlParameter("@FullName", employee.FullName),
+        new SqlParameter("@JobTitle", (object)employee.JobTitle ?? DBNull.Value),
+        new SqlParameter("@Department", (object)employee.Department ?? DBNull.Value),
+        new SqlParameter("@PhoneNumber", (object)employee.PhoneNumber ?? DBNull.Value),
+        new SqlParameter("@Email", employee.Email),
+        new SqlParameter("@HireDate", (object)employee.HireDate ?? DBNull.Value),
+        new SqlParameter("@IsActive", employee.IsActive),
+        new SqlParameter("@Address", (object)employee.Address ?? DBNull.Value),
+        new SqlParameter("@Location", (object)employee.Location ?? DBNull.Value),
+        new SqlParameter("@EmergencyContactPhone", (object)employee.EmergencyContactPhone ?? DBNull.Value),
+        new SqlParameter("@Gender", (object)employee.Gender ?? DBNull.Value),
+        new SqlParameter("@DateOfBirth", (object)employee.DateOfBirth ?? DBNull.Value),
+        new SqlParameter("@MaritalStatus", (object)employee.MaritalStatus ?? DBNull.Value),
+        new SqlParameter("@EducationLevel", (object)employee.EducationLevel ?? DBNull.Value),
+        new SqlParameter("@CurrentSalary", (object)employee.CurrentSalary ?? DBNull.Value),
+        new SqlParameter("@AnnualIncreasePercentage", (object)employee.AnnualIncreasePercentage ?? DBNull.Value),
+        new SqlParameter("@SalaryAfterAnnualIncrease", (object)employee.SalaryAfterAnnualIncrease ?? DBNull.Value),
+        new SqlParameter("@BankAccountNumber", (object)employee.BankAccountNumber ?? DBNull.Value),
+        new SqlParameter("@BankName", (object)employee.BankName ?? DBNull.Value),
+        new SqlParameter("@TaxId", (object)employee.TaxId ?? DBNull.Value),
+        new SqlParameter("@InsuranceNumber", (object)employee.InsuranceNumber ?? DBNull.Value),
+        new SqlParameter("@EmployeeID", employee.EmployeeID)
     };
             ExecuteNonQuery(sql, parameters);
         }
@@ -1565,7 +1565,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         public bool EmployeeEmailExists(string email)
         {
             string sql = "SELECT 1 FROM Employees WHERE Email = @Email";
-            var parameters = new[] { new MySqlParameter("@Email", email) };
+            var parameters = new[] { new SqlParameter("@Email", email) };
 
             object result = ExecuteScalar(sql, parameters);
 
@@ -1595,7 +1595,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         {
             // ?????? ???? ??? ????? ???????? (UserID) ??????? ??????? ??? ????
             string getUserIdSql = "SELECT UserID FROM Employees WHERE EmployeeID = @EmployeeID";
-            var getUserIdParams = new[] { new MySqlParameter("@EmployeeID", employeeId) };
+            var getUserIdParams = new[] { new SqlParameter("@EmployeeID", employeeId) };
             DataTable dt = ExecuteQuery(getUserIdSql, getUserIdParams);
 
             int? userId = null;
@@ -1606,14 +1606,14 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
 
             // ??????? ???? ??? ?????? ?? ???? ????????
             string deleteEmployeeSql = "DELETE FROM Employees WHERE EmployeeID = @EmployeeID";
-            var deleteEmployeeParams = new[] { new MySqlParameter("@EmployeeID", employeeId) };
+            var deleteEmployeeParams = new[] { new SqlParameter("@EmployeeID", employeeId) };
             ExecuteNonQuery(deleteEmployeeSql, deleteEmployeeParams);
 
             // ??????? ??? ??? ???? ?????? ?????? ????? ?? ???? ??????????
             if (userId.HasValue)
             {
                 string deleteUserSql = "DELETE FROM Users WHERE UserID = @UserID";
-                var deleteUserParams = new[] { new MySqlParameter("@UserID", userId.Value) };
+                var deleteUserParams = new[] { new SqlParameter("@UserID", userId.Value) };
                 ExecuteNonQuery(deleteUserSql, deleteUserParams);
             }
         }
@@ -1912,7 +1912,7 @@ LEFT JOIN Airports a ON c.AirportId = a.AirportId
 LEFT JOIN Employees e ON l.EmployeeId = e.EmployeeId
 WHERE l.LicenseId = @LicenseId";
 
-            var parameters = new[] { new MySqlParameter("@LicenseId", licenseId) };
+            var parameters = new[] { new SqlParameter("@LicenseId", licenseId) };
             DataTable dt = ExecuteQuery(sql, parameters);
 
             if (dt.Rows.Count > 0)
@@ -1954,7 +1954,7 @@ WHERE l.LicenseId = @LicenseId";
         public void DeleteLicenseById(int licenseId)
         {
             const string sql = "DELETE FROM Licenses WHERE LicenseId = @LicenseId";
-            var parameters = new[] { new MySqlParameter("@LicenseId", licenseId) };
+            var parameters = new[] { new SqlParameter("@LicenseId", licenseId) };
             ExecuteNonQuery(sql, parameters);
         }
 
@@ -2263,7 +2263,7 @@ WHERE l.LicenseId = @LicenseId";
             ce.CertificateId = @CertificateId;
     ";
 
-            var parameters = new[] { new MySqlParameter("@CertificateId", certificateId) };
+            var parameters = new[] { new SqlParameter("@CertificateId", certificateId) };
             DataTable dt = ExecuteQuery(sql, parameters);
 
             if (dt.Rows.Count > 0)
@@ -2311,7 +2311,7 @@ WHERE l.LicenseId = @LicenseId";
 
             // Now delete the record from the database
             const string sql = "DELETE FROM Certificates WHERE CertificateId = @CertificateId";
-            ExecuteNonQuery(sql, new MySqlParameter("@CertificateId", certificateId));
+            ExecuteNonQuery(sql, new SqlParameter("@CertificateId", certificateId));
         }
 
         /// <summary>
@@ -2458,7 +2458,7 @@ WHERE l.LicenseId = @LicenseId";
         public void DeleteObservationById(int observationId)
         {
             const string sql = "DELETE FROM dbo.Observations WHERE ObservationId = @ObservationId";
-            ExecuteNonQuery(sql, new MySqlParameter("@ObservationId", observationId));
+            ExecuteNonQuery(sql, new SqlParameter("@ObservationId", observationId));
         }
 
 
@@ -2499,18 +2499,18 @@ WHERE l.LicenseId = @LicenseId";
             if (controllerId.HasValue)
             {
                 sql = "SELECT COUNT(*) FROM dbo.Observations WHERE ControllerId = @Id";
-                parameter = new MySqlParameter("@Id", controllerId.Value);
+                parameter = new SqlParameter("@Id", controllerId.Value);
             }
             else if (employeeId.HasValue)
             {
                 sql = "SELECT COUNT(*) FROM dbo.Observations WHERE EmployeeId = @Id";
-                parameter = new MySqlParameter("@Id", employeeId.Value);
+                parameter = new SqlParameter("@Id", employeeId.Value);
             }
             else return 1;
 
-            using (var connection = new MySqlConnection(_connectionString))
+            using (var connection = new SqlConnection(_connectionString))
             {
-                using (var command = new MySqlCommand(sql, connection))
+                using (var command = new SqlCommand(sql, connection))
                 {
                     command.Parameters.Add(parameter);
                     connection.Open();
@@ -2570,14 +2570,14 @@ WHERE l.LicenseId = @LicenseId";
 
             var parameters = new[]
             {
-        new MySqlParameter("@ProjectName", project.ProjectName),
-        new MySqlParameter("@Description", (object)project.Description ?? DBNull.Value),
-        new MySqlParameter("@Location", (object)project.Location ?? DBNull.Value),
-        new MySqlParameter("@AssociatedEntity", (object)project.AssociatedEntity ?? DBNull.Value),
-        new MySqlParameter("@Status", project.Status),
-        new MySqlParameter("@StartDate", (object)project.StartDate ?? DBNull.Value),
-        new MySqlParameter("@EndDate", (object)project.EndDate ?? DBNull.Value),
-        new MySqlParameter("@FolderPath", (object)project.FolderPath ?? DBNull.Value)
+        new SqlParameter("@ProjectName", project.ProjectName),
+        new SqlParameter("@Description", (object)project.Description ?? DBNull.Value),
+        new SqlParameter("@Location", (object)project.Location ?? DBNull.Value),
+        new SqlParameter("@AssociatedEntity", (object)project.AssociatedEntity ?? DBNull.Value),
+        new SqlParameter("@Status", project.Status),
+        new SqlParameter("@StartDate", (object)project.StartDate ?? DBNull.Value),
+        new SqlParameter("@EndDate", (object)project.EndDate ?? DBNull.Value),
+        new SqlParameter("@FolderPath", (object)project.FolderPath ?? DBNull.Value)
     };
 
             // ExecuteScalar is used here to get the first value returned, which is the new ProjectId.
@@ -2597,16 +2597,16 @@ WHERE l.LicenseId = @LicenseId";
             foreach (var controllerId in controllerIds)
             {
                 sql += $"INSERT INTO ProjectParticipants (ProjectId, ControllerId) VALUES (@ProjectId{paramIndex}, @ControllerId{paramIndex});\n";
-                parameters.Add(new MySqlParameter($"@ProjectId{paramIndex}", projectId));
-                parameters.Add(new MySqlParameter($"@ControllerId{paramIndex}", controllerId));
+                parameters.Add(new SqlParameter($"@ProjectId{paramIndex}", projectId));
+                parameters.Add(new SqlParameter($"@ControllerId{paramIndex}", controllerId));
                 paramIndex++;
             }
 
             foreach (var employeeId in employeeIds)
             {
                 sql += $"INSERT INTO ProjectParticipants (ProjectId, EmployeeId) VALUES (@ProjectId{paramIndex}, @EmployeeId{paramIndex});\n";
-                parameters.Add(new MySqlParameter($"@ProjectId{paramIndex}", projectId));
-                parameters.Add(new MySqlParameter($"@EmployeeId{paramIndex}", employeeId));
+                parameters.Add(new SqlParameter($"@ProjectId{paramIndex}", projectId));
+                parameters.Add(new SqlParameter($"@EmployeeId{paramIndex}", employeeId));
                 paramIndex++;
             }
 
@@ -2628,8 +2628,8 @@ WHERE l.LicenseId = @LicenseId";
             foreach (var divisionId in divisionIds)
             {
                 sql += $"INSERT INTO ProjectDivisions (ProjectId, DivisionId) VALUES (@ProjectId{paramIndex}, @DivisionId{paramIndex});\n";
-                parameters.Add(new MySqlParameter($"@ProjectId{paramIndex}", projectId));
-                parameters.Add(new MySqlParameter($"@DivisionId{paramIndex}", divisionId));
+                parameters.Add(new SqlParameter($"@ProjectId{paramIndex}", projectId));
+                parameters.Add(new SqlParameter($"@DivisionId{paramIndex}", divisionId));
                 paramIndex++;
             }
 
@@ -2724,7 +2724,7 @@ WHERE l.LicenseId = @LicenseId";
         {
             Project project = null;
             const string sql = "SELECT * FROM dbo.Projects WHERE ProjectId = @ProjectId";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@ProjectId", projectId));
 
             if (dt.Rows.Count > 0)
             {
@@ -2771,7 +2771,7 @@ WHERE l.LicenseId = @LicenseId";
             ParticipantName;
     ";
 
-            var dt = ExecuteQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@ProjectId", projectId));
 
             foreach (DataRow row in dt.Rows)
             {
@@ -2807,7 +2807,7 @@ WHERE l.LicenseId = @LicenseId";
         ORDER BY
             a.AirportName;
     ";
-            DataTable dt = ExecuteQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            DataTable dt = ExecuteQuery(sql, new SqlParameter("@ProjectId", projectId));
             foreach (DataRow row in dt.Rows)
             {
                 list.Add(row["AirportName"].ToString());
@@ -2836,14 +2836,14 @@ WHERE l.LicenseId = @LicenseId";
 
             var parameters = new[]
             {
-        new MySqlParameter("@ProjectName", project.ProjectName),
-        new MySqlParameter("@Description", (object)project.Description ?? DBNull.Value),
-        new MySqlParameter("@Location", (object)project.Location ?? DBNull.Value),
-        new MySqlParameter("@AssociatedEntity", (object)project.AssociatedEntity ?? DBNull.Value),
-        new MySqlParameter("@Status", project.Status),
-        new MySqlParameter("@StartDate", (object)project.StartDate ?? DBNull.Value),
-        new MySqlParameter("@EndDate", (object)project.EndDate ?? DBNull.Value),
-        new MySqlParameter("@ProjectId", project.ProjectId)
+        new SqlParameter("@ProjectName", project.ProjectName),
+        new SqlParameter("@Description", (object)project.Description ?? DBNull.Value),
+        new SqlParameter("@Location", (object)project.Location ?? DBNull.Value),
+        new SqlParameter("@AssociatedEntity", (object)project.AssociatedEntity ?? DBNull.Value),
+        new SqlParameter("@Status", project.Status),
+        new SqlParameter("@StartDate", (object)project.StartDate ?? DBNull.Value),
+        new SqlParameter("@EndDate", (object)project.EndDate ?? DBNull.Value),
+        new SqlParameter("@ProjectId", project.ProjectId)
     };
 
             ExecuteNonQuery(sql, parameters);
@@ -2864,7 +2864,7 @@ WHERE l.LicenseId = @LicenseId";
             {
                 // 1. Delete all existing participants for this project
                 var deleteSql = "DELETE FROM ProjectParticipants WHERE ProjectId = @ProjectId";
-                using (var cmdDelete = new MySqlCommand(deleteSql, conn, tx))
+                using (var cmdDelete = new SqlCommand(deleteSql, conn, tx))
                 {
                     cmdDelete.Parameters.AddWithValue("@ProjectId", projectId);
                     cmdDelete.ExecuteNonQuery();
@@ -2880,22 +2880,22 @@ WHERE l.LicenseId = @LicenseId";
                     foreach (var controllerId in controllerIds ?? new List<int>())
                     {
                         addSql += $"INSERT INTO ProjectParticipants (ProjectId, ControllerId) VALUES (@pId{paramIndex}, @cId{paramIndex});\n";
-                        parameters.Add(new MySqlParameter($"@pId{paramIndex}", projectId));
-                        parameters.Add(new MySqlParameter($"@cId{paramIndex}", controllerId));
+                        parameters.Add(new SqlParameter($"@pId{paramIndex}", projectId));
+                        parameters.Add(new SqlParameter($"@cId{paramIndex}", controllerId));
                         paramIndex++;
                     }
 
                     foreach (var employeeId in employeeIds ?? new List<int>())
                     {
                         addSql += $"INSERT INTO ProjectParticipants (ProjectId, EmployeeId) VALUES (@pId{paramIndex}, @eId{paramIndex});\n";
-                        parameters.Add(new MySqlParameter($"@pId{paramIndex}", projectId));
-                        parameters.Add(new MySqlParameter($"@eId{paramIndex}", employeeId));
+                        parameters.Add(new SqlParameter($"@pId{paramIndex}", projectId));
+                        parameters.Add(new SqlParameter($"@eId{paramIndex}", employeeId));
                         paramIndex++;
                     }
 
                     if (!string.IsNullOrEmpty(addSql))
                     {
-                        using (var cmdAdd = new MySqlCommand(addSql, conn, tx))
+                        using (var cmdAdd = new SqlCommand(addSql, conn, tx))
                         {
                             cmdAdd.Parameters.AddRange(parameters.ToArray());
                             cmdAdd.ExecuteNonQuery();
@@ -2926,7 +2926,7 @@ WHERE l.LicenseId = @LicenseId";
             {
                 // 1. Delete old divisions
                 var deleteSql = "DELETE FROM ProjectDivisions WHERE ProjectId = @ProjectId";
-                using (var cmdDelete = new MySqlCommand(deleteSql, conn, tx))
+                using (var cmdDelete = new SqlCommand(deleteSql, conn, tx))
                 {
                     cmdDelete.Parameters.AddWithValue("@ProjectId", projectId);
                     cmdDelete.ExecuteNonQuery();
@@ -2941,11 +2941,11 @@ WHERE l.LicenseId = @LicenseId";
                     foreach (var divisionId in divisionIds)
                     {
                         addSql += $"INSERT INTO ProjectDivisions (ProjectId, DivisionId) VALUES (@pId{paramIndex}, @dId{paramIndex});\n";
-                        parameters.Add(new MySqlParameter($"@pId{paramIndex}", projectId));
-                        parameters.Add(new MySqlParameter($"@dId{paramIndex}", divisionId));
+                        parameters.Add(new SqlParameter($"@pId{paramIndex}", projectId));
+                        parameters.Add(new SqlParameter($"@dId{paramIndex}", divisionId));
                         paramIndex++;
                     }
-                    using (var cmdAdd = new MySqlCommand(addSql, conn, tx))
+                    using (var cmdAdd = new SqlCommand(addSql, conn, tx))
                     {
                         cmdAdd.Parameters.AddRange(parameters.ToArray());
                         cmdAdd.ExecuteNonQuery();
@@ -2976,7 +2976,7 @@ WHERE l.LicenseId = @LicenseId";
             'e-' + CAST(EmployeeId AS VARCHAR) AS ParticipantId
         FROM ProjectParticipants WHERE ProjectId = @ProjectId AND EmployeeId IS NOT NULL;
     ";
-            DataTable dt = ExecuteQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            DataTable dt = ExecuteQuery(sql, new SqlParameter("@ProjectId", projectId));
             foreach (DataRow row in dt.Rows)
             {
                 list.Add(row["ParticipantId"].ToString());
@@ -2991,7 +2991,7 @@ WHERE l.LicenseId = @LicenseId";
         {
             var list = new List<int>();
             const string sql = "SELECT DivisionId FROM ProjectDivisions WHERE ProjectId = @ProjectId;";
-            DataTable dt = ExecuteQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            DataTable dt = ExecuteQuery(sql, new SqlParameter("@ProjectId", projectId));
             foreach (DataRow row in dt.Rows)
             {
                 list.Add(Convert.ToInt32(row["DivisionId"]));
@@ -3003,7 +3003,7 @@ WHERE l.LicenseId = @LicenseId";
         public void DeleteProject(int projectId)
         {
             const string sql = "DELETE FROM Projects WHERE ProjectId = @ProjectId";
-            ExecuteNonQuery(sql, new MySqlParameter("@ProjectId", projectId));
+            ExecuteNonQuery(sql, new SqlParameter("@ProjectId", projectId));
         }
         public Employee GetEmployeeByUsername(string username)
         {
@@ -3012,7 +3012,7 @@ WHERE l.LicenseId = @LicenseId";
                 FROM Employees e
                 JOIN Users u ON e.UserID = u.UserID
                 WHERE u.Username = @Username";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@Username", username));
+            var dt = ExecuteQuery(sql, new SqlParameter("@Username", username));
             return dt.Rows.Count > 0 ? MapDataRowToEmployee(dt.Rows[0]) : null;
         }
 
@@ -3020,7 +3020,7 @@ WHERE l.LicenseId = @LicenseId";
         public List<License> GetLicensesByEmployeeId(int employeeId)
         {
             const string sql = "SELECT * FROM Licenses WHERE EmployeeID = @EmployeeID ORDER BY ExpiryDate ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@EmployeeID", employeeId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeID", employeeId));
             var list = new List<License>();
             foreach (DataRow row in dt.Rows)
             {
@@ -3044,7 +3044,7 @@ WHERE l.LicenseId = @LicenseId";
                 FROM certificates cer
                 JOIN documenttypes t ON cer.typeid = t.typeid
                 WHERE cer.EmployeeId = @EmployeeId ORDER BY cer.certificateid ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@EmployeeId", employeeId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeId", employeeId));
             var list = new List<CertificateViewModel>();
             foreach (DataRow row in dt.Rows)
             {
@@ -3066,7 +3066,7 @@ WHERE l.LicenseId = @LicenseId";
         public List<Observation> GetObservationsByEmployeeId(int employeeId)
         {
             const string sql = "SELECT * FROM observations WHERE EmployeeId = @EmployeeId ORDER BY departdate ASC";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@EmployeeId", employeeId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeId", employeeId));
             var list = new List<Observation>();
             foreach (DataRow row in dt.Rows)
             {
@@ -3096,8 +3096,8 @@ WHERE l.LicenseId = @LicenseId";
                 ORDER BY p.StartDate DESC;";
             var parameters = new List<SqlParameter>
             {
-                new MySqlParameter("@controllerId", (object)controllerId ?? DBNull.Value),
-                new MySqlParameter("@employeeId", (object)employeeId ?? DBNull.Value)
+                new SqlParameter("@controllerId", (object)controllerId ?? DBNull.Value),
+                new SqlParameter("@employeeId", (object)employeeId ?? DBNull.Value)
             };
             DataTable dt = ExecuteQuery(sql, parameters.ToArray());
             foreach (DataRow row in dt.Rows)
@@ -3287,7 +3287,7 @@ WHERE l.LicenseId = @LicenseId";
         {
             var list = new List<Project>();
             const string sql = "SELECT TOP (@count) * FROM Projects ORDER BY ProjectId DESC;";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@count", count));
+            var dt = ExecuteQuery(sql, new SqlParameter("@count", count));
             foreach (DataRow row in dt.Rows)
             {
                 list.Add(new Project
@@ -3315,7 +3315,7 @@ WHERE l.LicenseId = @LicenseId";
             {
                 // 1. Update the central Users table with the new hash.
                 const string sqlUsers = "UPDATE Users SET PasswordHash = @PasswordHash WHERE Username = @Username";
-                using (var cmdUsers = new MySqlCommand(sqlUsers, conn, tx))
+                using (var cmdUsers = new SqlCommand(sqlUsers, conn, tx))
                 {
                     cmdUsers.Parameters.AddWithValue("@PasswordHash", hashedPassword);
                     cmdUsers.Parameters.AddWithValue("@Username", username);
@@ -3324,7 +3324,7 @@ WHERE l.LicenseId = @LicenseId";
 
                 // 2. Also update the Controllers table to keep passwords in sync.
                 const string sqlControllers = "UPDATE Controllers SET Password = @Password WHERE Username = @Username";
-                using (var cmdControllers = new MySqlCommand(sqlControllers, conn, tx))
+                using (var cmdControllers = new SqlCommand(sqlControllers, conn, tx))
                 {
                     // This assumes the 'Password' column in the Controllers table is large enough (e.g., nvarchar(255))
                     // to store the full hash generated by ASP.NET Core Identity.
@@ -3358,15 +3358,15 @@ WHERE l.LicenseId = @LicenseId";
         WHERE ControllerId = @ControllerId";
 
             ExecuteNonQuery(sql,
-                new MySqlParameter("@FullName", user.FullName),
-                new MySqlParameter("@Email", user.Email),
-                new MySqlParameter("@PhoneNumber", (object)user.PhoneNumber ?? DBNull.Value),
-                new MySqlParameter("@DateOfBirth", (object)user.DateOfBirth ?? DBNull.Value),
-                new MySqlParameter("@MaritalStatus", (object)user.MaritalStatus ?? DBNull.Value),
-                new MySqlParameter("@Address", (object)user.Address ?? DBNull.Value),
-                new MySqlParameter("@EmergencyContact", (object)user.EmergencyContact ?? DBNull.Value),
-                new MySqlParameter("@EducationLevel", (object)user.EducationLevel ?? DBNull.Value),
-                new MySqlParameter("@ControllerId", user.ControllerId)
+                new SqlParameter("@FullName", user.FullName),
+                new SqlParameter("@Email", user.Email),
+                new SqlParameter("@PhoneNumber", (object)user.PhoneNumber ?? DBNull.Value),
+                new SqlParameter("@DateOfBirth", (object)user.DateOfBirth ?? DBNull.Value),
+                new SqlParameter("@MaritalStatus", (object)user.MaritalStatus ?? DBNull.Value),
+                new SqlParameter("@Address", (object)user.Address ?? DBNull.Value),
+                new SqlParameter("@EmergencyContact", (object)user.EmergencyContact ?? DBNull.Value),
+                new SqlParameter("@EducationLevel", (object)user.EducationLevel ?? DBNull.Value),
+                new SqlParameter("@ControllerId", user.ControllerId)
             );
         }
 
@@ -3380,14 +3380,14 @@ WHERE l.LicenseId = @LicenseId";
         WHERE EmployeeID = @EmployeeID";
 
             ExecuteNonQuery(sql,
-                new MySqlParameter("@FullName", employee.FullName),
-                new MySqlParameter("@Email", employee.Email),
-                new MySqlParameter("@PhoneNumber", employee.PhoneNumber),
-                new MySqlParameter("@Address", employee.Address),
-                new MySqlParameter("@EmergencyContactPhone", employee.EmergencyContactPhone),
-                new MySqlParameter("@Gender", employee.Gender),
-                new MySqlParameter("@Location", employee.Location),
-                new MySqlParameter("@EmployeeID", employee.EmployeeID)
+                new SqlParameter("@FullName", employee.FullName),
+                new SqlParameter("@Email", employee.Email),
+                new SqlParameter("@PhoneNumber", employee.PhoneNumber),
+                new SqlParameter("@Address", employee.Address),
+                new SqlParameter("@EmergencyContactPhone", employee.EmergencyContactPhone),
+                new SqlParameter("@Gender", employee.Gender),
+                new SqlParameter("@Location", employee.Location),
+                new SqlParameter("@EmployeeID", employee.EmployeeID)
             );
         }
 
@@ -3465,7 +3465,7 @@ WHERE l.LicenseId = @LicenseId";
         HAVING ISNULL(c.FullName, e.FullName) IS NOT NULL
         ORDER BY Value DESC;
     ";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@topN", topN));
+            var dt = ExecuteQuery(sql, new SqlParameter("@topN", topN));
             var list = new List<ChartData>();
             foreach (DataRow row in dt.Rows)
             {
@@ -3501,7 +3501,7 @@ WHERE l.LicenseId = @LicenseId";
         GROUP BY ParticipantName
         ORDER BY Value DESC;
     ";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@topN", topN));
+            var dt = ExecuteQuery(sql, new SqlParameter("@topN", topN));
             var list = new List<ChartData>();
             foreach (DataRow row in dt.Rows)
             {
@@ -3563,7 +3563,7 @@ WHERE l.LicenseId = @LicenseId";
             var files = new List<ProjectFile>();
 
             // 1. ??? ???? ?????? ????? ???????? ?? ????? ????????
-            var projectInfo = ExecuteQuery("SELECT FolderPath FROM Projects WHERE ProjectId = @ProjectId", new[] { new MySqlParameter("@ProjectId", projectId) });
+            var projectInfo = ExecuteQuery("SELECT FolderPath FROM Projects WHERE ProjectId = @ProjectId", new[] { new SqlParameter("@ProjectId", projectId) });
             if (projectInfo.Rows.Count == 0 || projectInfo.Rows[0]["FolderPath"] == DBNull.Value)
             {
                 return files; // ?? ???? ???? ??????? ???? ????? ?????
@@ -3608,7 +3608,7 @@ WHERE l.LicenseId = @LicenseId";
         ORDER BY p.StartDate DESC;
     ";
 
-            var dt = ExecuteQuery(sql, new MySqlParameter("@EmployeeId", employeeId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeId", employeeId));
 
             foreach (DataRow row in dt.Rows)
             {
@@ -3671,7 +3671,7 @@ WHERE l.LicenseId = @LicenseId";
                 FROM Employees e
                 LEFT JOIN Users u ON e.UserID = u.UserID
                 WHERE e.EmployeeID = @EmployeeID";
-            var dt = ExecuteQuery(sql, new MySqlParameter("@EmployeeID", employeeId));
+            var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeID", employeeId));
 
             if (dt.Rows.Count > 0)
             {

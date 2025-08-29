@@ -1,4 +1,4 @@
-﻿using DocuSign.eSign.Model;
+using DocuSign.eSign.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using QuestPDF.Fluent;
@@ -19,13 +18,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data; // Required for DBNull.Value
-using System.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
-using System.Drawing; // لعمليات الصورة إذا أردت
+using System.Data.SqlClient; // ???? ?? ??????? ??? ??? namespace
+using System.Drawing; // ??????? ?????? ??? ????
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using WebApplication1.DataAccess;
-using WebApplication1.DataAccess; // تأكد من أنك تستخدم SqlDb هنا
+using WebApplication1.DataAccess; // ???? ?? ??? ?????? SqlDb ???
 using WebApplication1.DataAccess; // Assume _db is of type SqlDb
 using WebApplication1.Models;
 using WebApplication1.Models;
@@ -37,17 +36,17 @@ using Color = System.Drawing.Color; // Assume 'model' is of a Controller-related
 public class ControllerUserController : Controller
 {
     private readonly SqlServerDb _db;
-    private readonly IPasswordHasher<ControllerUser> _hasher; // لاحظ ControllerUserViewModel
+    private readonly IPasswordHasher<ControllerUser> _hasher; // ???? ControllerUserViewModel
     private readonly IHostEnvironment _hostEnvironment;
 
     public ControllerUserController(
         SqlServerDb db,
-        IPasswordHasher<ControllerUser> hasher, // لاحظ ControllerUserViewModel
+        IPasswordHasher<ControllerUser> hasher, // ???? ControllerUserViewModel
         IHostEnvironment hostEnvironment)
     {
         _db = db;
         _hasher = hasher;
-        _hostEnvironment = hostEnvironment; // تأكد أن هذا السطر موجود
+        _hostEnvironment = hostEnvironment; // ???? ?? ??? ????? ?????
     }
     // GET: /ControllerUser
     public IActionResult Index()
@@ -133,24 +132,24 @@ public class ControllerUserController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        // 1) منع تكرار اليوزر
+        // 1) ??? ????? ??????
         if (_db.GetUserByUsername(model.Username) != null)
         {
             ModelState.AddModelError("Username", "This username is already taken.");
             return View(model);
         }
 
-        // 2) إنشاء حساب المستخدم
+        // 2) ????? ???? ????????
         _db.CreateUser(model.Username, model.Password, model.Role);
         var userRec = _db.GetUserByUsername(model.Username);
         int userId = userRec?.userId ?? 0;
 
-        // 3) رفع الملفات
+        // 3) ??? ???????
         string sanitized = SanitizeFolderName(model.Username);
         string photoPath = SaveUploadedFile(model.PhotoFile, "uploads", sanitized, "default.jpg");
         string licensePath = SaveUploadedFile(model.LicenseFile, "licenses", sanitized, "default.pdf");
 
-        // 4) INSERT مع الحقول الجديدة و sequence
+        // 4) INSERT ?? ?????? ??????? ? sequence
         const string sql = @"
 INSERT INTO controllers (
     fullname,
@@ -212,17 +211,17 @@ INSERT INTO controllers (
     @BankName,
     @TaxId,
     @InsuranceNumber
-)"; // <== تم التعديل هنا
+)"; // <== ?? ??????? ???
 
         var parameters = new[]
        {
     new Microsoft.Data.SqlClient.SqlParameter("@fullName",           model.FullName),
     new Microsoft.Data.SqlClient.SqlParameter("@userName",            model.Username),
-    new Microsoft.Data.SqlClient.SqlParameter("@password",            model.Password), // هذا عادةً يكون هاش كلمة المرور، وليس كلمة المرور الخام
+    new Microsoft.Data.SqlClient.SqlParameter("@password",            model.Password), // ??? ????? ???? ??? ???? ??????? ???? ???? ?????? ?????
     new Microsoft.Data.SqlClient.SqlParameter("@airportId",           model.AirportId),
     new Microsoft.Data.SqlClient.SqlParameter("@photoPath",           (object?)photoPath            ?? DBNull.Value),
     new Microsoft.Data.SqlClient.SqlParameter("@licensePath",         (object?)licensePath          ?? DBNull.Value),
-    new Microsoft.Data.SqlClient.SqlParameter("@userId",              userId), // تأكد أن userId تم تعريفه وجلب قيمته مسبقاً
+    new Microsoft.Data.SqlClient.SqlParameter("@userId",              userId), // ???? ?? userId ?? ?????? ???? ????? ??????
     new Microsoft.Data.SqlClient.SqlParameter("@jobTitle",            (object?)model.JobTitle       ?? DBNull.Value),
     new Microsoft.Data.SqlClient.SqlParameter("@educationLevel",      (object?)model.EducationLevel ?? DBNull.Value),
     new Microsoft.Data.SqlClient.SqlParameter("@dateOfBirth",         (object?)model.DateOfBirth    ?? DBNull.Value),
@@ -426,12 +425,12 @@ INSERT INTO controllers (
         if (file == null || file.Length == 0)
             return $"/{folderCategory}/default_user_{defaultFileName}";
 
-        // اضمن وجود المجلد
+        // ???? ???? ??????
         string root = Directory.GetCurrentDirectory();
         string target = Path.Combine(root, "wwwroot", folderCategory, userFolder);
         Directory.CreateDirectory(target);
 
-        // اسم فريد
+        // ??? ????
         string unique = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
         string full = Path.Combine(target, unique);
         using var fs = new FileStream(full, FileMode.Create);
@@ -462,10 +461,10 @@ INSERT INTO controllers (
 
     private DataTable GetAirportsFromDb()
     {
-        // هذا مجرد مثال، استبدله بطريقة جلب المطارات الفعلية من قاعدة بياناتك
-        // يجب أن يرجع هذا DataTable أعمدة مثل AirportId, AirportName, CountryId
-        string airportQuery = "SELECT AirportId, AirportName,icao_code, CountryId FROM Airports"; // تأكد أن أسماء الأعمدة صحيحة
-        return _db.ExecuteQuery(airportQuery); // افترض أن _db هو كائن الوصول لقاعدة البيانات
+        // ??? ???? ????? ??????? ?????? ??? ???????? ??????? ?? ????? ???????
+        // ??? ?? ???? ??? DataTable ????? ??? AirportId, AirportName, CountryId
+        string airportQuery = "SELECT AirportId, AirportName,icao_code, CountryId FROM Airports"; // ???? ?? ????? ??????? ?????
+        return _db.ExecuteQuery(airportQuery); // ????? ?? _db ?? ???? ?????? ?????? ????????
     }
 
     private void PopulateAirportsViewBag()
@@ -478,7 +477,7 @@ INSERT INTO controllers (
             {
                 AirportId = Convert.ToInt32(row["AirportId"]),
                 AirportName = row["AirportName"].ToString(),
-                icao_code = row["icao_code"].ToString(), // تم إضافة icao_code هنا
+                icao_code = row["icao_code"].ToString(), // ?? ????? icao_code ???
                 CountryId = Convert.ToInt32(row["CountryId"])
             });
         }
@@ -501,14 +500,14 @@ INSERT INTO controllers (
     [HttpGet]
     public IActionResult Edit(int id)
     {
-        // 1) جلب البيانات مع الدور من جدول USERS
+        // 1) ??? ???????? ?? ????? ?? ???? USERS
         const string sql = @"
     SELECT c.controllerid,
             c.fullname,
             c.username,
             u.passwordhash AS password,
             c.airportid,
-            a.CountryId, -- <<== هذا هو الحقل الجديد الذي نحتاجه
+            a.CountryId, -- <<== ??? ?? ????? ?????? ???? ??????
             u.rolename AS role,
             c.job_title,
             c.education_level,
@@ -534,9 +533,9 @@ INSERT INTO controllers (
             c.InsuranceNumber
             FROM controllers c
             JOIN users u ON c.userid = u.userid
-            LEFT JOIN airports a ON c.airportid = a.airportid -- <<== وهذا هو الربط الجديد
+            LEFT JOIN airports a ON c.airportid = a.airportid -- <<== ???? ?? ????? ??????
         WHERE c.controllerid = @ControllerId";
-        var dt = _db.ExecuteQuery(sql, new Microsoft.Data.SqlClient.SqlParameter("@ControllerId", id)); // <== تم التعديل
+        var dt = _db.ExecuteQuery(sql, new Microsoft.Data.SqlClient.SqlParameter("@ControllerId", id)); // <== ?? ???????
 
 
         if (dt.Rows.Count == 0)
@@ -548,7 +547,7 @@ INSERT INTO controllers (
             ControllerId = Convert.ToInt32(row["controllerid"]),
             FullName = row["fullname"].ToString()!,
             Username = row["username"].ToString()!,
-            Password = row["password"].ToString()!,   // هذا هو الهاش الحالي
+            Password = row["password"].ToString()!,   // ??? ?? ????? ??????
             Role = row["role"].ToString()!,
             AirportId = Convert.ToInt32(row["airportid"]),
 
@@ -604,12 +603,12 @@ INSERT INTO controllers (
         if (!ModelState.IsValid)
             return View(model);
 
-        // اجلب الباسورد هاش الحالي إذا لم يدخل كلمة سر جديدة
+        // ???? ???????? ??? ?????? ??? ?? ???? ???? ?? ?????
         string newHashedPassword = string.IsNullOrEmpty(model.Password)
             ? _db.GetUserPasswordHashByUserId(model.UserId)
             : _hasher.HashPassword(model, model.Password);
 
-        // رفع ملفات جديدة إن وجدت
+        // ??? ????? ????? ?? ????
         string sanitizedUsername = SanitizeFolderName(model.Username);
         string photoPath = model.PhotoPath;
         string licensePath = model.LicensePath;
@@ -619,16 +618,16 @@ INSERT INTO controllers (
         if (model.LicenseFile != null && model.LicenseFile.Length > 0)
             licensePath = SaveUploadedFile(model.LicenseFile, "licenses", sanitizedUsername, "default.pdf");
 
-        // استخدم ترانزاكشن لضمان سلامة البيانات في الجدولين
+        // ?????? ????????? ????? ????? ???????? ?? ????????
         using (var conn = _db.GetConnection())
         {
             conn.Open();
             using (var tx = conn.BeginTransaction())
             {
-                // 1) تحديث users دائمًا
+                // 1) ????? users ??????
                 const string updUser = @"
                 UPDATE users SET passwordhash=@pwdHash, rolename=@role WHERE username=@username";
-                using (var cmdUser = new Microsoft.Data.SqlClient.SqlCommand(updUser, conn, tx))
+                                        using (var cmdUser = new SqlCommand(updUser, conn, tx))
                 {
                     cmdUser.Parameters.AddWithValue("@pwdHash", newHashedPassword);
                     cmdUser.Parameters.AddWithValue("@role", model.Role ?? (object)DBNull.Value);
@@ -636,7 +635,7 @@ INSERT INTO controllers (
                     cmdUser.ExecuteNonQuery();
                 }
 
-                // 2) تحديث controllers دائمًا
+                // 2) ????? controllers ??????
                 const string updCtrl = @"
                 UPDATE controllers SET
                     fullname = @fullName,
@@ -667,7 +666,7 @@ INSERT INTO controllers (
                     InsuranceNumber = @InsuranceNumber,
                     password = @pwdHash
                 WHERE controllerid = @ControllerId";
-                using (var cmdCtrl = new Microsoft.Data.SqlClient.SqlCommand(updCtrl, conn, tx))
+                                        using (var cmdCtrl = new SqlCommand(updCtrl, conn, tx))
                 {
                     cmdCtrl.Parameters.AddWithValue("@ControllerId", model.ControllerId);
                     cmdCtrl.Parameters.AddWithValue("@pwdHash", newHashedPassword);
@@ -710,7 +709,7 @@ INSERT INTO controllers (
     }
 
 
-    // لا تنس دالة LoadCountriesAndAirports إذا لم تكن موجودة بالفعل
+    // ?? ??? ???? LoadCountriesAndAirports ??? ?? ??? ?????? ??????
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -719,38 +718,38 @@ INSERT INTO controllers (
         try
         {
             int licCount = _db.GetLicenseCountByController(id);
-            // (يمكنك تمرير licCount إلى TempData أو ViewBag لعرض تحذير إن أردت)
+            // (????? ????? licCount ??? TempData ?? ViewBag ???? ????? ?? ????)
 
             _db.DeleteController(id);
-            TempData["Success"] = "تم حذف المراقب وجميع سجلات رخصه من قاعدة البيانات.";
+            TempData["Success"] = "?? ??? ??????? ????? ????? ???? ?? ????? ????????.";
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"تعذّر الحذف: {ex.Message}";
+            TempData["Error"] = $"????? ?????: {ex.Message}";
         }
         return RedirectToAction(nameof(Index));
     }
 
-    // في ملف الـ Controller الخاص بك (مثلاً ControllerUserController.cs)
+    // ?? ??? ??? Controller ????? ?? (????? ControllerUserController.cs)
 
-    // تأكد من وجود using System.Linq; في بداية الملف
+    // ???? ?? ???? using System.Linq; ?? ????? ?????
 
     public IActionResult ExportToPDF(string fullName, string username, string airportName, string icao_code,
     string jobTitle, string educationLevel, string maritalStatus, string phoneNumber, string email, string employmentStatus, string currentDepartment)
     {
-        // 1. تحديد الترخيص
+        // 1. ????? ???????
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
-        // 2. جلب البيانات المفلترة
+        // 2. ??? ???????? ????????
         var filteredControllers = _db.GetControllers(
             fullName, username, airportName, icao_code, jobTitle, educationLevel,
             maritalStatus, phoneNumber, email, employmentStatus, currentDepartment
         );
 
-        // ==> نحصل على عدد السجلات هنا <==
+        // ==> ???? ??? ??? ??????? ??? <==
         var recordCount = filteredControllers.Count;
 
-        // 3. تعريف دوال التنسيق (Styles)
+        // 3. ????? ???? ??????? (Styles)
         IContainer HeaderStyle(IContainer container) => container
             .Background(Colors.Blue.Medium)
             .PaddingVertical(4).PaddingHorizontal(6)
@@ -761,7 +760,7 @@ INSERT INTO controllers (
             .BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
             .PaddingVertical(4).PaddingHorizontal(6);
 
-        // 4. إنشاء المستند
+        // 4. ????? ???????
         var document = QuestPDF.Fluent.Document.Create(container =>
         {
             container.Page(page =>
@@ -770,7 +769,7 @@ INSERT INTO controllers (
                 page.Margin(25);
                 page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
-                // تصميم رأس الصفحة (Header)
+                // ????? ??? ?????? (Header)
                 page.Header().Column(headerCol =>
                 {
                     headerCol.Item().Row(row =>
@@ -784,7 +783,7 @@ INSERT INTO controllers (
 
                         row.RelativeColumn().Column(col =>
                         {
-                            col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(13);
+                            col.Item().AlignCenter().Text("???? ????? ??????? ?????? ???????").Bold().FontSize(13);
                             col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(10).FontColor(Colors.Grey.Darken1);
                             col.Item().PaddingTop(5).AlignCenter().Text(DateTime.Now.ToString("yyyy-MM-dd HH:mm")).FontSize(9).FontColor(Colors.Grey.Darken2);
 
@@ -795,7 +794,7 @@ INSERT INTO controllers (
                     headerCol.Item().PaddingTop(5);
                 });
 
-                // محتوى الصفحة (Content)
+                // ????? ?????? (Content)
                 page.Content().Table(table =>
                 {
                     table.ColumnsDefinition(columns =>
@@ -831,18 +830,18 @@ INSERT INTO controllers (
                 });
 
                 // =============================================================
-                // ==> هنا التعديل المطلوب لإضافة عدد السجلات في التذييل <==
+                // ==> ??? ??????? ??????? ?????? ??? ??????? ?? ??????? <==
                 // =============================================================
                 page.Footer().Row(row =>
                 {
-                    // العنصر الأول في الصف: عدد السجلات على اليسار
+                    // ?????? ????? ?? ????: ??? ??????? ??? ??????
                     row.RelativeColumn().Text(txt =>
                     {
                         txt.DefaultTextStyle(x => x.FontSize(8).FontColor(Colors.Grey.Darken1));
                         txt.Span($"Total Records: {recordCount}");
                     });
 
-                    // العنصر الثاني في الصف: رقم الصفحة على اليمين
+                    // ?????? ?????? ?? ????: ??? ?????? ??? ??????
                     row.RelativeColumn().AlignRight().Text(txt =>
                     {
                         txt.DefaultTextStyle(x => x.FontSize(8).FontColor(Colors.Grey.Darken1));
@@ -863,35 +862,35 @@ INSERT INTO controllers (
     string jobTitle, string educationLevel, string maritalStatus,
     string phoneNumber, string email, string employmentStatus, string currentDepartment)
     {
-        // 1. تحديد ترخيص استخدام المكتبة
+        // 1. ????? ????? ??????? ???????
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        // 2. جلب البيانات المفلترة بنفس الطريقة
+        // 2. ??? ???????? ???????? ???? ???????
         var controllers = _db.GetControllers(
             fullName, username, airportName, icao_code, jobTitle, educationLevel,
             maritalStatus, phoneNumber, email, employmentStatus, currentDepartment
         );
 
-        // 3. إنشاء ملف الإكسل
+        // 3. ????? ??? ??????
         using (var package = new ExcelPackage())
         {
             var worksheet = package.Workbook.Worksheets.Add("Air Traffic Controllers");
 
-            // --- إعدادات وتصميم الهيدر والشعار ---
+            // --- ??????? ?????? ?????? ??????? ---
             worksheet.Cells.Style.Font.Name = "Arial";
-            worksheet.View.RightToLeft = false; // للتأكد من أن الورقة من اليسار لليمين
+            worksheet.View.RightToLeft = false; // ?????? ?? ?? ?????? ?? ?????? ??????
 
-            // إضافة الشعار
+            // ????? ??????
             var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "carc.png");
             if (System.IO.File.Exists(logoPath))
             {
                 var excelImage = worksheet.Drawings.AddPicture("Logo", logoPath);
                 excelImage.SetPosition(0, 0, 0, 15); // (row, row offset, col, col offset)
-                excelImage.SetSize(120, 65); // تعديل حجم الشعار ليكون مناسبًا
+                excelImage.SetSize(120, 65); // ????? ??? ?????? ????? ???????
             }
 
-            // إضافة العناوين الرئيسية
-            worksheet.Cells["C1"].Value = "هيئة تنظيم الطيران المدني الأردني";
+            // ????? ???????? ????????
+            worksheet.Cells["C1"].Value = "???? ????? ??????? ?????? ???????";
             worksheet.Cells["C1"].Style.Font.Bold = true;
             worksheet.Cells["C1"].Style.Font.Size = 14;
             worksheet.Cells["C1:H1"].Merge = true;
@@ -908,7 +907,7 @@ INSERT INTO controllers (
             worksheet.Cells["C3:H3"].Merge = true;
             worksheet.Cells["C3:H3"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
-            // --- تحديد عناوين الجدول ---
+            // --- ????? ?????? ?????? ---
             var headers = new string[]
             {
             "#", "Full Name", "Username", "Airport", "ICAO", "Job Title",
@@ -921,17 +920,17 @@ INSERT INTO controllers (
                 worksheet.Cells[5, i + 1].Value = headers[i];
             }
 
-            // تنسيق صف العناوين
+            // ????? ?? ????????
             using (var range = worksheet.Cells[5, 1, 5, headers.Length])
             {
                 range.Style.Font.Bold = true;
                 range.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#4F81BD")); // لون أزرق
+                range.Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#4F81BD")); // ??? ????
                 range.Style.Font.Color.SetColor(Color.White);
                 range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
             }
 
-            // --- إضافة البيانات ---
+            // --- ????? ???????? ---
             int row = 6;
             int index = 1;
             foreach (var c in controllers)
@@ -954,18 +953,18 @@ INSERT INTO controllers (
                 row++;
             }
 
-            // تنسيق الخلايا الرقمية والتاريخية
+            // ????? ??????? ??????? ??????????
             worksheet.Cells[6, 10, row - 1, 11].Style.Numberformat.Format = "yyyy-mm-dd";
             worksheet.Cells[6, 1, row - 1, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
-            // جعل الأعمدة تتناسب مع المحتوى تلقائيًا
+            // ??? ??????? ?????? ?? ??????? ????????
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
             var excelBytes = package.GetAsByteArray();
             return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Controllers_List_{DateTime.Now:yyyyMMdd}.xlsx");
         }
     }
-    // في NotificationsController مثلاً
+    // ?? NotificationsController ?????
 
     [HttpGet]
     public JsonResult GetAirports(int countryId)
@@ -974,14 +973,14 @@ INSERT INTO controllers (
         return Json(airports);
     }
 
-    // إضافة هذه الدالة إلى ControllerUserController.cs
+    // ????? ??? ?????? ??? ControllerUserController.cs
 
    [HttpGet]
 public IActionResult ViewControllerDetails(int id)
 {
     try
     {
-        // جلب البيانات الأساسية للمراقب
+        // ??? ???????? ???????? ???????
         var controllerData = _db.GetControllerById(id);
         if (controllerData.Rows.Count == 0)
         {
@@ -990,7 +989,7 @@ public IActionResult ViewControllerDetails(int id)
 
         var row = controllerData.Rows[0];
 
-        // إنشاء كائن البيانات الأساسية للمراقب
+        // ????? ???? ???????? ???????? ???????
         var controller = new ControllerUser
         {
             ControllerId = Convert.ToInt32(row["controllerid"]),
@@ -1009,7 +1008,7 @@ public IActionResult ViewControllerDetails(int id)
             EmergencyContact = row["emergency_contact"]?.ToString(),
             PhotoPath = row["photopath"]?.ToString(),
             LicenseNumber = row["LicenseNumber"]?.ToString(),
-            // الحقول الجديدة
+            // ?????? ???????
             NeedLicense = row["NeedLicense"] != DBNull.Value && Convert.ToBoolean(row["NeedLicense"]),
             IsActive = row["IsActive"] != DBNull.Value && Convert.ToBoolean(row["IsActive"]),
             CurrentSalary = row["CurrentSalary"] != DBNull.Value ? Convert.ToDecimal(row["CurrentSalary"]) : null,
@@ -1021,28 +1020,28 @@ public IActionResult ViewControllerDetails(int id)
             InsuranceNumber = row["InsuranceNumber"]?.ToString()
         };
 
-        // جلب البيانات المرتبطة: الرخص، الشهادات، والملاحظات
+        // ??? ???????? ????????: ?????? ????????? ??????????
         var licenses = _db.GetLicensesByController(controller.Username);
         var certificates = _db.GetCertificatesByController(controller.Username);
         var observations = _db.GetObservationsByController(controller.Username);
 
-        // --- جلب تفاصيل المشاريع بالكامل ---
+        // --- ??? ?????? ???????? ??????? ---
 
-        // 1. جلب قائمة المشاريع الأساسية للمراقب
+        // 1. ??? ????? ???????? ???????? ???????
         var basicProjects = _db.GetProjectsByParticipant(controller.ControllerId, null);
 
-        // 2. إنشاء قائمة لتخزين المشاريع مع تفاصيلها الكاملة
+        // 2. ????? ????? ?????? ???????? ?? ???????? ???????
         var detailedProjects = new List<object>();
 
-        // 3. المرور على كل مشروع لجلب تفاصيله الإضافية
+        // 3. ?????? ??? ?? ????? ???? ??????? ????????
         foreach (var project in basicProjects)
         {
-            // استدعاء الدوال المساعدة التي قمنا بإنشائها
+            // ??????? ?????? ???????? ???? ???? ????????
             var participants = _db.GetParticipantsByProjectId(project.ProjectId);
             var divisions = _db.GetDivisionsByProjectId(project.ProjectId);
             var files = _db.GetFilesByProjectId(project.ProjectId);
 
-            // 4. بناء الكائن التفصيلي للمشروع
+            // 4. ???? ?????? ???????? ???????
             detailedProjects.Add(new
             {
                 id = project.ProjectId,
@@ -1053,14 +1052,14 @@ public IActionResult ViewControllerDetails(int id)
                 startDate = project.StartDate?.ToString("yyyy-MM-dd"),
                 endDate = project.EndDate?.ToString("yyyy-MM-dd"),
                 
-                // إضافة القوائم التفصيلية
+                // ????? ??????? ?????????
                 participants = participants.Select(p => new { name = p.Name, role = p.Role }).ToList(),
                 divisions = divisions,
                 files = files.Select(f => new { name = f.Name, size = f.Size, url = f.Url }).ToList()
             });
         }
         
-        // --- إنشاء الاستجابة النهائية ---
+        // --- ????? ????????? ???????? ---
         var response = new
         {
             success = true,
@@ -1081,7 +1080,7 @@ public IActionResult ViewControllerDetails(int id)
                 emergencyContact = controller.EmergencyContact,
                 photoPath = Url.Content(controller.PhotoPath ?? "~/images/default-avatar.png"),
                 licenseNumber = controller.LicenseNumber,
-                // الحقول الجديدة
+                // ?????? ???????
                 needLicense = controller.NeedLicense,
                 isActive = controller.IsActive,
                 currentSalary = controller.CurrentSalary,
@@ -1117,7 +1116,7 @@ public IActionResult ViewControllerDetails(int id)
                 licenseNumber = o.LicenseNumber,
                 notes = o.Notes
             }).ToList(),
-            // استخدام قائمة المشاريع التفصيلية
+            // ??????? ????? ???????? ?????????
             projects = detailedProjects
         };
 
@@ -1125,7 +1124,7 @@ public IActionResult ViewControllerDetails(int id)
     }
     catch (Exception ex)
     {
-        // يفضل تسجيل الخطأ هنا لمساعدتك على تصحيحه
+        // ???? ????? ????? ??? ???????? ??? ??????
         // Log.Error(ex, "Error in ViewControllerDetails");
         return Json(new { success = false, message = "An error occurred while fetching details." });
     }

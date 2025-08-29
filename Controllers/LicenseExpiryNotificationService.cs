@@ -1,4 +1,4 @@
-using MySql.Data.MySqlClient; // For SqlConnection, SqlCommand, SqlParameter, SqlDbType
+using Microsoft.Data.SqlClient; // For SqlConnection, SqlCommand, SqlParameter
 using Microsoft.Extensions.Configuration; // For IConfiguration
 using Microsoft.Extensions.DependencyInjection; // For IServiceProvider.CreateScope
 using Microsoft.Extensions.Hosting; // For BackgroundService
@@ -193,7 +193,7 @@ INNER JOIN
 INNER JOIN
     airports a ON c.airportid = a.airportid
 WHERE
-    l.expirydate <= DATEADD(day, 90, GETDATE())
+         l.expirydate <= DATEADD(day, 90, GETDATE())
 
 UNION ALL
 
@@ -242,12 +242,12 @@ UNION ALL
 
                                 // ????? ??????? ??????
                                 db.ExecuteNonQuery(
-                                    "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
-                                    new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // ??????? ?? NULL
-                                    new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // ??????? ?? NULL
-                                    new Microsoft.Data.SqlClient.SqlParameter("@message", SqlDbType.NVarChar, -1) { Value = msg },
-                                    new Microsoft.Data.SqlClient.SqlParameter("@licensetype", SqlDbType.NVarChar, 255) { Value = licenseType },
-                                    new Microsoft.Data.SqlClient.SqlParameter("@expirydate", SqlDbType.DateTime2) { Value = expiryDate }
+                                                                         "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
+                                    new SqlParameter("@userid", (object)userId ?? DBNull.Value), // ??????? ?? NULL
+                                    new SqlParameter("@controllerid", (object)controllerId ?? DBNull.Value), // ??????? ?? NULL
+                                    new SqlParameter("@message", msg),
+                                    new SqlParameter("@licensetype", licenseType),
+                                    new SqlParameter("@expirydate", expiryDate)
                                 );
                                 _logger.LogInformation("Inserted new notification for user {userId}, controller {controllerId}.", userId, controllerId);
 

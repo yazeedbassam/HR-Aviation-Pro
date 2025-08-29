@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http; // For IFormFile
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using MySql.Data.MySqlClient; // Required for SqlParameter
+using Microsoft.Data.SqlClient; // Required for SqlParameter
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using QuestPDF.Drawing;
@@ -154,15 +154,15 @@ namespace WebApplication1.Controllers
                     // --- ?? ????? ???????????? ??? ??? ??????? ---
                     var parameters = new[]
                     {
-                new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)certificate.ControllerId ?? DBNull.Value },
-                new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)certificate.EmployeeId ?? DBNull.Value },
-                new MySqlParameter("@TypeId", SqlDbType.Int) { Value = certificate.TypeId },
-                new MySqlParameter("@Title", SqlDbType.NVarChar, 255) { Value = (object)certificate.Title ?? string.Empty }, // <-- The Fix
-                new MySqlParameter("@IssueDate", SqlDbType.Date) { Value = certificate.IssueDate },
-                new MySqlParameter("@ExpiryDate", SqlDbType.Date) { Value = (object)certificate.ExpiryDate ?? DBNull.Value },
-                new MySqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = (object)certificate.Status ?? DBNull.Value },
-                new MySqlParameter("@FilePath", SqlDbType.NVarChar, 500) { Value = (object)certificate.FilePath ?? DBNull.Value },
-                new MySqlParameter("@Notes", SqlDbType.NVarChar, 1000) { Value = (object)certificate.Notes ?? DBNull.Value }
+                                        new SqlParameter("@ControllerId", (object)certificate.ControllerId ?? DBNull.Value),
+                        new SqlParameter("@EmployeeId", (object)certificate.EmployeeId ?? DBNull.Value),
+                        new SqlParameter("@TypeId", certificate.TypeId),
+                        new SqlParameter("@Title", (object)certificate.Title ?? string.Empty), // <-- The Fix
+                        new SqlParameter("@IssueDate", certificate.IssueDate),
+                        new SqlParameter("@ExpiryDate", (object)certificate.ExpiryDate ?? DBNull.Value),
+                        new SqlParameter("@Status", (object)certificate.Status ?? DBNull.Value),
+                        new SqlParameter("@FilePath", (object)certificate.FilePath ?? DBNull.Value),
+                        new SqlParameter("@Notes", (object)certificate.Notes ?? DBNull.Value)
             };
 
                     try
@@ -286,14 +286,14 @@ namespace WebApplication1.Controllers
 
                 var parameters = new[]
                 {
-            new MySqlParameter("@TypeId", certificate.TypeId),
-            new MySqlParameter("@Title", (object)certificate.Title ?? string.Empty),
-            new MySqlParameter("@IssueDate", certificate.IssueDate),
-            new MySqlParameter("@ExpiryDate", certificate.ExpiryDate),
-            new MySqlParameter("@Status", (object)certificate.Status ?? DBNull.Value),
-            new MySqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
-            new MySqlParameter("@Notes", (object)certificate.Notes ?? DBNull.Value),
-            new MySqlParameter("@CertificateId", id)
+            new SqlParameter("@TypeId", certificate.TypeId),
+            new SqlParameter("@Title", (object)certificate.Title ?? string.Empty),
+            new SqlParameter("@IssueDate", certificate.IssueDate),
+            new SqlParameter("@ExpiryDate", certificate.ExpiryDate),
+            new SqlParameter("@Status", (object)certificate.Status ?? DBNull.Value),
+            new SqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
+            new SqlParameter("@Notes", (object)certificate.Notes ?? DBNull.Value),
+            new SqlParameter("@CertificateId", id)
         };
 
                 try

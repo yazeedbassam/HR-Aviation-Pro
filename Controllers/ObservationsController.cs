@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -133,17 +133,17 @@ namespace WebApplication1.Controllers
 
                     var parameters = new[]
                     {
-                        new MySqlParameter("@ControllerId", (object)observation.ControllerId ?? DBNull.Value),
-                        new MySqlParameter("@EmployeeId", (object)observation.EmployeeId ?? DBNull.Value),
-                        new MySqlParameter("@ObservationNo", (object)observation.ObservationNo ?? DBNull.Value),
-                        new MySqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
-                        new MySqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
-                        new MySqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
-                        new MySqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
-                        new MySqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
-                        new MySqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
-                        new MySqlParameter("@FilePath", (object)observation.FilePath ?? DBNull.Value),
-                        new MySqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value)
+                        new SqlParameter("@ControllerId", (object)observation.ControllerId ?? DBNull.Value),
+                        new SqlParameter("@EmployeeId", (object)observation.EmployeeId ?? DBNull.Value),
+                        new SqlParameter("@ObservationNo", (object)observation.ObservationNo ?? DBNull.Value),
+                        new SqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
+                        new SqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
+                        new SqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
+                        new SqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
+                        new SqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
+                        new SqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
+                        new SqlParameter("@FilePath", (object)observation.FilePath ?? DBNull.Value),
+                        new SqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value)
                     };
 
                     try
@@ -270,15 +270,15 @@ namespace WebApplication1.Controllers
 
                 var parameters = new[]
                 {
-            new MySqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
-            new MySqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
-            new MySqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
-            new MySqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
-            new MySqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
-            new MySqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
-            new MySqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
-            new MySqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value),
-            new MySqlParameter("@ObservationId", id)
+            new SqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
+            new SqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
+            new SqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
+            new SqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
+            new SqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
+            new SqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
+            new SqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
+            new SqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value),
+            new SqlParameter("@ObservationId", id)
         };
 
                 try

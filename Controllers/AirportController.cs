@@ -7,7 +7,7 @@ using System.Data;
 using System.Linq;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
-using MySql.Data.MySqlClient; // ???? ?? ??????? ??? ??? namespace
+using Microsoft.Data.SqlClient; // Required for SQL Server namespace
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -74,7 +74,7 @@ namespace WebApplication1.Controllers
         {
             var dtAirports = _db.ExecuteQuery(
                 "SELECT airportid, airportname, icao_code FROM airports WHERE countryid = @countryId ORDER BY airportname",
-                new MySqlParameter("@countryId", countryId));
+                new SqlParameter("@countryId", countryId));
 
             var airports = dtAirports.Rows.Cast<DataRow>()
                 .Select(r => new Dictionary<string, string>
@@ -131,9 +131,9 @@ namespace WebApplication1.Controllers
             VALUES(@name, @countryId, @IcaoCode)";
 
             _db.ExecuteNonQuery(sql,
-                new MySqlParameter("@name", model.AirportName),
-                new MySqlParameter("@countryId", model.CountryId),
-                new MySqlParameter("@IcaoCode", model.IcaoCode));
+                new SqlParameter("@name", model.AirportName),
+                new SqlParameter("@countryId", model.CountryId),
+                new SqlParameter("@IcaoCode", model.IcaoCode));
 
             TempData["SuccessMessage"] = "Division has been added successfully.";
             return RedirectToAction(nameof(Index));
@@ -144,7 +144,7 @@ namespace WebApplication1.Controllers
         {
             DataTable dt = _db.ExecuteQuery(
                 "SELECT airportid, airportname, countryid, icao_code FROM airports WHERE airportid = @id",
-                new MySqlParameter("@id", id));
+                new SqlParameter("@id", id));
 
             if (dt.Rows.Count == 0) return NotFound();
 
@@ -180,10 +180,10 @@ namespace WebApplication1.Controllers
             WHERE airportid = @id";
 
             _db.ExecuteNonQuery(sql,
-                new MySqlParameter("@name", model.AirportName),
-                new MySqlParameter("@countryId", model.CountryId),
-                new MySqlParameter("@IcaoCode", model.IcaoCode),
-                new MySqlParameter("@id", model.AirportId));
+                new SqlParameter("@name", model.AirportName),
+                new SqlParameter("@countryId", model.CountryId),
+                new SqlParameter("@IcaoCode", model.IcaoCode),
+                new SqlParameter("@id", model.AirportId));
 
             TempData["SuccessMessage"] = "Division details have been updated successfully.";
             return RedirectToAction(nameof(Index));
@@ -196,7 +196,7 @@ namespace WebApplication1.Controllers
         {
             _db.ExecuteNonQuery(
                 "DELETE FROM airports WHERE airportid = @id",
-                new MySqlParameter("@id", id));
+                new SqlParameter("@id", id));
 
             TempData["SuccessMessage"] = "Division has been deleted successfully.";
             return RedirectToAction(nameof(Index));
