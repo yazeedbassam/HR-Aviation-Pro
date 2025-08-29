@@ -1,0 +1,15 @@
+﻿@media (max-width: 900px) {
+    .noti-table {
+        font-size: 0.86rem;
+    }
+
+        .noti-table th, .noti-table td {
+            padding: 4px 4px;
+        }
+}
+
+@media (max-width: 700px) {
+    .noti-table {
+        font-size: 0.80rem;
+    }
+}

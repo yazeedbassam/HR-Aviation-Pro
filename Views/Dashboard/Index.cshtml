@@ -1,0 +1,517 @@
+﻿@model WebApplication1.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم الاستراتيجية";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- External Libraries: Chart.js for charts and FontAwesome for icons -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+<link rel="stylesheet" href="~/css/dashboard-enhancements.css" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<div class="container-fluid py-4" id="dashboard-content">
+    <!-- Enhanced Header -->
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="mb-2"><i class="fas fa-chart-line me-3"></i>@ViewData["Title"]</h1>
+                <p class="mb-0 opacity-75">مرحباً بك في لوحة التحكم الاستراتيجية - نظرة شاملة على أداء النظام</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="quick-actions">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="stats-badge">
+                            <i class="fas fa-users me-2"></i>@(Model.SwotAnalysis.Strengths?.Value ?? "0") موظف نشط
+                        </span>
+                        <span class="stats-badge">
+                            <i class="fas fa-calendar-check me-2"></i>@DateTime.Now.ToString("dd/MM/yyyy")
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @Html.AntiForgeryToken()
+                        <button onclick="sendWeeklyReportEmail()" class="btn btn-light btn-dashboard btn-sm">
+                            <i class="fas fa-envelope me-2"></i>إرسال التقرير الأسبوعي
+                        </button>
+                        <button onclick="downloadDashboardPDF()" class="btn btn-light btn-dashboard btn-sm">
+                            <i class="fas fa-file-pdf me-2"></i>تحميل PDF
+                        </button>
+                        <button onclick="showDataDetails()" class="btn btn-light btn-dashboard btn-sm">
+                            <i class="fas fa-database me-2"></i>عرض كل البيانات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SWOT Analysis Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3 text-primary">
+                <i class="fas fa-chart-pie me-2"></i>تحليل SWOT
+            </h3>
+        </div>
+    </div>
+    <div class="row">
+        @if (Model.SwotAnalysis.Strengths != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-strengths h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Strengths.Title</p>
+                            <h3 class="kpi-value text-success">@Model.SwotAnalysis.Strengths.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Strengths.Subtitle</p>
+                        </div>
+                        <i class="fas fa-rocket kpi-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Weaknesses != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-weaknesses h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Weaknesses.Title</p>
+                            <h3 class="kpi-value text-danger">@Model.SwotAnalysis.Weaknesses.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Weaknesses.Subtitle</p>
+                        </div>
+                        <i class="fas fa-shield-alt kpi-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Opportunities != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-opportunities h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Opportunities.Title</p>
+                            <h3 class="kpi-value text-primary">@Model.SwotAnalysis.Opportunities.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Opportunities.Subtitle</p>
+                        </div>
+                        <i class="fas fa-lightbulb kpi-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Threats != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-threats h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Threats.Title</p>
+                            <h3 class="kpi-value text-warning">@Model.SwotAnalysis.Threats.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Threats.Subtitle</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle kpi-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Core Summaries Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3 text-primary">
+                <i class="fas fa-chart-bar me-2"></i>التحليلات التفصيلية
+            </h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-graduation-cap me-2"></i>نظرة عامة على الدورات
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center p-4">
+                    <canvas id="projectStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-users me-2"></i>الموظفون حسب القسم
+                </div>
+                <div class="card-body">
+                    <canvas id="personnelByDivisionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-id-card me-2"></i>حالة التراخيص
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center p-4">
+                    <canvas id="licenseStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-certificate me-2"></i>أفضل 5 موظفين حسب عدد الشهادات
+                </div>
+                <div class="card-body">
+                    <canvas id="certsByPersonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Enhanced chart configurations
+            const chartColors = {
+                primary: ['#007bff', '#0056b3', '#004085', '#002752', '#001a35'],
+                success: ['#198754', '#146c43', '#0f5132', '#0a3624', '#051b12'],
+                warning: ['#ffc107', '#e0a800', '#b8860b', '#8b6914', '#5d4b1d'],
+                danger: ['#dc3545', '#b02a37', '#842029', '#58151c', '#2d0b0e'],
+                info: ['#0dcaf0', '#0aa2c0', '#087990', '#055160', '#032830']
+            };
+
+            const createPieChart = (elementId, chartData, chartTitle) => {
+                const ctx = document.getElementById(elementId);
+                if (!ctx || !chartData || chartData.length === 0) return;
+                
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: chartData.map(d => d.Label),
+                        datasets: [{
+                            data: chartData.map(d => d.Value),
+                            backgroundColor: chartColors.primary,
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverBorderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: chartTitle,
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    top: 10,
+                                    bottom: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#007bff',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: true
+                            }
+                        },
+                        animation: {
+                            animateRotate: true,
+                            animateScale: true,
+                            duration: 1000
+                        }
+                    }
+                });
+            };
+
+            const createBarChart = (elementId, chartData, label) => {
+                const ctx = document.getElementById(elementId);
+                if (!ctx || !chartData || chartData.length === 0) return;
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.map(d => d.Label),
+                        datasets: [{
+                            label: label,
+                            data: chartData.map(d => d.Value),
+                            backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            hoverBackgroundColor: 'rgba(0, 123, 255, 1)',
+                            hoverBorderColor: 'rgba(0, 123, 255, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0,
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#007bff',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                });
+            };
+
+            // Initialize charts with enhanced data
+            createPieChart('projectStatusChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.ProjectSummary.ProjectsByStatusChart)), 'حالة الدورات');
+            createBarChart('personnelByDivisionChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DivisionSummary.PersonnelByDivisionChart)), 'عدد الموظفين');
+            
+            const licenseChartData = [
+                { Label: 'منتهي الصلاحية', Value: @Model.LicenseSummary.ExpiredToday },
+                { Label: 'ينتهي قريباً', Value: @Model.LicenseSummary.ExpiringSoon },
+                { Label: 'صالح', Value: @(Model.LicenseSummary.TotalLicenses - Model.LicenseSummary.ExpiredToday - Model.LicenseSummary.ExpiringSoon) }
+            ];
+            createPieChart('licenseStatusChart', licenseChartData, 'حالة التراخيص');
+            createBarChart('certsByPersonChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CertificateSummary.CertificatesByPersonChart)), 'عدد الشهادات');
+
+            // Add interactive features
+            addChartInteractivity();
+            addCardAnimations();
+        });
+
+        // Enhanced functions with better UX
+        window.sendWeeklyReportEmail = function() {
+            Swal.fire({
+                title: 'جاري الإرسال...',
+                text: 'يرجى الانتظار بينما نقوم بإرسال التقرير الأسبوعي',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('/Dashboard/SendWeeklyReportEmail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'تم الإرسال بنجاح!',
+                        text: 'تم إرسال التقرير الأسبوعي بنجاح',
+                        icon: 'success',
+                        confirmButtonText: 'حسناً',
+                        confirmButtonColor: '#007bff'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'خطأ!',
+                        text: data.error || 'حدث خطأ أثناء الإرسال',
+                        icon: 'error',
+                        confirmButtonText: 'حسناً',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'خطأ في الشبكة!',
+                    text: 'حدث خطأ في الاتصال: ' + error,
+                    icon: 'error',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#dc3545'
+                });
+            });
+        }
+
+        window.downloadDashboardPDF = function() {
+            Swal.fire({
+                title: 'جاري إنشاء PDF...',
+                text: 'يرجى الانتظار بينما نقوم بإنشاء التقرير',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const dashboardContent = document.getElementById('dashboard-content');
+            html2canvas(dashboardContent, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                allowTaint: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('تقرير_لوحة_التحكم_الاستراتيجية.pdf');
+                
+                Swal.fire({
+                    title: 'تم التحميل بنجاح!',
+                    text: 'تم إنشاء وتحميل التقرير بنجاح',
+                    icon: 'success',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#007bff'
+                });
+            }).catch(err => {
+                Swal.fire({
+                    title: 'خطأ في إنشاء PDF!',
+                    text: 'فشل في إنشاء التقرير: ' + err,
+                    icon: 'error',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#dc3545'
+                });
+            });
+        }
+
+        window.showDataDetails = function() {
+            Swal.fire({
+                title: 'جاري التحميل...',
+                text: 'يرجى الانتظار',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Redirect to data details page
+            setTimeout(() => {
+                window.location.href = '/DataDetails';
+            }, 1000);
+        }
+
+        // Additional interactive features
+        function addChartInteractivity() {
+            // Add click events to chart cards
+            document.querySelectorAll('.chart-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+        }
+
+        function addCardAnimations() {
+            // Add hover effects to KPI cards
+            document.querySelectorAll('.kpi-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                });
+            });
+        }
+
+        // Auto-refresh dashboard data every 5 minutes
+        setInterval(() => {
+            // You can add auto-refresh functionality here
+            console.log('Dashboard auto-refresh check...');
+        }, 300000); // 5 minutes
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + P for PDF download
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                downloadDashboardPDF();
+            }
+            
+            // Ctrl/Cmd + E for email report
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                sendWeeklyReportEmail();
+            }
+            
+            // Ctrl/Cmd + D for data details
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                showDataDetails();
+            }
+        });
+
+        // Show welcome notification
+        setTimeout(() => {
+            if (!localStorage.getItem('dashboardWelcomeShown')) {
+                Swal.fire({
+                    title: 'مرحباً بك في لوحة التحكم!',
+                    text: 'يمكنك استخدام الاختصارات: Ctrl+P للتحميل، Ctrl+E للإرسال، Ctrl+D للبيانات التفصيلية',
+                    icon: 'info',
+                    confirmButtonText: 'فهمت',
+                    confirmButtonColor: '#007bff'
+                });
+                localStorage.setItem('dashboardWelcomeShown', 'true');
+            }
+        }, 2000);
+    </script>
+}

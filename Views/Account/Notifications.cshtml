@@ -1,0 +1,233 @@
+﻿@model System.Data.DataTable
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link href="~/css/medianotification.css" rel="stylesheet" />
+<style>
+    .notifications-table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .noti-table {
+        width: 100%;
+        font-size: 0.92rem;
+        min-width: 980px;
+        background: #fcfcfc;
+    }
+
+        .noti-table th, .noti-table td {
+            vertical-align: middle !important;
+            text-align: left;
+            padding: 6px 8px;
+            white-space: nowrap;
+        }
+
+        .noti-table thead th {
+            font-size: 0.99rem;
+            background: #eaf5f4;
+            color: #167862;
+            font-weight: 600;
+            border-bottom: 2px solid #d5e7e5;
+        }
+
+        /* Expired or expiring in less than 7 days */
+        .noti-table .table-danger td {
+            background: #ffdada !important;
+        }
+
+        /* Expiring in less than 30 days */
+        .noti-table .table-warning td {
+            background: #fff9d6 !important;
+        }
+
+        .noti-table i.fab.fa-whatsapp {
+            font-size: 1.2em !important;
+            color: #25d366 !important;
+        }
+
+    .search-box-compact {
+        max-width: 230px;
+        font-size: 0.97rem;
+        height: 32px;
+        padding: 4px 10px;
+        border-radius: 7px;
+    }
+
+    .btn-sm, .form-control, .form-select {
+        font-size: 0.93rem !important;
+        padding: 2px 11px !important;
+        border-radius: 6px;
+        min-height: 30px;
+    }
+
+    .export-btns button {
+        margin-left: 3px;
+    }
+</style>
+
+<h2 class="mb-3" style="font-size:1.1em; font-weight:600; color:#147858;">
+    <i class="fa-solid fa-bell"></i> Notifications
+</h2>
+
+@if (User.IsInRole("Admin"))
+{
+    <div class="mb-3">
+        <div class="row">
+            <div class="col-md-4">
+                <a href="@Url.Action("ControllersNeedingLicenses", "Notification")" class="btn btn-warning btn-sm w-100">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    المراقبين الذين يحتاجون رخص
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="@Url.Action("InactiveControllers", "Notification")" class="btn btn-secondary btn-sm w-100">
+                    <i class="fa-solid fa-user-slash"></i>
+                    المراقبين غير النشطين
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="@Url.Action("ExportControllersNeedingLicensesToPDF", "Notification")" class="btn btn-danger btn-sm w-100">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    تصدير تقرير PDF
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@if (User.IsInRole("Admin"))
+{
+    <form method="post" asp-action="SendExpiryEmails" class="mb-2">
+        <button type="submit" class="btn btn-danger btn-sm">
+            <i class="fa-solid fa-envelope"></i> إرسال بريد إلكتروني للتراخيص منتهية الصلاحية
+        </button>
+    </form>
+}
+
+<div class="mb-2 row align-items-center">
+    <div class="col-md-5">
+        <input type="text" id="notiFilter" class="form-control search-box-compact" placeholder="ابحث في الإشعارات أو اسم المستخدم..." />
+    </div>
+    <div class="col-md-7 text-end export-btns">
+        <button onclick="exportNotificationsPDF()" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <button onclick="exportNotificationsExcel()" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-excel"></i> Excel</button>
+    </div>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="alert alert-success">لا يوجد تنبيهات حالياً.</div>
+}
+else
+{
+    <div class="notifications-table-container">
+        <table id="notiTable" class="table noti-table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>User Name</th>
+                    <th>User Type</th>
+                    <th>Expiry Date</th>
+                    <th>License Type</th>
+                    <th>Days Left</th>
+                    <th>Mobile</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Location</th>
+                    <th class="text-center">WhatsApp</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in Model.Rows)
+                {
+                    string rowClass = "";
+                    if (row["RemainingDays"] != DBNull.Value)
+                    {
+                        int days = Convert.ToInt32(row["RemainingDays"]);
+                        if (days < 7) // Expired or less than 7 days
+                        {
+                            rowClass = "table-danger";
+                        }
+                        else if (days < 30) // Less than 30 days
+                        {
+                            rowClass = "table-warning";
+                        }
+                    }
+                    <tr class="@rowClass">
+                        <td>@row["ControllerName"]</td>
+                        <td>@row["UserType"]</td>
+                        <td>@Convert.ToDateTime(row["licenseexpirydate"]).ToString("yyyy-MM-dd")</td>
+                        <td>@row["licensetype"]</td>
+                        <td>
+                            @if (row["RemainingDays"] != DBNull.Value)
+                            {
+                                int days = Convert.ToInt32(row["RemainingDays"]);
+                                if (days < 0)
+                                {
+                                    <span class="text-danger">Expired (@Math.Abs(days) days ago)</span>
+                                }
+                                else if (days == 0)
+                                {
+                                    <span class="text-danger">Expires Today!</span>
+                                }
+                                else
+                                {
+                                    @days
+                                }
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </td>
+                        <td>@row["phone_number"]</td>
+                        <td>@row["email"]</td>
+                        <td>@row["Department"]</td>
+                        <td>@(row["airportname"] != DBNull.Value ? row["airportname"] : "N/A")</td>
+                        <td class="text-center">
+                            @{
+                                var phone = row["phone_number"].ToString();
+                                if (!string.IsNullOrEmpty(phone) && phone.StartsWith("0"))
+                                {
+                                    phone = "962" + phone.Substring(1);
+                                }
+                                var licenseType = row["licensetype"].ToString();
+                                var name = row["ControllerName"].ToString();
+                                var waUrl = $"https://wa.me/{phone}?text=Dear {name}, your {licenseType} needs to be renewed. Thank you.%0A%0Aالسيد/السيدة {name}، يرجى إجراء اللازم لتجديد {licenseType} الخاصة بك. شكرًا";
+                            }
+                            <a href="@waUrl" target="_blank" title="Send WhatsApp Message">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterInput = document.getElementById('notiFilter');
+            if (filterInput) {
+                filterInput.addEventListener('keyup', function () {
+                    const filter = this.value.toLowerCase();
+                    const rows = document.querySelectorAll('#notiTable tbody tr');
+                    rows.forEach(function (row) {
+                        const rowText = row.innerText.toLowerCase();
+                        row.style.display = rowText.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+        });
+
+        function exportNotificationsPDF() {
+            const filter = document.getElementById('notiFilter').value;
+            window.open('/Notification/ExportNotificationsToPDF?filter=' + encodeURIComponent(filter), '_blank');
+        }
+
+        function exportNotificationsExcel() {
+            const filter = document.getElementById('notiFilter').value;
+            window.open('/Notification/ExportNotificationsToExcel?filter=' + encodeURIComponent(filter), '_blank');
+        }
+    </script>
+}

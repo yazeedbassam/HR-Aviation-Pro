@@ -1,0 +1,142 @@
+@model UserDepartmentPermissionViewModel
+@{
+    ViewData["Title"] = "Edit User Department Permission";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-pencil-square"></i>
+                        Edit User Department Permission
+                    </h3>
+                    <div class="card-tools">
+                        <a href="/Permission/UserDepartmentPermissions" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EditUserDepartmentPermission" method="post">
+                        <input type="hidden" asp-for="UserDepartmentPermissionId" />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="UserId" class="form-label">User</label>
+                                    <select asp-for="UserId" class="form-select" required>
+                                        <option value="">Select User</option>
+                                    </select>
+                                    <span asp-validation-for="UserId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DepartmentId" class="form-label">Department</label>
+                                    <select asp-for="DepartmentId" class="form-select" required>
+                                        <option value="">Select Department</option>
+                                    </select>
+                                    <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="PermissionId" class="form-label">Permission</label>
+                                    <select asp-for="PermissionId" class="form-select" required>
+                                        <option value="">Select Permission</option>
+                                    </select>
+                                    <span asp-validation-for="PermissionId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Access Rights</label>
+                                    <div class="form-check">
+                                        <input asp-for="CanView" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanView" class="form-check-label">Can View</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input asp-for="CanEdit" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanEdit" class="form-check-label">Can Edit</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input asp-for="CanDelete" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanDelete" class="form-check-label">Can Delete</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <div class="form-check">
+                                        <input asp-for="IsActive" class="form-check-input" type="checkbox">
+                                        <label asp-for="IsActive" class="form-check-label">Active</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Update Permission
+                                </button>
+                                <a href="/Permission/UserDepartmentPermissions" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Load users
+            $.get('/Permission/GetUsers', function (data) {
+                var select = $('#UserId');
+                select.empty();
+                select.append('<option value="">Select User</option>');
+                data.forEach(function (user) {
+                    var selected = user.value == '@Model.UserId' ? 'selected' : '';
+                    select.append('<option value="' + user.value + '" ' + selected + '>' + user.text + '</option>');
+                });
+            });
+
+            // Load departments
+            $.get('/Permission/GetDepartments', function (data) {
+                var select = $('#DepartmentId');
+                select.empty();
+                select.append('<option value="">Select Department</option>');
+                data.forEach(function (dept) {
+                    var selected = dept.value == '@Model.DepartmentId' ? 'selected' : '';
+                    select.append('<option value="' + dept.value + '" ' + selected + '>' + dept.text + '</option>');
+                });
+            });
+
+            // Load permissions
+            $.get('/Permission/GetPermissions', function (data) {
+                var select = $('#PermissionId');
+                select.empty();
+                select.append('<option value="">Select Permission</option>');
+                data.forEach(function (permission) {
+                    var selected = permission.value == '@Model.PermissionId' ? 'selected' : '';
+                    select.append('<option value="' + permission.value + '" ' + selected + '>' + permission.text + '</option>');
+                });
+            });
+        });
+    </script>
+} 

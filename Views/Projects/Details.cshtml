@@ -1,0 +1,267 @@
+﻿@model WebApplication1.ViewModels.ProjectDetailViewModel
+@{
+    ViewData["Title"] = Model.Project.ProjectName;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var statusClass = Model.Project.Status switch
+    {
+        "Completed" => "bg-success-subtle text-success-emphasis",
+        "In Progress" => "bg-primary-subtle text-primary-emphasis",
+        "Cancelled" => "bg-danger-subtle text-danger-emphasis",
+        _ => "bg-secondary-subtle text-secondary-emphasis"
+    };
+}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+<style>
+    .details-header {
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 1rem;
+    }
+
+    .status-pill {
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.5em 1em;
+        border-radius: 50rem;
+    }
+
+    .details-card {
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+
+        .details-card .card-header {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .info-item h6 {
+        color: #6c757d;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-item p {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+
+    .participant-list .list-group-item {
+        display: flex;
+        align-items: center;
+        border-right: 0;
+        border-left: 0;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 1rem;
+    }
+
+    .avatar-controller {
+        background-color: #0d6efd;
+    }
+
+    .avatar-employee {
+        background-color: #6c757d;
+    }
+
+    .file-list .list-group-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    /* Adjusted gap */
+    .file-list .file-icon {
+        font-size: 1.5rem;
+    }
+
+    .card-footer-upload {
+        background-color: #fafbfd;
+        border-top: 1px solid #e9ecef;
+        padding: 0.75rem 1.25rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center details-header mb-4">
+        <div>
+            <h2 class="mb-1">@Model.Project.ProjectName</h2>
+            <p class="text-muted mb-0">Course Details</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+            <span class="status-pill @statusClass">
+                <i class="fa-solid fa-circle-info me-2"></i>@Model.Project.Status
+            </span>
+            <a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-arrow-left me-1"></i> Back to List</a>
+            <a asp-action="Edit" asp-route-id="@Model.Project.ProjectId" class="btn btn-primary"><i class="fa-solid fa-pencil me-1"></i> Edit Course</a>
+        </div>
+    </div>
+
+    @if (TempData["FileMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["FileMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Project Information Card -->
+            <div class="card details-card">
+                <div class="card-header"><i class="fa-solid fa-file-invoice me-2"></i>Course Information</div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Project.Description))
+                    {
+                        <h6 class="text-muted small text-uppercase">Description</h6>
+                        <p class="mb-4">@Model.Project.Description</p>
+                    }
+                    <div class="info-grid">
+                        <div class="info-item"><h6><i class="fa-solid fa-calendar-alt me-1"></i> Start Date</h6><p>@(Model.Project.StartDate?.ToString("dd MMM, yyyy") ?? "Not Set")</p></div>
+                        <div class="info-item"><h6><i class="fa-solid fa-calendar-check me-1"></i> End Date</h6><p>@(Model.Project.EndDate?.ToString("dd MMM, yyyy") ?? "Not Set")</p></div>
+                        <div class="info-item"><h6><i class="fa-solid fa-location-dot me-1"></i> Location</h6><p>@(Model.Project.Location ?? "N/A")</p></div>
+                        <div class="info-item"><h6><i class="fa-solid fa-building-user me-1"></i> Associated Entity</h6><p>@(Model.Project.AssociatedEntity ?? "N/A")</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Files Card -->
+            <div class="card details-card">
+                <div class="card-header d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-folder-open me-2"></i>Course Files</span></div>
+                <div class="card-body p-0">
+                    @if (Model.Files.Any())
+                    {
+                        <ul class="list-group list-group-flush file-list">
+                            @foreach (var file in Model.Files)
+                            {
+                                <li class="list-group-item">
+                                    <i class="@file.FileIconClass file-icon"></i>
+                                    <div class="flex-grow-1">
+                                        <a href="@Url.Content(file.FilePath)" target="_blank" class="text-decoration-none">@file.FileName</a>
+                                        <small class="d-block text-muted">@file.FormattedFileSize</small>
+                                    </div>
+                                    <a href="@Url.Content(file.FilePath)" download class="btn btn-sm btn-outline-secondary" title="Download"><i class="fa-solid fa-download"></i></a>
+                                    <!-- NEW DELETE BUTTON -->
+                                    <button class="btn btn-sm btn-outline-danger delete-file-btn" data-project-id="@Model.Project.ProjectId" data-file-name="@file.FileName" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted">No files found for this Course.</div>
+                    }
+                </div>
+                <div class="card-footer card-footer-upload">
+                    <form asp-action="UploadFile" asp-controller="Projects" method="post" enctype="multipart/form-data" class="d-flex gap-2" id="uploadFileForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@Model.Project.ProjectId" />
+                        <input type="file" name="file" class="form-control form-control-sm" required />
+                        <button type="submit" class="btn btn-success btn-sm flex-shrink-0"><i class="fa-solid fa-upload me-1"></i> Upload</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (Participants & Divisions) -->
+        <div class="col-lg-4">
+            <!-- Participants Card -->
+            <div class="card details-card">
+                <div class="card-header"><i class="fa-solid fa-users me-2"></i>Participants (@Model.Participants.Count)</div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush participant-list">
+                        @foreach (var participant in Model.Participants)
+                        {
+                            <li class="list-group-item">
+                                <div class="avatar @participant.AvatarCssClass">@participant.AvatarText</div>
+                                <div>
+                                    <div class="fw-bold">@participant.Name</div>
+                                    <small class="text-muted">@participant.Type</small>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Divisions Card -->
+            <div class="card details-card">
+                <div class="card-header"><i class="fa-solid fa-building me-2"></i>Divisions</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var division in Model.Divisions)
+                        {
+                            <span class="badge bg-light text-dark p-2">@division</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- jQuery is now loaded correctly from _Layout.cshtml -->
+    <script>
+        $(function() {
+            // Handle File Deletion
+            $('.delete-file-btn').on('click', function (e) {
+                e.preventDefault();
+
+                var button = $(this);
+                const projectId = button.data('project-id');
+                const fileName = button.data('file-name');
+                // Get token from the upload form
+                const token = $('#uploadFileForm input[name="__RequestVerificationToken"]').val();
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You are about to delete the file "${fileName}". This action cannot be undone.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var deleteForm = $('<form>')
+                            .attr('method', 'post')
+                            .attr('action', '/Projects/DeleteFile');
+
+                        deleteForm.append($('<input>').attr('type', 'hidden').attr('name', '__RequestVerificationToken').val(token));
+                        deleteForm.append($('<input>').attr('type', 'hidden').attr('name', 'projectId').val(projectId));
+                        deleteForm.append($('<input>').attr('type', 'hidden').attr('name', 'fileName').val(fileName));
+
+                        $('body').append(deleteForm);
+                        deleteForm.submit();
+                    }
+                });
+            });
+        });
+    </script>
+}

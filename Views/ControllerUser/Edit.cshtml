@@ -1,0 +1,338 @@
+﻿@model WebApplication1.Models.ControllerUser
+
+@{
+    ViewData["Title"] = "Edit Controller";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="~/css/editcontroller.css" />
+<style>
+    .custom-card {
+        max-width: 950px;
+        margin: 30px auto;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+        font-size: 0.98rem;
+    }
+
+    .section-title {
+        font-size: 1.08rem;
+        font-weight: 600;
+        color: #1763b6;
+        margin: 16px 0 7px 0;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .section-divider {
+        height: 1px;
+        background: linear-gradient(to right, #1763b6 30%, #eee 100%);
+        margin: 0 0 10px 0;
+        opacity: 0.22;
+    }
+
+    .form-control, .form-select {
+        border-radius: 7px;
+        font-size: 0.99rem;
+        padding: 5px 8px;
+        min-height: 33px;
+        max-height: 38px;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 3px;
+    }
+
+    .form-group {
+        margin-bottom: 8px;
+    }
+
+    .btn-primary, .btn-secondary {
+        border-radius: 8px;
+        padding: 6px 24px;
+        font-size: 1rem;
+    }
+
+    textarea.form-control {
+        min-height: 33px;
+        max-height: 60px;
+    }
+
+
+    .custom-card {
+        padding: 0 6px;
+    }
+
+</style>
+
+<div class="card custom-card">
+    <div class="card-header bg-primary text-white d-flex align-items-center" style="border-radius:14px 14px 0 0;">
+        <i class="fa-solid fa-user-pen fa-lg me-2"></i>
+        <span>Edit Air Traffic Controller</span>
+    </div>
+    <div class="card-body py-2">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="ControllerId" />
+
+            <!-- SECTION 1: User Information -->
+            <div class="section-title">
+                <i class="fa-solid fa-id-badge"></i>
+                User Information
+            </div>
+            <div class="section-divider"></div>
+            <div class="row g-2">
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="FullName" class="form-label"></label>
+                    <input asp-for="FullName" class="form-control form-control-sm" maxlength="60" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="Username" class="form-label"></label>
+                    <input asp-for="Username" class="form-control form-control-sm" readonly />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="Password" class="form-label">Password <span class="text-secondary small">(Leave blank to keep current)</span></label>
+                    <input asp-for="Password" type="password" class="form-control form-control-sm" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="Role" class="form-label">Role</label>
+                    <select asp-for="Role" asp-items="ViewBag.Roles" class="form-select form-select-sm">
+                        <option value="">-- Select Role --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Employee Information -->
+            <div class="section-title mt-2">
+                <i class="fa-solid fa-user-tie"></i>
+                Employee Information
+            </div>
+            <div class="section-divider"></div>
+            <div class="row g-2">
+                <!-- NEW COUNTRY DROPDOWN -->
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label class="form-label">Country</label>
+                    <select id="CountrySelect" asp-items="ViewBag.Countries" class="form-select form-select-sm">
+                        <option value="">-- Select Country --</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="AirportId" class="form-label">Division</label>
+                    <select asp-for="AirportId" asp-items="ViewBag.Airports" class="form-select form-select-sm" id="AirportSelect">
+                        <option value="">-- Select Division --</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="JobTitle" class="form-label">Job Title</label>
+                    <select asp-for="JobTitle" asp-items="ViewBag.JobTitle" class="form-select form-select-sm">
+                        <option value="">-- Select Job Title --</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="LicenseNumber" class="form-label">License Number</label>
+                    <input asp-for="LicenseNumber" class="form-control form-control-sm" maxlength="30" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="HireDate" class="form-label">Hire Date</label>
+                    <input asp-for="HireDate" type="date" class="form-control form-control-sm" value="@Model.HireDate?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="CurrentDepartment" class="form-label">Current Department</label>
+                    <select asp-for="CurrentDepartment" asp-items="ViewBag.CurrentDepartment" class="form-select form-select-sm"></select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="EmploymentStatus" class="form-label">Employment Status</label>
+                    <select asp-for="EmploymentStatus" asp-items="ViewBag.EmploymentStatus" class="form-select form-select-sm">
+                        <option value="">-- Select Status --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECTION 3: General Information -->
+            <div class="section-title mt-2">
+                <i class="fa-solid fa-circle-info"></i>
+                General Information
+            </div>
+            <div class="section-divider"></div>
+            <div class="row g-2">
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="EducationLevel" class="form-label">Education Level</label>
+                    <select asp-for="EducationLevel" asp-items="ViewBag.EducationLevel" class="form-select form-select-sm">
+                        <option value="">-- Select Level --</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
+                    <input asp-for="DateOfBirth" type="date" class="form-control form-control-sm" value="@Model.DateOfBirth?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="MaritalStatus" class="form-label">Marital Status</label>
+                    <select asp-for="MaritalStatus" asp-items="ViewBag.MaritalStatus" class="form-select form-select-sm">
+                        <option value="">-- Select Status --</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control form-control-sm" maxlength="20" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" type="email" class="form-control form-control-sm" maxlength="80" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="Address" class="form-label">Address</label>
+                    <textarea asp-for="Address" class="form-control form-control-sm" rows="1" maxlength="150"></textarea>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="EmergencyContact" class="form-label">Emergency Contact</label>
+                    <input asp-for="EmergencyContact" class="form-control form-control-sm" maxlength="40" />
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <div class="form-check">
+                        <input asp-for="NeedLicense" class="form-check-input" type="checkbox" />
+                        <label asp-for="NeedLicense" class="form-check-label">Need License</label>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <div class="form-check">
+                        <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                        <label asp-for="IsActive" class="form-check-label">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: Financial Information -->
+            <div class="section-title">
+                <i class="fa-solid fa-money-bill-wave"></i>
+                Financial Information
+            </div>
+            <div class="section-divider"></div>
+            <div class="row g-2">
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="CurrentSalary" class="form-label"></label>
+                    <input asp-for="CurrentSalary" class="form-control form-control-sm" type="number" step="0.01" min="0" />
+                    <span asp-validation-for="CurrentSalary" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="AnnualIncreasePercentage" class="form-label"></label>
+                    <input asp-for="AnnualIncreasePercentage" class="form-control form-control-sm" type="number" step="0.01" min="0" max="100" />
+                    <span asp-validation-for="AnnualIncreasePercentage" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="SalaryAfterAnnualIncrease" class="form-label"></label>
+                    <input asp-for="SalaryAfterAnnualIncrease" class="form-control form-control-sm" type="number" step="0.01" min="0" readonly />
+                    <small class="text-muted">Calculated automatically</small>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="BankAccountNumber" class="form-label"></label>
+                    <input asp-for="BankAccountNumber" class="form-control form-control-sm" maxlength="50" />
+                    <span asp-validation-for="BankAccountNumber" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="BankName" class="form-label"></label>
+                    <input asp-for="BankName" class="form-control form-control-sm" maxlength="100" />
+                    <span asp-validation-for="BankName" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="TaxId" class="form-label"></label>
+                    <input asp-for="TaxId" class="form-control form-control-sm" maxlength="50" />
+                    <span asp-validation-for="TaxId" class="text-danger small"></span>
+                </div>
+                <div class="col-lg-4 col-md-4 form-group">
+                    <label asp-for="InsuranceNumber" class="form-label"></label>
+                    <input asp-for="InsuranceNumber" class="form-control form-control-sm" maxlength="50" />
+                    <span asp-validation-for="InsuranceNumber" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="col-12 mt-3 text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save
+                </button>
+                <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const countrySelect = document.getElementById('CountrySelect');
+            const airportSelect = document.getElementById('AirportSelect');
+
+            // 1. احصل على القيم الأولية من النموذج عند تحميل الصفحة
+            const selectedCountryId = '@(ViewBag.SelectedCountryId ?? "0")';
+            const originalAirportId = '@Model.AirportId';
+
+            // 2. تعامل مع حدث تغيير الدولة (كما كان)
+            countrySelect.addEventListener('change', function () {
+                const countryId = this.value;
+                airportSelect.innerHTML = '<option value="">-- Loading Divisions --</option>';
+
+                if (countryId) {
+                    fetch(`/ControllerUser/GetAirports?countryId=${countryId}`)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            airportSelect.innerHTML = '<option value="">-- Select Division --</option>';
+                            data.forEach(function (airport) {
+                                const option = document.createElement('option');
+                                option.value = airport.value;
+                                option.text = airport.text;
+                                airportSelect.appendChild(option);
+                            });
+
+                            // 3. أعد تحديد المطار الأصلي بعد تعبئة القائمة الجديدة
+                            // هذا يضمن عدم فقدان الاختيار بعد تحديث القائمة
+                            if (countryId === selectedCountryId) {
+                                 airportSelect.value = originalAirportId;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching airports:', error);
+                            airportSelect.innerHTML = '<option value="">-- Error Loading --</option>';
+                        });
+                } else {
+                    airportSelect.innerHTML = '<option value="">-- Select Country First --</option>';
+                }
+            });
+
+            // 4. قم بتشغيل الإعداد الأولي عند تحميل الصفحة
+            if (selectedCountryId && selectedCountryId !== '0') {
+                countrySelect.value = selectedCountryId;
+                // قم بتشغيل حدث 'change' يدويًا لتعبئة قائمة المطارات
+                countrySelect.dispatchEvent(new Event('change'));
+            }
+
+            // Calculate salary after annual increase
+            function calculateSalaryAfterIncrease() {
+                var currentSalary = parseFloat(document.getElementById('CurrentSalary').value) || 0;
+                var annualIncrease = parseFloat(document.getElementById('AnnualIncreasePercentage').value) || 0;
+                
+                if (currentSalary > 0 && annualIncrease >= 0) {
+                    var increaseAmount = currentSalary * (annualIncrease / 100);
+                    var newSalary = currentSalary + increaseAmount;
+                    document.getElementById('SalaryAfterAnnualIncrease').value = newSalary.toFixed(2);
+                } else {
+                    document.getElementById('SalaryAfterAnnualIncrease').value = '';
+                }
+            }
+
+            // Bind events to salary calculation
+            document.getElementById('CurrentSalary').addEventListener('input', calculateSalaryAfterIncrease);
+            document.getElementById('AnnualIncreasePercentage').addEventListener('input', calculateSalaryAfterIncrease);
+
+            // Calculate on page load
+            calculateSalaryAfterIncrease();
+        });
+    </script>
+}

@@ -1,0 +1,697 @@
+@using WebApplication1.Services
+@model WebApplication1.Controllers.AdvancedObservationIndexViewModel
+@{
+    ViewData["Title"] = "الملاحظات - نظام الصلاحيات المتقدم";
+    Layout = "_AdvancedLayout";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-binoculars text-primary"></i>
+                الملاحظات - نظام الصلاحيات المتقدم
+            </h2>
+            <p class="text-muted mb-0">عرض الملاحظات مع فلترة البيانات حسب الصلاحيات</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (ViewBag.CanCreate == true)
+            {
+                <a href="@Url.Action("Create", "AdvancedObservations")" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> إضافة ملاحظة جديدة
+                </a>
+            }
+            <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">
+                <i class="bi bi-house"></i> الرئيسية
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @ViewBag.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Permission Info -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-shield-check"></i>
+                معلومات الصلاحيات
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <i class="bi bi-person-circle fs-1 text-primary"></i>
+                        <p class="mb-0"><strong>معرف المستخدم:</strong></p>
+                        <p class="text-muted">@ViewBag.CurrentUserId</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <i class="bi bi-eye @(ViewBag.CanCreate == true ? "text-success" : "text-muted") fs-1"></i>
+                        <p class="mb-0"><strong>عرض:</strong></p>
+                        <p class="text-muted">@(ViewBag.CanCreate == true ? "مصرح" : "غير مصرح")</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <i class="bi bi-pencil @(ViewBag.CanEdit == true ? "text-warning" : "text-muted") fs-1"></i>
+                        <p class="mb-0"><strong>تعديل:</strong></p>
+                        <p class="text-muted">@(ViewBag.CanEdit == true ? "مصرح" : "غير مصرح")</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <i class="bi bi-trash @(ViewBag.CanDelete == true ? "text-danger" : "text-muted") fs-1"></i>
+                        <p class="mb-0"><strong>حذف:</strong></p>
+                        <p class="text-muted">@(ViewBag.CanDelete == true ? "مصرح" : "غير مصرح")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="observationsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="controllers-tab" data-bs-toggle="tab" data-bs-target="#controllers" type="button" role="tab">
+                <i class="bi bi-person-badge"></i> مراقبون جويون
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ais-tab" data-bs-toggle="tab" data-bs-target="#ais" type="button" role="tab">
+                <i class="bi bi-info-circle"></i> AIS
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cns-tab" data-bs-toggle="tab" data-bs-target="#cns" type="button" role="tab">
+                <i class="bi bi-wifi"></i> CNS
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="aftn-tab" data-bs-toggle="tab" data-bs-target="#aftn" type="button" role="tab">
+                <i class="bi bi-transmission"></i> AFTN
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="atfm-tab" data-bs-toggle="tab" data-bs-target="#atfm" type="button" role="tab">
+                <i class="bi bi-speedometer2"></i> ATFM
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ops-tab" data-bs-toggle="tab" data-bs-target="#ops" type="button" role="tab">
+                <i class="bi bi-gear"></i> العمليات والإدارة
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="observationsTabContent">
+        <!-- Controllers Tab -->
+        <div class="tab-pane fade show active" id="controllers" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-badge"></i>
+                        ملاحظات المراقبين الجويين
+                    </h5>
+                    <div class="d-flex gap-2">
+                        @if (ViewBag.CanExport == true)
+                        {
+                            <button class="btn btn-danger btn-sm">
+                                <i class="bi bi-file-pdf"></i> تصدير PDF
+                            </button>
+                            <button class="btn btn-success btn-sm">
+                                <i class="bi bi-file-excel"></i> تصدير Excel
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.ControllerObservations != null && Model.ControllerObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="controllersTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.ControllerObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات للمراقبين الجويين</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- AIS Tab -->
+        <div class="tab-pane fade" id="ais" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        ملاحظات AIS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.AISObservations != null && Model.AISObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.AISObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات لـ AIS</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- CNS Tab -->
+        <div class="tab-pane fade" id="cns" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-wifi"></i>
+                        ملاحظات CNS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.CNSObservations != null && Model.CNSObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.CNSObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات لـ CNS</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- AFTN Tab -->
+        <div class="tab-pane fade" id="aftn" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-transmission"></i>
+                        ملاحظات AFTN
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.AFTNObservations != null && Model.AFTNObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.AFTNObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات لـ AFTN</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ATFM Tab -->
+        <div class="tab-pane fade" id="atfm" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-speedometer2"></i>
+                        ملاحظات ATFM
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.ATFMObservations != null && Model.ATFMObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.ATFMObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات لـ ATFM</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Ops Staff Tab -->
+        <div class="tab-pane fade" id="ops" role="tabpanel">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear"></i>
+                        ملاحظات العمليات والإدارة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.OpsStaffObservations != null && Model.OpsStaffObservations.Rows.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>رقم الملاحظة</th>
+                                        <th>الموظف</th>
+                                        <th>رقم الرحلة</th>
+                                        <th>البلد</th>
+                                        <th>الأيام</th>
+                                        <th>تاريخ المغادرة</th>
+                                        <th>تاريخ العودة</th>
+                                        <th>الملف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (System.Data.DataRow row in Model.OpsStaffObservations.Rows)
+                                    {
+                                        <tr>
+                                            <td>@row["ObservationNo"]</td>
+                                            <td>@row["Employee"]</td>
+                                            <td>@row["FlightNo"]</td>
+                                            <td>@row["Country"]</td>
+                                            <td>@row["Days"]</td>
+                                            <td>@(row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>@(row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]).ToString("yyyy-MM-dd") : "")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(row["File"]?.ToString()))
+                                                {
+                                                    <a href="@row["File"]" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> عرض
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">لا يوجد ملف</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    @if (ViewBag.CanEdit == true)
+                                                    {
+                                                        <a href="@Url.Action("Edit", "AdvancedObservations", new { id = row["Obs#"] })" class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    }
+                                                    @if (ViewBag.CanDelete == true)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteObservation(@row["Obs#"])">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">لا توجد ملاحظات للعمليات والإدارة</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize DataTables
+        $(document).ready(function() {
+            $('#controllersTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ar.json'
+                },
+                pageLength: 10,
+                order: [[0, 'desc']]
+            });
+        });
+
+        // Delete observation function
+        function deleteObservation(id) {
+            if (confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("Delete", "AdvancedObservations")';
+                
+                var csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '__RequestVerificationToken';
+                csrfToken.value = $('input[name="__RequestVerificationToken"]').val();
+                
+                var idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = id;
+                
+                form.appendChild(csrfToken);
+                form.appendChild(idInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Auto-refresh data every 5 minutes
+        setInterval(function() {
+            location.reload();
+        }, 300000); // 5 minutes
+    </script>
+} 

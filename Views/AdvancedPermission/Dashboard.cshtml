@@ -1,0 +1,279 @@
+@model WebApplication1.Models.AdvancedPermissionDashboardViewModel
+@{
+    ViewData["Title"] = "لوحة تحكم الصلاحيات المتقدمة";
+    Layout = "_AdvancedLayout";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-shield-lock text-primary"></i>
+                لوحة تحكم الصلاحيات المتقدمة
+            </h2>
+            <p class="text-muted mb-0">نظام إدارة الصلاحيات والتحكم في الوصول</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("DataAccess", "AdvancedPermission")" class="btn btn-info">
+                <i class="bi bi-database"></i> الوصول للبيانات
+            </a>
+            <a href="@Url.Action("MenuVisibility", "AdvancedPermission")" class="btn btn-success">
+                <i class="bi bi-list"></i> رؤية القائمة
+            </a>
+        </div>
+    </div>
+
+    <!-- Permission Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">0</h4>
+                            <p class="mb-0">إجمالي الصلاحيات</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-shield-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">0</h4>
+                            <p class="mb-0">الصلاحيات النشطة</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">0</h4>
+                            <p class="mb-0">الأقسام المتاحة</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-building fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">0</h4>
+                            <p class="mb-0">عناصر القائمة المرئية</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-list-ul fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Information -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-circle"></i>
+                        معلومات المستخدم
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-person-circle fs-1 text-primary"></i>
+                    </div>
+                    <div class="mb-2">
+                        <strong>معرف المستخدم:</strong>
+                        <span class="text-muted">@Model.CurrentUserId</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>اسم المستخدم:</strong>
+                        <span class="text-muted">-</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>الاسم الكامل:</strong>
+                        <span class="text-muted">-</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>الدور:</strong>
+                        <span class="badge bg-primary">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning"></i>
+                        إجراءات سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("UserPermissions", "AdvancedPermission", new { userId = Model.CurrentUserId })" class="btn btn-outline-primary">
+                            <i class="bi bi-shield"></i> عرض صلاحياتي
+                        </a>
+                        <a href="@Url.Action("DataAccess", "AdvancedPermission")" class="btn btn-outline-info">
+                            <i class="bi bi-database"></i> الوصول للبيانات
+                        </a>
+                        <a href="@Url.Action("MenuVisibility", "AdvancedPermission")" class="btn btn-outline-success">
+                            <i class="bi bi-list"></i> رؤية القائمة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visible Menu Items -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i>
+                        عناصر القائمة المرئية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (false)
+                    {
+                        <div class="row">
+                            @* Placeholder for menu items *@
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                            <p class="text-muted mt-2">لا توجد عناصر قائمة مرئية</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accessible Departments -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-building"></i>
+                        الأقسام المتاحة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (false)
+                    {
+                        <div class="row">
+                            @* Placeholder for departments *@
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                            <p class="text-muted mt-2">لا توجد أقسام متاحة</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear"></i>
+                        حالة النظام
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                                <div>
+                                    <strong>نظام الصلاحيات</strong>
+                                    <p class="text-muted mb-0">يعمل بشكل طبيعي</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                                <div>
+                                    <strong>فلترة البيانات</strong>
+                                    <p class="text-muted mb-0">مفعلة</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                                <div>
+                                    <strong>الذاكرة المؤقتة</strong>
+                                    <p class="text-muted mb-0">تعمل بشكل طبيعي</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                                <div>
+                                    <strong>تسجيل الوصول</strong>
+                                    <p class="text-muted mb-0">مفعل</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-refresh every 30 seconds
+            setInterval(function() {
+                location.reload();
+            }, 30000);
+
+            // Add hover effects to menu items
+            $('.card.border-success').hover(
+                function() {
+                    $(this).addClass('shadow');
+                },
+                function() {
+                    $(this).removeClass('shadow');
+                }
+            );
+        });
+    </script>
+} 

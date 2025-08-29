@@ -1,0 +1,689 @@
+/* === Component Styles === */
+
+/* --- Buttons --- */
+/* Base button style (consolidated from multiple files) */
+.btn {
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: var(--space-sm) var(--space-md); /* 8px 16px - Adjusted base padding */
+    font-size: 1rem; /* 16px */
+    line-height: var(--base-line-height);
+    border-radius: var(--border-radius-md); /* 8px */
+    transition: var(--transition-fast);
+    cursor: pointer;
+    text-decoration: none; /* Ensure links styled as buttons don't have underlines */
+}
+
+/* Primary Button Style (Login, Submit, etc.) */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white-color);
+    position: relative; /* For ripple effect */
+    overflow: hidden; /* For ripple effect */
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+/* Ripple effect for primary button (from login_aviation_theme.css) */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%, -50%); /* Centered */
+    transform-origin: 50% 50%;
+}
+
+/* Trigger ripple on hover */
+/* Note: This animation runs once on hover. Consider JS for click-based ripple if preferred. */
+.btn-primary:hover::after {
+    animation: ripple 1s ease-out;
+}
+
+/* Success Button Style (from aviation_theme.css) */
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--white-color);
+}
+
+.btn-success:hover {
+    background-color: #3da066; /* Slightly darker success */
+    border-color: #3da066;
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+/* Danger Button Style (from aviation_theme.css) */
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--white-color);
+}
+
+.btn-danger:hover {
+    background-color: #c53030; /* Slightly darker danger */
+    border-color: #c53030;
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+/* Action Button Style (Small buttons, e.g., in tables from aviation_theme.css) */
+.btn-action {
+    padding: var(--space-xs) var(--space-sm); /* 4px 8px */
+    font-size: 0.8rem; /* 12.8px */
+    margin-right: var(--space-xs);
+}
+
+/* Submit Button Style (Specific variant from LoginStyles.css) */
+.btn-submit {
+    /* Inherits .btn styles */
+    background: linear-gradient(45deg, var(--primary-color), var(--primary-dark)); /* Gradient blue */
+    color: var(--white-color);
+    padding: var(--space-md) var(--space-lg); /* 16px 24px - Larger padding */
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 1.2rem; /* 19.2px */
+    font-weight: 600;
+    width: 100%; /* Full width */
+    transition: var(--transition-medium);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3); /* Button shadow */
+    letter-spacing: 0.5px;
+}
+
+.btn-submit:hover {
+    background: linear-gradient(45deg, var(--primary-dark), #0c2340); /* Darker gradient on hover */
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    transform: translateY(-2px); /* Slight lift on hover */
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+/* Button in Contact Form (from enhanced_panels.css) */
+/* Assuming it should look like a primary button */
+.contact-form button {
+    /* Apply .btn and .btn-primary styles or create a specific class */
+    /* For now, let's style it directly but recommend using .btn .btn-primary */
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid var(--primary-color);
+    padding: var(--space-sm) var(--space-lg); /* 8px 24px */
+    font-size: 1rem;
+    line-height: var(--base-line-height);
+    border-radius: var(--border-radius-sm); /* Was 4px */
+    transition: var(--transition-medium);
+    cursor: pointer;
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.contact-form button:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+/* Login Button (from inline styles in pasted_content.txt) */
+/* Assuming this should be the main submit button */
+.login-button {
+    /* Recommend using class="btn btn-submit" in HTML instead */
+    /* Styles duplicated from .btn-submit for now */
+    background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
+    color: var(--white-color);
+    padding: var(--space-sm) var(--space-lg); /* Adjusted from 0.8rem 1.5rem */
+    border: none;
+    border-radius: var(--border-radius-sm); /* Was 4px */
+    cursor: pointer;
+    width: 100%;
+    font-size: 1rem; /* Adjusted from original */
+    transition: var(--transition-medium);
+}
+
+.login-button:hover {
+    background: linear-gradient(45deg, var(--primary-dark), #0c2340);
+}
+
+
+
+/* --- Login Card --- */
+/* Consolidated from login_aviation_theme.css, aviation_radar_styles.css, LoginStyles.css, pasted_content.txt */
+.login-card {
+    background-color: rgba(255, 255, 255, 0.95); /* From aviation_radar_styles */
+    border-radius: var(--border-radius-lg); /* 12px - from LoginStyles */
+    box-shadow: var(--shadow-lg); /* 0 10px 30px rgba(0,0,0,0.1) - from LoginStyles */
+    width: 100%;
+    max-width: 400px; /* Consistent max-width */
+    text-align: center;
+    overflow: hidden; /* Ensure content respects border-radius */
+    position: relative; /* For potential absolute children */
+    z-index: 1; /* Ensure it's above background elements */
+    border: 1px solid var(--border-light); /* Subtle border from LoginStyles */
+    padding: 0; /* Remove padding here, apply to header/body */
+    margin: var(--space-md) auto; /* Center the card */
+}
+
+.login-header {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: var(--space-xl) var(--space-lg); /* 32px 24px - Adjusted */
+    text-align: center;
+    position: relative;
+    /* Removed icon styles from LoginStyles.css header, assuming logo-container is used */
+}
+
+/* Header bottom gradient line (from login_aviation_theme.css & aviation_radar_styles.css) */
+.login-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, var(--accent-hover-color), #63b3ed, var(--accent-hover-color)); /* Using accent-hover-color */
+    background-size: 200% 100%;
+    animation: gradient-shift 3s ease infinite; /* Renamed animation */
+}
+
+.login-header h2 {
+    margin: 0;
+    font-size: 1.8rem; /* Adjusted from multiple sources */
+    font-weight: var(--heading-font-weight);
+}
+
+/* Logo Container within Login Header/Card */
+/* Consolidated from login_aviation_theme.css, aviation_radar_styles.css, pasted_content.txt */
+.logo-container {
+    width: 120px; /* From pasted_content */
+    height: 120px; /* From pasted_content */
+    background-color: var(--white-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-lg); /* Centered, with bottom margin */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.logo-container img {
+    width: 100%; /* Make image fill the container */
+    height: 100%;
+    object-fit: contain; /* Use contain to avoid distortion */
+}
+
+/* Radar ping effect on logo (from login_aviation_theme.css & aviation_radar_styles.css) */
+.logo-container::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(74, 144, 226, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    animation: radar-ping 2s ease-out infinite;
+}
+
+/* Login Body/Form Area */
+.login-body {
+    padding: var(--space-xl) var(--space-lg); /* 32px 24px - Adjusted */
+    position: relative;
+    text-align: left; /* Align form elements left */
+}
+
+/* --- Forms --- */
+/* Consolidated from multiple files */
+.form-group {
+    margin-bottom: var(--space-lg); /* 24px - Consistent spacing */
+    position: relative;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--space-sm); /* 8px */
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 1rem; /* 16px */
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-md); /* 12px 16px - Adjusted */
+    font-size: 1rem; /* 16px */
+    line-height: var(--base-line-height);
+    color: var(--text-color);
+    background-color: var(--input-bg);
+    background-clip: padding-box;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md); /* 8px */
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.25); /* Consistent focus shadow */
+}
+
+.form-control::placeholder {
+    color: var(--input-placeholder-color);
+    opacity: 1; /* Ensure placeholder is visible */
+}
+
+/* Input Group (from aviation_radar_styles.css - used for icons) */
+.input-group {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    transition: var(--transition-medium);
+    background-color: var(--input-bg);
+    margin-bottom: var(--space-lg); /* Added margin like form-group */
+}
+
+.input-group:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+.input-group .form-control {
+    flex: 1;
+    border: none; /* Remove border from input inside group */
+    border-radius: 0; /* Remove radius from input inside group */
+    box-shadow: none; /* Remove focus shadow from input inside group */
+}
+
+.input-group .form-control:focus {
+    box-shadow: none;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-md); /* 16px */
+    background-color: var(--secondary-color);
+    border: none;
+    color: var(--primary-color);
+}
+
+/* Contact Form Specific Styles (from enhanced_panels.css) */
+.contact-form .input-group {
+    /* Overrides default input-group margin if needed, but form-group is better */
+    margin-bottom: var(--space-md);
+}
+
+.contact-form label {
+    /* Already covered by .form-label */
+}
+
+.contact-form input,
+.contact-form textarea {
+    /* Mostly covered by .form-control */
+    padding: var(--space-sm); /* 8px - Was 0.8rem */
+    border: 1px solid #ddd; /* Slightly different border? Use var(--border-color) */
+    border-radius: var(--border-radius-sm); /* 4px */
+    font-family: inherit; /* Ensure font consistency */
+}
+
+.contact-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* --- Info Panels & Side Menu (from enhanced_panels.css & pasted_content.txt) --- */
+.info-panels-container { /* New wrapper for panels and overlay */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 35%;
+    height: 100%;
+    z-index: 1000; /* High z-index */
+    pointer-events: none; /* Allow clicks through unless overlay is active */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-medium), visibility var(--transition-medium);
+}
+
+.info-panels-container.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto; /* Enable pointer events when active */
+}
+
+.panel-overlay {
+    position: absolute; /* Position within the container */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.info-panel {
+    position: absolute; /* Position within the container */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--white-color);
+    padding: 0; /* Padding handled by header/content */
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden; /* Changed from overflow-y: auto */
+    display: none; /* Hide inactive panels */
+}
+
+.info-panels-container.active .info-panel.active {
+    display: block; /* Show the active panel */
+}
+
+.panel-header {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--white-color); /* Ensure color overrides base */
+}
+
+.close-panel {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--white-color);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 var(--space-sm);
+    opacity: 0.8;
+    transition: opacity var(--transition-fast);
+}
+
+.close-panel:hover {
+    opacity: 1;
+}
+
+.panel-content {
+    padding: var(--space-lg);
+    max-height: calc(80vh - 100px); /* Adjust based on header height */
+    overflow-y: auto;
+}
+
+.panel-content h4 {
+    color: var(--primary-color);
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+    font-size: 1.2rem;
+}
+
+.panel-content ul {
+    margin-bottom: var(--space-md);
+    padding-left: var(--space-lg);
+}
+
+.panel-content li {
+    margin-bottom: var(--space-sm);
+}
+
+.panel-content .contact-info {
+    margin-bottom: var(--space-lg);
+}
+
+/* Fixed Side Menu (from pasted_content.txt - modified for static positioning) */
+.fixed-side-menu {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 900; /* Below panels */
+}
+
+.side-menu-item {
+    background-color: rgba(0, 123, 255, 0.8);
+    color: var(--white-color);
+    width: 180px;
+    padding: var(--space-md);
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition-medium);
+    box-shadow: var(--shadow-md);
+}
+
+.side-menu-item:hover {
+    background-color: var(--primary-dark);
+    transform: translateX(-5px);
+}
+
+.side-menu-item i {
+    font-size: 1.5rem;
+    margin-right: var(--space-md);
+    width: 24px; /* Fixed width for alignment */
+    text-align: center;
+}
+
+.side-menu-item span {
+    font-weight: 500;
+    flex-grow: 1; /* Allow text to take remaining space */
+}
+
+/* --- Radar Screen --- */
+/* Consolidated from pasted_content.txt, aviation_radar_styles.css */
+.radar-screen-container {
+    position: fixed; /* Changed from absolute */
+    bottom: 590px; /* Adjust as needed */
+    left: 80%;
+    transform: translateX(-50%);
+    width: 120px; /* Default size */
+    height: 120px;
+    z-index: 25; /* Below logo and side menu */
+    pointer-events: none; /* Allow clicks through */
+    }
+
+.radar-screen {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 30, 60, 0.7);
+    border-radius: 50%;
+    position: relative;
+    border: 3px solid rgba(0, 200, 0, 0.5);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    overflow: hidden;
+}
+
+.radar-sweep {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(0, 255, 0, 0) 0%, rgba(0, 255, 0, 0.8) 100%); /* Adjusted gradient */
+    transform-origin: left center;
+    animation: radar-sweep 4s linear infinite;
+}
+
+.radar-blip {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: rgba(255, 0, 0, 0.8);
+    border-radius: 50%;
+    animation: radar-blip 2s ease-in-out infinite;
+}
+
+/* --- ATCS Logo (Fixed) --- */
+/* From pasted_content.txt */
+.atcs-logo-fixed {
+    position: fixed;
+    top: 75px;
+    right: 20px; /* May conflict with side menu, adjust layout */
+    width: 100px; /* Default size */
+    height: 100px;
+    z-index: 1000; /* High z-index */
+    opacity: 0.9; /* Slightly less transparent */
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.1); /* Very subtle background */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); /* Subtle glow */
+    transition: var(--transition-medium);
+}
+
+.atcs-logo-fixed:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+    .atcs-logo-fixed img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+/* --- ATC Avatar (from login_aviation_theme.css) --- */
+/* Used in dashboard theme, maybe not login? Add if needed */
+.atc-avatar {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(120deg, #226ba0 60%, var(--accent-color) 100%);
+    color: var(--white-color);
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    box-shadow: 0 1px 6px #1b6ec255;
+    margin-right: var(--space-xs);
+    border: 2px solid var(--white-color);
+}
+
+.atc-avatar-img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--white-color);
+    box-shadow: 0 1px 6px #1b6ec255;
+}
+
+/* --- Status Indicators (from aviation_theme.css) --- */
+/* Used in dashboard theme, maybe not login? Add if needed */
+.status {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: rgba(72, 187, 120, 0.1);
+    color: var(--success-color);
+}
+
+.status-inactive {
+    background-color: rgba(229, 62, 62, 0.1);
+    color: var(--danger-color);
+}
+
+/* --- Tables (from aviation_theme.css) --- */
+/* Used in dashboard theme, maybe not login? Add if needed */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: var(--space-lg);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--white-color);
+}
+
+table th {
+    background-color: var(--table-header);
+    color: var(--text-color);
+    font-weight: 600;
+    text-align: left;
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+table td {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+table tr:hover {
+    background-color: var(--secondary-color);
+}
+
+/* --- Cards (General - from aviation_theme.css) --- */
+/* Used in dashboard theme, maybe not login? Add if needed */
+.card {
+    background-color: var(--white-color);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: var(--space-md) var(--space-lg);
+    background-color: var(--white-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.card-body {
+    padding: var(--space-lg);
+}
+
+
+
+/* --- Logo Image --- */
+.logo-container img {
+    width: 100%; /* Make image fill the container */
+    height: 100%;
+    object-fit: contain; /* Use contain to avoid distortion */
+    /* Removed fixed width/height from inline style, size controlled by .logo-container */
+}
+

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 600">
+  <!-- Base of tower -->
+  <rect x="100" y="500" width="100" height="100" fill="#555" />
+  
+  <!-- Tower stem -->
+  <rect x="120" y="200" width="60" height="300" fill="#777" />
+  
+  <!-- Tower middle section -->
+  <rect x="110" y="150" width="80" height="50" fill="#666" />
+  
+  <!-- Tower cabin -->
+  <ellipse cx="150" cy="120" rx="70" ry="30" fill="#1a3c6e" />
+  <path d="M80 120 L220 120 L200 150 L100 150 Z" fill="#1a3c6e" />
+  
+  <!-- Windows -->
+  <rect x="130" y="110" width="40" height="10" fill="#87CEEB" />
+  <rect x="130" y="125" width="40" height="10" fill="#87CEEB" />
+  
+  <!-- Detailed windows around cabin -->
+  <rect x="90" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="100" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="110" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="120" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="175" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="185" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="195" y="115" width="5" height="10" fill="#87CEEB" />
+  <rect x="205" y="115" width="5" height="10" fill="#87CEEB" />
+  
+  <!-- Tower top -->
+  <ellipse cx="150" cy="90" rx="30" ry="15" fill="#555" />
+  
+  <!-- Radar dish -->
+  <circle cx="150" cy="70" r="15" fill="#ccc" />
+  <rect id="radar-arm" x="150" y="55" width="60" height="8" fill="#aaa" transform="rotate(0 150 70)">
+    <animateTransform
+      attributeName="transform"
+      attributeType="XML"
+      type="rotate"
+      from="0 150 70"
+      to="360 150 70"
+      dur="10s"
+      repeatCount="indefinite" />
+  </rect>
+  
+  <!-- Antenna -->
+  <rect x="148" y="40" width="4" height="20" fill="#999" />
+  <circle cx="150" cy="35" r="5" fill="red">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Signal waves -->
+  <g id="signal-waves">
+    <path d="M180 70 Q 210 40 240 70" stroke="#ff7700" fill="none" stroke-width="3" stroke-opacity="0.8">
+      <animate attributeName="stroke-opacity" values="0.8;0;0.8" dur="3s" repeatCount="indefinite" />
+    </path>
+    <path d="M180 70 Q 220 30 260 70" stroke="#ff7700" fill="none" stroke-width="3" stroke-opacity="0.5">
+      <animate attributeName="stroke-opacity" values="0.5;0;0.5" dur="3s" begin="0.5s" repeatCount="indefinite" />
+    </path>
+    <path d="M180 70 Q 230 20 280 70" stroke="#ff7700" fill="none" stroke-width="3" stroke-opacity="0.3">
+      <animate attributeName="stroke-opacity" values="0.3;0;0.3" dur="3s" begin="1s" repeatCount="indefinite" />
+    </path>
+  </g>
+  
+  <!-- Tower details -->
+  <rect x="140" y="200" width="20" height="50" fill="#666" />
+  <rect x="140" y="270" width="20" height="50" fill="#666" />
+  <rect x="140" y="340" width="20" height="50" fill="#666" />
+  <rect x="140" y="410" width="20" height="50" fill="#666" />
+  
+  <!-- Tower lights -->
+  <circle cx="150" cy="175" r="5" fill="red">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="150" cy="250" r="5" fill="red">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="0.5s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="150" cy="325" r="5" fill="red">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="1s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="150" cy="400" r="5" fill="red">
+    <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="1.5s" repeatCount="indefinite" />
+  </circle>
+</svg>

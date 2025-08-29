@@ -1,0 +1,96 @@
+USE [HR-Aviation]
+GO
+
+PRINT 'بدء إضافة الأعمدة المالية الجديدة إلى جدول controllers...'
+
+-- Add CurrentSalary column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'CurrentSalary')
+BEGIN
+    ALTER TABLE controllers ADD CurrentSalary DECIMAL(18,2) NULL;
+    PRINT 'تم إضافة عمود CurrentSalary'
+END
+ELSE
+BEGIN
+    PRINT 'عمود CurrentSalary موجود بالفعل'
+END
+
+-- Add AnnualIncreasePercentage column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'AnnualIncreasePercentage')
+BEGIN
+    ALTER TABLE controllers ADD AnnualIncreasePercentage DECIMAL(5,2) NULL;
+    PRINT 'تم إضافة عمود AnnualIncreasePercentage'
+END
+ELSE
+BEGIN
+    PRINT 'عمود AnnualIncreasePercentage موجود بالفعل'
+END
+
+-- Add SalaryAfterAnnualIncrease column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'SalaryAfterAnnualIncrease')
+BEGIN
+    ALTER TABLE controllers ADD SalaryAfterAnnualIncrease DECIMAL(18,2) NULL;
+    PRINT 'تم إضافة عمود SalaryAfterAnnualIncrease'
+END
+ELSE
+BEGIN
+    PRINT 'عمود SalaryAfterAnnualIncrease موجود بالفعل'
+END
+
+-- Add BankAccountNumber column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'BankAccountNumber')
+BEGIN
+    ALTER TABLE controllers ADD BankAccountNumber NVARCHAR(50) NULL;
+    PRINT 'تم إضافة عمود BankAccountNumber'
+END
+ELSE
+BEGIN
+    PRINT 'عمود BankAccountNumber موجود بالفعل'
+END
+
+-- Add BankName column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'BankName')
+BEGIN
+    ALTER TABLE controllers ADD BankName NVARCHAR(100) NULL;
+    PRINT 'تم إضافة عمود BankName'
+END
+ELSE
+BEGIN
+    PRINT 'عمود BankName موجود بالفعل'
+END
+
+-- Add TaxId column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'TaxId')
+BEGIN
+    ALTER TABLE controllers ADD TaxId NVARCHAR(50) NULL;
+    PRINT 'تم إضافة عمود TaxId'
+END
+ELSE
+BEGIN
+    PRINT 'عمود TaxId موجود بالفعل'
+END
+
+-- Add InsuranceNumber column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'InsuranceNumber')
+BEGIN
+    ALTER TABLE controllers ADD InsuranceNumber NVARCHAR(50) NULL;
+    PRINT 'تم إضافة عمود InsuranceNumber'
+END
+ELSE
+BEGIN
+    PRINT 'عمود InsuranceNumber موجود بالفعل'
+END
+
+-- Verify the changes
+SELECT
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'controllers'
+AND COLUMN_NAME IN ('CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease', 
+                   'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber')
+ORDER BY COLUMN_NAME;
+
+PRINT 'تم إضافة جميع الأعمدة المالية بنجاح!'
+GO 

@@ -1,0 +1,417 @@
+/* Dashboard Enhancements CSS */
+
+/* Keyframes Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Modal Fixes */
+.modal-header {
+    position: relative;
+    z-index: 1056;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0.3rem 0.3rem 0 0;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 600;
+    color: #212529;
+    font-size: 1.25rem;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: calc(100% - 50px);
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-dialog {
+    z-index: 1055;
+}
+
+.modal-backdrop {
+    z-index: 1054;
+}
+
+/* Dashboard Styles */
+.kpi-card {
+    border-left-width: 4px;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.kpi-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.kpi-icon {
+    font-size: 3rem;
+    opacity: 0.2;
+    transition: all 0.3s ease;
+}
+
+.kpi-card:hover .kpi-icon {
+    opacity: 0.4;
+    transform: scale(1.1);
+}
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.kpi-title {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.kpi-subtitle {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Color classes for SWOT analysis cards */
+.border-swot-strengths {
+    border-color: #198754;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.border-swot-weaknesses {
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.border-swot-opportunities {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+}
+
+.border-swot-threats {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 700;
+    color: #495057;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.chart-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.chart-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.btn-dashboard {
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-dashboard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.quick-actions {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.stats-badge {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    backdrop-filter: blur(5px);
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+}
+
+/* Data Details Styles */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+}
+
+.table-hover-highlight {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.badge-clicked {
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.table-dark th {
+    background: linear-gradient(135deg, #343a40, #495057) !important;
+    border: none;
+    color: white;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.nav-pills .nav-link:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #007bff !important;
+    text-decoration: underline !important;
+}
+
+.btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border-color: #495057;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.badge.bg-pink {
+    background-color: #e83e8c !important;
+}
+
+.card {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+/* Fix for navbar brand overlapping tabs */
+.atc-navbar .navbar-brand {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    z-index: 1200;
+}
+
+/* Ensure main content doesn't overlap with navbar */
+.atc-main-content {
+    margin-top: 60px;
+    padding-top: 20px;
+}
+
+/* Fix for tabs positioning */
+.nav-tabs {
+    position: relative;
+    z-index: 1100;
+    margin-top: 10px;
+}
+
+/* Ensure proper spacing for tab content */
+.tab-content {
+    margin-top: 20px;
+}
+
+/* Fix for modal title visibility */
+.modal-header {
+    position: relative;
+    z-index: 1056;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0.3rem 0.3rem 0 0;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 600;
+    color: #212529;
+    font-size: 1.25rem;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: calc(100% - 50px);
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-dialog {
+    z-index: 1055;
+}
+
+.modal-backdrop {
+    z-index: 1054;
+}
+
+/* Custom styles for improved appearance */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #20c997, #17a2b8) !important;
+}
+
+.table-hover-highlight {
+    background-color: rgba(32, 201, 151, 0.1) !important;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.badge-clicked {
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.table-dark th {
+    background: linear-gradient(135deg, #20c997, #17a2b8) !important;
+    border: none;
+    color: white;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(32, 201, 151, 0.1) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(32, 201, 151, 0.2);
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #20c997, #17a2b8) !important;
+    border: none;
+    box-shadow: 0 2px 8px rgba(32, 201, 151, 0.3);
+}
+
+.nav-pills .nav-link:hover {
+    background: linear-gradient(135deg, #17a2b8, #138496) !important;
+    transform: translateY(-1px);
+}
+
+.breadcrumb-item a:hover {
+    color: #20c997 !important;
+    text-decoration: none;
+}
+
+.btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8) !important;
+    border-color: #20c997;
+    transform: translateY(-1px);
+}
+
+.badge.bg-pink {
+    background: linear-gradient(135deg, #e83e8c, #dc3545) !important;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+} 

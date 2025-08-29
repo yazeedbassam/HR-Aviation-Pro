@@ -1,0 +1,7 @@
+﻿@model int
+@* @await Component.InvokeAsync("NotificationCount")
+ *@
+@if (Model > 0)
+{
+    <span class="badge bg-danger">@Model</span>
+}

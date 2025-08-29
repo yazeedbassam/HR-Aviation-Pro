@@ -1,0 +1,394 @@
+/* =============================================
+   AVIATION HR PRO - Professional Theme
+   ============================================= */
+
+:root {
+    /* Primary Colors */
+    --aviation-primary: #1e3a8a;      /* Deep Aviation Blue */
+    --aviation-secondary: #3b82f6;    /* Sky Blue */
+    --aviation-accent: #f59e0b;       /* Golden Orange */
+    --aviation-success: #10b981;      /* Emerald Green */
+    --aviation-warning: #f59e0b;      /* Warning Orange */
+    --aviation-danger: #ef4444;       /* Alert Red */
+    
+    /* Neutral Colors */
+    --aviation-light: #f8fafc;        /* Light Gray */
+    --aviation-gray: #64748b;         /* Medium Gray */
+    --aviation-dark: #1e293b;         /* Dark Gray */
+    --aviation-white: #ffffff;        /* Pure White */
+    
+    /* Gradients */
+    --aviation-gradient-primary: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    --aviation-gradient-secondary: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    --aviation-gradient-accent: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    
+    /* Shadows */
+    --aviation-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --aviation-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --aviation-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --aviation-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* =============================================
+   LOGO STYLES
+   ============================================= */
+
+.aviation-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-decoration: none;
+    color: var(--aviation-primary);
+    transition: all 0.3s ease;
+}
+
+.aviation-logo:hover {
+    transform: translateY(-2px);
+    color: var(--aviation-secondary);
+}
+
+.aviation-logo-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--aviation-gradient-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--aviation-shadow-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.aviation-logo-icon::before {
+    content: "✈️";
+    font-size: 24px;
+    animation: logoFloat 3s ease-in-out infinite;
+}
+
+.aviation-logo-icon::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    animation: logoShine 2s ease-in-out infinite;
+}
+
+.aviation-logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.aviation-logo-main {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--aviation-primary);
+    letter-spacing: -0.5px;
+}
+
+.aviation-logo-subtitle {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--aviation-gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Logo Animations */
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+}
+
+@keyframes logoShine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+}
+
+/* =============================================
+   NAVBAR STYLES
+   ============================================= */
+
+.aviation-navbar {
+    background: var(--aviation-white);
+    border-bottom: 2px solid var(--aviation-light);
+    box-shadow: var(--aviation-shadow-sm);
+    padding: 1rem 0;
+}
+
+.aviation-navbar .navbar-brand {
+    font-weight: 700;
+    color: var(--aviation-primary);
+}
+
+.aviation-navbar .nav-link {
+    color: var(--aviation-gray);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.aviation-navbar .nav-link:hover {
+    color: var(--aviation-primary);
+}
+
+.aviation-navbar .nav-link.active {
+    color: var(--aviation-primary);
+    font-weight: 600;
+}
+
+.aviation-navbar .nav-link.active::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--aviation-gradient-primary);
+    border-radius: 2px;
+}
+
+/* =============================================
+   BUTTON STYLES
+   ============================================= */
+
+.btn-aviation-primary {
+    background: var(--aviation-gradient-primary);
+    border: none;
+    color: var(--aviation-white);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: var(--aviation-shadow-md);
+}
+
+.btn-aviation-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--aviation-shadow-lg);
+    color: var(--aviation-white);
+}
+
+.btn-aviation-secondary {
+    background: var(--aviation-gradient-secondary);
+    border: none;
+    color: var(--aviation-white);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: var(--aviation-shadow-md);
+}
+
+.btn-aviation-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--aviation-shadow-lg);
+    color: var(--aviation-white);
+}
+
+.btn-aviation-accent {
+    background: var(--aviation-gradient-accent);
+    border: none;
+    color: var(--aviation-white);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: var(--aviation-shadow-md);
+}
+
+.btn-aviation-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--aviation-shadow-lg);
+    color: var(--aviation-white);
+}
+
+/* =============================================
+   CARD STYLES
+   ============================================= */
+
+.aviation-card {
+    background: var(--aviation-white);
+    border-radius: 12px;
+    box-shadow: var(--aviation-shadow-md);
+    border: 1px solid var(--aviation-light);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.aviation-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--aviation-shadow-xl);
+}
+
+.aviation-card-header {
+    background: var(--aviation-gradient-primary);
+    color: var(--aviation-white);
+    padding: 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.aviation-card-body {
+    padding: 1.5rem;
+}
+
+/* =============================================
+   DASHBOARD STYLES
+   ============================================= */
+
+.aviation-dashboard {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.aviation-stats-card {
+    background: var(--aviation-white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--aviation-shadow-md);
+    border-left: 4px solid var(--aviation-primary);
+    transition: all 0.3s ease;
+}
+
+.aviation-stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--aviation-shadow-lg);
+}
+
+.aviation-stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--aviation-primary);
+    line-height: 1;
+}
+
+.aviation-stats-label {
+    font-size: 0.9rem;
+    color: var(--aviation-gray);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* =============================================
+   SIDEBAR STYLES
+   ============================================= */
+
+.aviation-sidebar {
+    background: var(--aviation-white);
+    border-right: 1px solid var(--aviation-light);
+    box-shadow: var(--aviation-shadow-md);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.aviation-sidebar-header {
+    background: var(--aviation-gradient-primary);
+    color: var(--aviation-white);
+    padding: 1.5rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.aviation-sidebar-menu {
+    padding: 1rem 0;
+}
+
+.aviation-sidebar-item {
+    padding: 0.75rem 1.5rem;
+    color: var(--aviation-gray);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.aviation-sidebar-item:hover {
+    background: var(--aviation-light);
+    color: var(--aviation-primary);
+    border-left-color: var(--aviation-primary);
+}
+
+.aviation-sidebar-item.active {
+    background: var(--aviation-light);
+    color: var(--aviation-primary);
+    border-left-color: var(--aviation-primary);
+    font-weight: 600;
+}
+
+/* =============================================
+   RESPONSIVE DESIGN
+   ============================================= */
+
+@media (max-width: 768px) {
+    .aviation-logo-main {
+        font-size: 20px;
+    }
+    
+    .aviation-logo-subtitle {
+        font-size: 10px;
+    }
+    
+    .aviation-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .aviation-sidebar.show {
+        transform: translateX(0);
+    }
+}
+
+/* =============================================
+   ANIMATIONS
+   ============================================= */
+
+.aviation-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.aviation-slide-up {
+    animation: slideUp 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =============================================
+   UTILITY CLASSES
+   ============================================= */
+
+.aviation-text-primary { color: var(--aviation-primary) !important; }
+.aviation-text-secondary { color: var(--aviation-secondary) !important; }
+.aviation-text-accent { color: var(--aviation-accent) !important; }
+.aviation-bg-primary { background: var(--aviation-gradient-primary) !important; }
+.aviation-bg-secondary { background: var(--aviation-gradient-secondary) !important; }
+.aviation-bg-accent { background: var(--aviation-gradient-accent) !important; } 

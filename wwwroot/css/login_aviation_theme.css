@@ -1,0 +1,764 @@
+﻿/* ATC Login Page - Aviation Theme CSS */
+:root {
+    --primary-color: #3a7ca5;
+    --secondary-color: #f2f7fa;
+    --accent-color: #81b29a;
+    --text-color: #2d3748;
+    --background-color: #f8fafc;
+    --border-color: #cbd5e0;
+    --hover-color: #4a90e2;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a3a5f 0%, #2c5282 100%);
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+    /* Aviation Background Elements */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('https://images.unsplash.com/photo-1569154941061-e231b4725ef1?q=80&w=1920');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.1;
+        z-index: -1;
+    }
+/* ATC Login Page - Aviation Theme CSS */
+:root {
+    --primary-color: #3a7ca5;
+    --secondary-color: #f2f7fa;
+    --accent-color: #81b29a;
+    --text-color: #2d3748;
+    --background-color: #f8fafc;
+    --border-color: #cbd5e0;
+    --hover-color: #4a90e2;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a3a5f 0%, #2c5282 100%);
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+    /* Aviation Background Elements */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('https://images.unsplash.com/photo-1569154941061-e231b4725ef1?q=80&w=1920');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.1;
+        z-index: -1;
+    }
+
+/* Airplane Silhouettes */
+.airplane {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z'/%3E%3Cpath d='M16 12h4'/%3E%3Cpath d='M8 12H4'/%3E%3Cpath d='M12 16v4'/%3E%3Cpath d='M12 8V4'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.airplane-1 {
+    top: 15%;
+    left: 10%;
+    transform: rotate(45deg);
+    animation: fly-1 60s linear infinite;
+}
+
+.airplane-2 {
+    bottom: 20%;
+    right: 15%;
+    transform: rotate(-30deg);
+    animation: fly-2 80s linear infinite;
+}
+
+@keyframes fly-1 {
+    0% {
+        transform: translate(0, 0) rotate(45deg);
+    }
+
+    50% {
+        transform: translate(50vw, 20vh) rotate(30deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(45deg);
+    }
+}
+
+@keyframes fly-2 {
+    0% {
+        transform: translate(0, 0) rotate(-30deg);
+    }
+
+    50% {
+        transform: translate(-40vw, 10vh) rotate(-45deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(-30deg);
+    }
+}
+.atc-avatar {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(120deg, #226ba0 60%, #81b29a 100%);
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    box-shadow: 0 1px 6px #1b6ec255;
+    margin-right: 4px;
+    border: 2px solid #fff;
+}
+.atc-avatar-img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 6px #1b6ec255;
+}
+/* Flight Path Lines */
+.flight-path {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 20%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 80%, rgba(255, 255, 255, 0) 100%);
+}
+
+.flight-path-1 {
+    top: 30%;
+    left: 0;
+    width: 100%;
+    transform: rotate(5deg);
+}
+
+.flight-path-2 {
+    top: 70%;
+    left: 0;
+    width: 100%;
+    transform: rotate(-3deg);
+}
+
+/* Login Container */
+.container {
+    width: 100%;
+    max-width: 450px;
+    padding: 15px;
+    z-index: 1;
+}
+.atc-body {
+    background: linear-gradient(120deg, #274472 0%, #41729f 100%);
+    min-height: 100vh;
+    position: relative;
+}
+
+.atc-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: url('https://images.unsplash.com/photo-1569154941061-e231b4725ef1?q=80&w=1920') center/cover no-repeat;
+    opacity: 0.10;
+    filter: blur(1.5px);
+}
+
+.atc-navbar {
+    background: rgba(33, 46, 83, 0.85);
+    color: #fff;
+    border-bottom: 1.5px solid #4a90e2;
+}
+
+    .atc-navbar .navbar-brand {
+        color: #fff !important;
+        letter-spacing: 1px;
+    }
+
+.atc-sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: rgba(36, 60, 88, 0.97);
+    color: #fff;
+    border-right: 1px solid #81b29a15;
+    box-shadow: 2px 0 10px #23283a33;
+}
+
+    .atc-sidebar .nav-link {
+        color: #cce0f8;
+        border-radius: 10px;
+        padding: 10px 14px;
+        transition: all 0.15s;
+        font-size: 1.07rem;
+    }
+
+        .atc-sidebar .nav-link:hover, .atc-sidebar .nav-link.active {
+            background: linear-gradient(90deg, #1b6ec2 50%, #3a7ca5 100%);
+            color: #fff !important;
+            box-shadow: 0 2px 10px #00aaff20;
+        }
+
+.atc-main-content {
+    background: rgba(255,255,255,0.88);
+    border-radius: 18px;
+    box-shadow: 0 4px 18px #1a214530;
+    min-height: 90vh;
+}
+
+.footer {
+    background: rgba(230, 245, 255, 0.82);
+    border-top: 1px solid #b3d7e7;
+}
+
+/* Login Card */
+.login-card {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+}
+
+.login-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    position: relative;
+}
+
+    .login-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(90deg, #4a90e2, #63b3ed, #4a90e2);
+        background-size: 200% 100%;
+        animation: gradient 3s ease infinite;
+    }
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.logo-container {
+    width: 80px;
+    height: 80px;
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+    .logo-container i {
+        font-size: 40px;
+        color: var(--primary-color);
+        z-index: 1;
+    }
+
+    .logo-container::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(74, 144, 226, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+        animation: radar-ping 2s ease-out infinite;
+    }
+
+@keyframes radar-ping {
+    0% {
+        transform: scale(0.3);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.login-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.login-body {
+    padding: 30px 25px;
+    position: relative;
+}
+
+/* Form Styles */
+.form-group, .mb-3 {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-label, label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    background-color: white;
+    background-clip: padding-box;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(58, 124, 165, 0.25);
+    }
+
+.text-danger {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: 12px;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 8px;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+    .btn-primary:hover {
+        background-color: #2c5282;
+        border-color: #2c5282;
+    }
+
+    .btn-primary::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+
+    .btn-primary:hover::after {
+        animation: ripple 1s ease-out;
+    }
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(20, 20);
+        opacity: 0;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .container {
+        padding: 10px;
+    }
+
+    .login-header {
+        padding: 20px 15px;
+    }
+
+    .login-body {
+        padding: 20px 15px;
+    }
+}
+/* Airplane Silhouettes */
+.airplane {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z'/%3E%3Cpath d='M16 12h4'/%3E%3Cpath d='M8 12H4'/%3E%3Cpath d='M12 16v4'/%3E%3Cpath d='M12 8V4'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    z-index: -1;
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-container {
+        width: 95%;
+        margin: 10px auto;
+    }
+
+    .navbar-nav {
+        flex-wrap: wrap; /* ???? ?????? ?????? ????????? */
+    }
+
+    .nav-item {
+        margin-bottom: 5px; /* ???? ????? ???? ????? ?????? ??????? */
+    }
+}
+
+.airplane-1 {
+    top: 15%;
+    left: 10%;
+    transform: rotate(45deg);
+    animation: fly-1 60s linear infinite;
+}
+
+.airplane-2 {
+    bottom: 20%;
+    right: 15%;
+    transform: rotate(-30deg);
+    animation: fly-2 80s linear infinite;
+}
+
+@keyframes fly-1 {
+    0% {
+        transform: translate(0, 0) rotate(45deg);
+    }
+
+    50% {
+        transform: translate(50vw, 20vh) rotate(30deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(45deg);
+    }
+}
+
+@keyframes fly-2 {
+    0% {
+        transform: translate(0, 0) rotate(-30deg);
+    }
+
+    50% {
+        transform: translate(-40vw, 10vh) rotate(-45deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(-30deg);
+    }
+}
+
+/* Flight Path Lines */
+.flight-path {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 20%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 80%, rgba(255, 255, 255, 0) 100%);
+}
+
+.flight-path-1 {
+    top: 30%;
+    left: 0;
+    width: 100%;
+    transform: rotate(5deg);
+}
+
+.flight-path-2 {
+    top: 70%;
+    left: 0;
+    width: 100%;
+    transform: rotate(-3deg);
+}
+
+/* Login Container */
+.container {
+    width: 100%;
+    max-width: 450px;
+    padding: 15px;
+    z-index: 1;
+}
+
+/* Login Card */
+.login-card {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+}
+
+.login-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    position: relative;
+}
+
+    .login-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(90deg, #4a90e2, #63b3ed, #4a90e2);
+        background-size: 200% 100%;
+        animation: gradient 3s ease infinite;
+    }
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.logo-container {
+    width: 80px;
+    height: 80px;
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+    .logo-container i {
+        font-size: 40px;
+        color: var(--primary-color);
+        z-index: 1;
+    }
+
+    .logo-container::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(74, 144, 226, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+        animation: radar-ping 2s ease-out infinite;
+    }
+
+@keyframes radar-ping {
+    0% {
+        transform: scale(0.3);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.login-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.login-body {
+    padding: 30px 25px;
+    position: relative;
+}
+
+/* Form Styles */
+.form-group, .mb-3 {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-label, label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    background-color: white;
+    background-clip: padding-box;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(58, 124, 165, 0.25);
+    }
+
+.text-danger {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-block;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: 12px;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 8px;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+    .btn-primary:hover {
+        background-color: #2c5282;
+        border-color: #2c5282;
+    }
+
+    .btn-primary::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+
+    .btn-primary:hover::after {
+        animation: ripple 1s ease-out;
+    }
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(20, 20);
+        opacity: 0;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .container {
+        padding: 10px;
+    }
+
+    .login-header {
+        padding: 20px 15px;
+    }
+
+    .login-body {
+        padding: 20px 15px;
+    }
+}

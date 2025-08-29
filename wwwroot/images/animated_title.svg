@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 150">
+  <!-- Project Name Animation -->
+  <defs>
+    <!-- Gradient for text -->
+    <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0056b3;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#007bff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0056b3;stop-opacity:1" />
+      <animate attributeName="x1" from="0%" to="100%" dur="5s" repeatCount="indefinite" />
+      <animate attributeName="x2" from="100%" to="200%" dur="5s" repeatCount="indefinite" />
+    </linearGradient>
+    
+    <!-- Filter for glow effect -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Main Title -->
+  <g id="projectTitle" filter="url(#glow)">
+    <text x="400" y="75" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="url(#titleGradient)">ANS Management System</text>
+    
+    <!-- Small airplane icon flying around text -->
+    <path id="titlePlane" d="M30,10 L20,8 L18,8 L17,6 L12,8 L10,9 L12,10 L17,12 L18,10 L20,10 Z" fill="#fff" stroke="#333" stroke-width="0.5">
+      <animateMotion 
+        path="M0,0 C100,-30 200,30 300,-20 C400,-50 500,0 600,-30 C700,-50 800,0 800,-20" 
+        dur="15s" 
+        repeatCount="indefinite" 
+        rotate="auto" />
+    </path>
+    
+    <!-- Radar sweep effect behind text -->
+    <path id="radarSweep" d="M400,75 L700,0" stroke="#007bff" stroke-width="2" stroke-opacity="0.3">
+      <animateTransform 
+        attributeName="transform" 
+        attributeType="XML" 
+        type="rotate" 
+        from="0 400 75" 
+        to="360 400 75" 
+        dur="8s" 
+        repeatCount="indefinite" />
+    </path>
+  </g>
+  
+  <!-- Subtle pulsing effect for the entire title -->
+  <animate xlink:href="#projectTitle" attributeName="opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite" />
+</svg>

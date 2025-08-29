@@ -1,0 +1,81 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+
+# Visual Studio
+.vs/
+*.sln.docstates
+*.userprefs
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database
+*.mdf
+*.ldf
+
+# Backup files
+*.bak
+*.backup
+
+# Configuration files with sensitive data
+appsettings.Production.json
+appsettings.Staging.json
+
+# Uploaded files
+wwwroot/uploads/
+wwwroot/reports/
+wwwroot/licenses/
+wwwroot/certificates/
+wwwroot/projects/
+
+# Test files
+test.pdf 

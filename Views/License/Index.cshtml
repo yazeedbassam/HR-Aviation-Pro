@@ -1,0 +1,225 @@
+﻿@*
+  ملاحظة مهمة: هذا العرض الآن يتوقع نموذج من نوع LicenseIndexViewModel من الكنترولر
+*@
+@model WebApplication1.Models.LicenseIndexViewModel
+
+@{
+    ViewData["Title"] = "Licenses & Permissions";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .main-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #146c43;
+    }
+
+    .nav-tabs .nav-link {
+        font-weight: 500;
+        color: #495057;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: #146c43;
+            font-weight: 600;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+
+    .modal-body .details-list {
+        list-style: none;
+        padding: 0;
+    }
+
+        .modal-body .details-list li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .modal-body .details-list .detail-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 140px;
+            display: inline-block;
+        }
+</style>
+
+<div class="container-fluid">
+    <div class="card custom-card bg-white px-3 py-4">
+        <!-- Header with Title and Global Buttons -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div class="main-header">
+                <i class="fa-solid fa-id-card-clip"></i>
+                Licenses & Permissions
+            </div>
+            <div>
+                @if (Html.HasAdvancedPermission("LICENSES_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a href="@Url.Action("Create", "License")" class="btn btn-success btn-sm me-2">
+                        <i class="fa-solid fa-plus"></i> Add New License
+                    </a>
+                }
+                <a href="/" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+        }
+
+
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs" id="licenseTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="controllers-tab" data-bs-toggle="tab" data-bs-target="#controllers-tab-pane" type="button" role="tab" aria-controls="controllers-tab-pane" aria-selected="true">Controllers</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ais-tab" data-bs-toggle="tab" data-bs-target="#ais-tab-pane" type="button" role="tab" aria-controls="ais-tab-pane" aria-selected="false">AIS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cns-tab" data-bs-toggle="tab" data-bs-target="#cns-tab-pane" type="button" role="tab" aria-controls="cns-tab-pane" aria-selected="false">CNS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="aftn-tab" data-bs-toggle="tab" data-bs-target="#aftn-tab-pane" type="button" role="tab" aria-controls="aftn-tab-pane" aria-selected="false">AFTN</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="opsstaff-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-tab-pane" type="button" role="tab" aria-controls="opsstaff-tab-pane" aria-selected="false">Ops Staff & Admin</button>
+            </li>
+        </ul>
+
+        <!-- Tabs Content -->
+        <div class="tab-content pt-2" id="licenseTabContent">
+            <div class="tab-pane fade show active" id="controllers-tab-pane" role="tabpanel" aria-labelledby="controllers-tab" tabindex="0">
+                @await Html.PartialAsync("_ControllerLicensesPartial", Model.ControllerLicenses)
+            </div>
+            <div class="tab-pane fade" id="ais-tab-pane" role="tabpanel" aria-labelledby="ais-tab" tabindex="0">
+                @await Html.PartialAsync("_AISLicensesPartial", Model.AISLicenses)
+            </div>
+            <div class="tab-pane fade" id="cns-tab-pane" role="tabpanel" aria-labelledby="cns-tab" tabindex="0">
+                @await Html.PartialAsync("_CNSLicensesPartial", Model.CNSLicenses)
+            </div>
+            <div class="tab-pane fade" id="aftn-tab-pane" role="tabpanel" aria-labelledby="aftn-tab" tabindex="0">
+                @await Html.PartialAsync("_AFTNLicensesPartial", Model.AFTNLicenses)
+            </div>
+            <div class="tab-pane fade" id="opsstaff-tab-pane" role="tabpanel" aria-labelledby="opsstaff-tab" tabindex="0">
+                @await Html.PartialAsync("_OpsStaffLicensesPartial", Model.OpsStaffLicenses)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- License Details Modal -->
+<div class="modal fade" id="licenseDetailsModal" tabindex="-1" aria-labelledby="licenseDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="licenseDetailsModalLabel">License Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="details-list">
+                    <li><span class="detail-label">Person:</span> <span id="modalPersonName"></span></li>
+                    <li><span class="detail-label">Job/Department:</span> <span id="modalPersonJob"></span></li>
+                    <hr />
+                    <li><span class="detail-label">License/Permission:</span> <span id="modalLicenseType"></span></li>
+                    <li><span class="detail-label">License Number:</span> <span id="modalLicenseNumber"></span></li>
+                    <li><span class="detail-label">Issue Date:</span> <span id="modalIssueDate"></span></li>
+                    <li><span class="detail-label">Expiry Date:</span> <span id="modalExpiryDate"></span></li>
+                    <li><span class="detail-label">Status:</span> <span id="modalStatusMessage"></span></li>
+                    <li><span class="detail-label">Note:</span> <span id="modalNote"></span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function getExportUrl(personType, action) {
+            let tableId;
+            switch(personType) {
+                case 'Controller':
+                    tableId = '#controllerLicensesTable';
+                    break;
+                case 'AIS':
+                    tableId = '#aisLicensesTable';
+                    break;
+                case 'CNS':
+                    tableId = '#cnsLicensesTable';
+                    break;
+                case 'AFTN':
+                    tableId = '#aftnLicensesTable';
+                    break;
+                case 'OpsStaff':
+                    tableId = '#opsstaffLicensesTable';
+                    break;
+                default:
+                    tableId = '#employeeLicensesTable';
+            }
+            
+            const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
+
+            const params = new URLSearchParams();
+
+            filterInputs.forEach(input => {
+                const value = input.value.trim();
+                const paramName = input.getAttribute('data-param-name');
+                if (value !== '' && paramName) {
+                    params.append(paramName, value);
+                }
+            });
+
+            // Add personType to distinguish on the server which data to fetch for export
+            params.append('personType', personType);
+
+            // Note: The controller name is 'License', not the personType
+            return `/License/${action}?${params.toString()}`;
+        }
+
+        function exportToFile(personType, action, fileExtension) {
+            const url = getExportUrl(personType, action);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.setAttribute('download', `${personType}_Licenses_Report_${new Date().toISOString().slice(0, 10)}.${fileExtension}`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Modal logic
+        const licenseDetailsModal = document.getElementById('licenseDetailsModal');
+        if (licenseDetailsModal) {
+            licenseDetailsModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+
+                document.getElementById('modalLicenseType').textContent = button.getAttribute('data-licensetype') || "-";
+                document.getElementById('modalPersonName').textContent = button.getAttribute('data-personname') || "-";
+                document.getElementById('modalPersonJob').textContent = button.getAttribute('data-personjob') || "-";
+                document.getElementById('modalLicenseNumber').textContent = button.getAttribute('data-licensenumber') || "-";
+                document.getElementById('modalIssueDate').textContent = button.getAttribute('data-issuedate') || "-";
+                document.getElementById('modalExpiryDate').textContent = button.getAttribute('data-expirydate') || "-";
+                document.getElementById('modalStatusMessage').textContent = button.getAttribute('data-statusmessage') || "-";
+                document.getElementById('modalNote').textContent = button.getAttribute('data-note') || "-";
+            });
+        }
+    </script>
+}

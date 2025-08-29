@@ -1,0 +1,13 @@
+﻿@media (max-width: 991px) {
+    .custom-card {
+        font-size: 0.83rem;
+    }
+
+    .table th, .table td {
+        font-size: 0.71rem;
+    }
+
+    .btn, .form-control, .form-select {
+        font-size: 0.78rem;
+    }
+}

@@ -1,0 +1,1224 @@
+﻿@model IEnumerable<WebApplication1.Models.Employee>
+@{
+    var sectionTitle = ViewBag.SectionTitle as string ?? "Employees & Operation Staff";
+    var sectionIcon = ViewBag.SectionIcon as string ?? "fa-users";
+    ViewData["Title"] = $"{sectionTitle} - List";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    /* General styles for the page layout and components */
+    /* For styling the new files section */
+    .project-files-section {
+        margin-top: 20px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+    }
+
+        .project-files-section h6 {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+
+    .project-files-list {
+        list-style: none;
+        padding: 0;
+    }
+
+        .project-files-list li {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+            .project-files-list li:hover {
+                background-color: #f1f3f5;
+            }
+
+        .project-files-list .file-icon {
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-right: 15px;
+            width: 25px; /* Fixed width for alignment */
+            text-align: center;
+        }
+
+        /* Specific file type colors */
+        .project-files-list .fa-file-pdf {
+            color: #dc3545;
+        }
+
+        .project-files-list .fa-file-word {
+            color: #0d6efd;
+        }
+
+        .project-files-list .fa-file-excel {
+            color: #198754;
+        }
+
+        .project-files-list .fa-file-image {
+            color: #fd7e14;
+        }
+
+        .project-files-list .fa-file-archive {
+            color: #6f42c1;
+        }
+        /* For zip/rar */
+
+        .project-files-list .file-info {
+            flex-grow: 1;
+        }
+
+            .project-files-list .file-info .file-name {
+                font-weight: 500;
+                color: #212529;
+            }
+
+            .project-files-list .file-info .file-size {
+                font-size: 0.8rem;
+                color: #6c757d;
+            }
+
+        .project-files-list .download-btn {
+            margin-left: 15px;
+        }
+
+    /* Improved Participants list styling */
+    .participants-list {
+        list-style: none;
+        padding-left: 0;
+        max-height: 150px; /* Limit height and make it scrollable */
+        overflow-y: auto;
+    }
+
+        .participants-list li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .participants-list .role-tag {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            color: #495057;
+            margin-left: 8px;
+        }
+
+    .project-accordion .accordion-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+
+    .project-accordion .accordion-header .accordion-button {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #212529;
+        border-radius: 0;
+    }
+
+        .project-accordion .accordion-header .accordion-button:not(.collapsed) {
+            background-color: #e9ecef;
+            box-shadow: none;
+        }
+
+    .project-accordion .accordion-body {
+        font-size: 0.9rem;
+        padding: 20px;
+    }
+
+    .project-accordion .project-description {
+        color: #dc3545; /* Red color as in the example */
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .project-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .project-info-section h6 {
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+        color: #0d6efd; /* Blue color for titles */
+    }
+
+    .project-info-section .info-item {
+        margin-bottom: 8px;
+    }
+
+        .project-info-section .info-item strong {
+            display: inline-block;
+            min-width: 80px;
+            color: #495057;
+        }
+
+    .project-divisions .badge {
+        margin-right: 5px;
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+
+    .badge-status {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-status-inprogress {
+        background-color: #0d6efd;
+    }
+
+    .badge-status-planning {
+        background-color: #ffc107;
+        color: #000 !important;
+    }
+
+    .badge-status-completed {
+        background-color: #198754;
+    }
+
+    .badge-status-onhold {
+        background-color: #6c757d;
+    }
+
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06 );
+        font-size: 0.90rem;
+    }
+
+    .custom-header {
+        font-size: 1.04rem;
+        font-weight: 600;
+        letter-spacing: .4px;
+        color: #146c43;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    /* Table styling */
+    .table-responsive {
+        border-radius: 9px;
+    }
+
+    .table th, .table td {
+        vertical-align: middle !important;
+        font-size: 0.78rem; /* Adjusted for better readability */
+        padding: 6px 8px; /* Adjusted padding */
+        line-height: 1.3;
+        white-space: nowrap;
+    }
+
+    .table thead th {
+        font-size: 0.85rem;
+        font-weight: 600; /* Bolder headers */
+    }
+
+    .table-Employee img {
+        box-shadow: 0 0 2px #2222;
+    }
+
+    .action-btns {
+        min-width: 95px; /* Increased width for new button */
+        text-align: center; /* Center action buttons */
+    }
+
+    /* Sticky column for better horizontal scrolling experience */
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: #fff;
+        z-index: 1;
+    }
+
+    /* Ensure sticky column header also has a background */
+    thead .sticky-col {
+        background: #d1e7dd; /* Matching the success-subtle color */
+    }
+
+    .btn, .form-control, .form-select {
+        font-size: 0.78rem;
+    }
+
+    .btn-sm {
+        padding: 2px 8px; /* Slightly more padding */
+        font-size: 0.80rem;
+    }
+
+    .custom-card .card-header {
+        font-size: 1.01rem;
+    }
+
+    .icon-xs {
+        font-size: 1em !important;
+    }
+
+    .photo-thumb {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Styling for filter inputs in the table header */
+    .filter-input {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 0.75rem;
+    }
+
+    /* Style for the record counter */
+    #recordCounter {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* Styles for the enhanced employee details modal */
+    .modal-xl {
+        max-width: 95%;
+    }
+
+    .profile-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .profile-pic-large {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid rgba(255,255,255,0.3);
+        margin-bottom: 15px;
+    }
+
+    .nav-pills .nav-link {
+        border-radius: 25px;
+        margin: 0 5px;
+        font-weight: 500;
+    }
+
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+    .info-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #212529;
+        font-size: 0.95rem;
+    }
+
+    .data-table {
+        font-size: 0.85rem;
+    }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+    .badge-status {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+
+</style>
+
+<div class="container-fluid">
+    <div class="custom-card bg-white px-3 py-4">
+        <!-- MODIFIED: Combined header and buttons into a single flex container -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div class="custom-header">
+                <i class="@sectionIcon"></i>
+                @sectionTitle - List
+                <span id="recordCounter" class="badge bg-primary ms-3"></span>
+            </div>
+
+            <!-- Button Group on the right -->
+            <div>
+                <div class="text-end mb-2">
+                    @if (Html.HasAdvancedPermission("EMPLOYEES_ADD") || Html.IsAdvancedAdmin())
+                    {
+                        <a class="btn btn-success btn-sm me-2" asp-action="Create">
+                            <i class="fa-solid fa-user-plus"></i> Add New
+                        </a>
+                    }
+                    <a class="btn btn-secondary btn-sm" href="/">
+                        <i class="fa-solid fa-house"></i> Home
+                    </a>
+                </div>
+                <div class="text-end">
+                    <button type="button" onclick="exportEmployeesPDF()" class="btn btn-danger btn-sm me-2">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </button>
+                    <button type="button" onclick="exportEmployeesExcel()" class="btn btn-success btn-sm">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="employeesTable" class="table table-bordered table-striped table-hover table-Employee align-middle">
+                <thead class="table-success">
+                    <tr>
+                        <th class="sticky-col">#</th>
+                        <th>Full Name</th>
+                        <th>User ID</th>
+                        <th>Job Title</th>
+                        <th>Department</th>
+                        <th>Username</th>
+                        <th>Status</th>
+                        <th class="action-btns">Actions</th>
+                    </tr>
+                    <tr class="filters">
+                        <th class="sticky-col"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="1"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="2"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="3"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="4"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="5"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="6"></th>
+                        <th class="text-center"><button id="clearFiltersBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var employeesList = Model.ToList();
+                    }
+                    @for (var i = 0; i < employeesList.Count; i++)
+                    {
+                        var employee = employeesList[i];
+                        <tr>
+                            <td class="sticky-col bg-light">@(i + 1)</td>
+                            <td>@employee.FullName</td>
+                            <td>@employee.EmployeeOfficialID</td>
+                            <td>@employee.JobTitle</td>
+                            <td>@employee.Department</td>
+                            <td>@employee.Username</td>
+                            <td>
+                                @if (employee.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+                            <td class="action-btns">
+                                <button type="button" class="btn btn-sm btn-info me-1 mb-1 view-details-btn" title="View Full Details"
+                                        data-employee-id="@employee.EmployeeID">
+                                    <i class="fa-solid fa-eye icon-xs"></i>
+                                </button>
+                                <a asp-action="Edit" asp-route-id="@employee.EmployeeID" class="btn btn-sm btn-warning me-1 mb-1" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square icon-xs"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@employee.EmployeeID" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                    <button type="submit" class="btn btn-sm btn-danger mb-1" title="Delete">
+                                        <i class="fa-solid fa-trash icon-xs"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Employee Details Modal -->
+<div class="modal fade" id="employeeDetailsModal" tabindex="-1" aria-labelledby="employeeDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="employeeDetailsModalLabel">
+                    <i class="fa-solid fa-user-tie me-2"></i>Employee Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading User details...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="modalContent" style="display: none;">
+                    <!-- Profile Header Section -->
+                    <div class="profile-section">
+                        <img id="modalProfilePic" src="" class="profile-pic-large" alt="Profile Photo" />
+                        <h3 id="modalFullName" class="mb-1"></h3>
+                        <p id="modalUsername" class="mb-2 opacity-75"></p>
+                        <span id="modalJobTitle" class="badge bg-light text-dark px-3 py-2"></span>
+                    </div>
+
+                    <div class="container-fluid px-4 pb-4">
+                        <!-- Navigation Tabs -->
+                        <ul class="nav nav-pills justify-content-center mb-4" id="profileTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="personal-tab" data-bs-toggle="pill" data-bs-target="#personal" type="button" role="tab">
+                                    <i class="fa-solid fa-user me-2"></i>Personal Info
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="financial-tab" data-bs-toggle="pill" data-bs-target="#financial" type="button" role="tab">
+                                    <i class="fa-solid fa-money-bill-wave me-2"></i>Financial Info
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="licenses-tab" data-bs-toggle="pill" data-bs-target="#licenses" type="button" role="tab">
+                                    <i class="fa-solid fa-id-card me-2"></i>Licenses <span id="licensesCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="certificates-tab" data-bs-toggle="pill" data-bs-target="#certificates" type="button" role="tab">
+                                    <i class="fa-solid fa-certificate me-2"></i>Certificates <span id="certificatesCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="observations-tab" data-bs-toggle="pill" data-bs-target="#observations" type="button" role="tab">
+                                    <i class="fa-solid fa-plane me-2"></i>Observations <span id="observationsCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab">
+                                    <i class="fa-solid fa-project-diagram me-2"></i>Courses<span id="projectsCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="profileTabsContent">
+                            <!-- Personal Information Tab -->
+                            <div class="tab-pane fade show active" id="personal" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Email Address</div>
+                                            <div class="info-value" id="modalEmail">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Phone Number</div>
+                                            <div class="info-value" id="modalPhone">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Employee Official ID</div>
+                                            <div class="info-value" id="modalEmployeeOfficialID">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Gender</div>
+                                            <div class="info-value" id="modalGender">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Date of Birth</div>
+                                            <div class="info-value" id="modalDob">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Marital Status</div>
+                                            <div class="info-value" id="modalMarital">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Department</div>
+                                            <div class="info-value" id="modalDepartment">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Organizational Structure</div>
+                                            <div class="info-value" id="modalOrganizationalStructure">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Division</div>
+                                            <div class="info-value" id="modalDivision">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Education Level</div>
+                                            <div class="info-value" id="modalEducation">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Employment Status</div>
+                                            <div class="info-value" id="modalStatus">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Hire Date</div>
+                                            <div class="info-value" id="modalHireDate">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Address</div>
+                                    <div class="info-value" id="modalAddress">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Emergency Contact</div>
+                                    <div class="info-value" id="modalEmergencyContact">-</div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Information Tab -->
+                            <div class="tab-pane fade" id="financial" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Current Salary</div>
+                                            <div class="info-value" id="modalCurrentSalary">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Annual Increase %</div>
+                                            <div class="info-value" id="modalAnnualIncrease">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Salary After Increase</div>
+                                            <div class="info-value" id="modalSalaryAfterIncrease">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Bank Account Number</div>
+                                            <div class="info-value" id="modalBankAccount">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Bank Name</div>
+                                            <div class="info-value" id="modalBankName">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Tax ID</div>
+                                            <div class="info-value" id="modalTaxId">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Insurance Number</div>
+                                            <div class="info-value" id="modalInsuranceNumber">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Licenses Tab -->
+                            <div class="tab-pane fade" id="licenses" role="tabpanel">
+                                <div id="licensesContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-id-card"></i>
+                                        <h5>No licenses found</h5>
+                                        <p>This employee has no licenses on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Certificates Tab -->
+                            <div class="tab-pane fade" id="certificates" role="tabpanel">
+                                <div id="certificatesContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-certificate"></i>
+                                        <h5>No certificates found</h5>
+                                        <p>This employee has no certificates on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Observations Tab -->
+                            <div class="tab-pane fade" id="observations" role="tabpanel">
+                                <div id="observationsContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-plane"></i>
+                                        <h5>No observations found</h5>
+                                        <p>This employee has no observations on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Projects Tab -->
+                            <div class="tab-pane fade" id="projects" role="tabpanel">
+                                <div id="projectsContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-project-diagram"></i>
+                                        <h5>No projects found</h5>
+                                        <p>This employee is not assigned to any projects.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // === TABLE FILTERING LOGIC ===
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const tableRows = document.querySelectorAll('#employeesTable tbody tr');
+            const recordCounter = document.getElementById('recordCounter');
+            const totalRows = tableRows.length;
+
+            function applyFilters() {
+                const filters = {};
+                let visibleRowCount = 0;
+                filterInputs.forEach(input => {
+                    const columnIndex = input.getAttribute('data-column-index');
+                    if (input.value.trim() !== '') {
+                        filters[columnIndex] = input.value.toLowerCase();
+                    }
+                });
+
+                tableRows.forEach(row => {
+                    let isVisible = true;
+                    for (const colIndex in filters) {
+                        if (row.cells[colIndex]) {
+                            const cellText = row.cells[colIndex].innerText.toLowerCase();
+                            if (!cellText.includes(filters[colIndex])) {
+                                isVisible = false;
+                                break;
+                            }
+                        }
+                    }
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) {
+                        visibleRowCount++;
+                    }
+                });
+                recordCounter.innerText = `Showing ${visibleRowCount} of ${totalRows} Records`;
+            }
+
+            filterInputs.forEach(input => {
+                input.addEventListener('keyup', applyFilters);
+            });
+            applyFilters(); // Apply on initial load
+
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function () {
+                    filterInputs.forEach(input => { input.value = ''; });
+                    applyFilters();
+                });
+            }
+
+            // === MODAL DETAILS LOGIC ===
+            // Select all buttons with class 'view-details-btn'
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    // Get the employee ID from the data-employee-id attribute
+                    const employeeId = this.getAttribute('data-employee-id');
+                    loadEmployeeDetails(employeeId);
+                });
+            });
+
+            // === EXPORT LOGIC ===
+            // متغير لتتبع حالة التصدير لمنع الطلبات المتعددة
+            let isExporting = false;
+
+            // Object to map column index to parameter name for Employees
+            const columnIndexToParamName = {
+                '1': 'fullName',
+                '2': 'employeeOfficialID',
+                '3': 'jobTitle',
+                '4': 'department',
+                '5': 'username',
+                '6': 'status'
+            };
+
+            // دالة لإظهار/إخفاء مؤشر التحميل على أزرار التصدير
+            function showExportLoading(show = true) {
+                const exportButtons = document.querySelectorAll('[onclick*="export"]');
+                exportButtons.forEach(btn => {
+                    if (show) {
+                        btn.disabled = true;
+                        const originalText = btn.innerHTML;
+                        btn.setAttribute('data-original-text', originalText);
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+                    } else {
+                        btn.disabled = false;
+                        const originalText = btn.getAttribute('data-original-text');
+                        if (originalText) {
+                            btn.innerHTML = originalText;
+                        }
+                    }
+                });
+            }
+
+            // دالة لإظهار رسائل للمستخدم
+            function showExportMessage(message, type = 'info') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+                alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+
+                setTimeout(() => {
+                    if (document.body.contains(alertDiv)) {
+                        alertDiv.remove();
+                    }
+                }, 3000);
+            }
+
+            function getExportUrl(action) {
+                const filterInputs = document.querySelectorAll('.filter-input');
+                const params = new URLSearchParams();
+                filterInputs.forEach(input => {
+                    const value = input.value.trim();
+                    if (value !== '') {
+                        const columnIndex = input.getAttribute('data-column-index');
+                        const paramName = columnIndexToParamName[columnIndex];
+                        if (paramName) {
+                            params.append(paramName, value);
+                        }
+                    }
+                });
+                return `/Employees/${action}?${params.toString()}`;
+            }
+
+            // دالة محسنة للتصدير مع حماية من الطلبات المتعددة
+            function exportToFile(action, fileExtension) {
+                // منع التصدير إذا كان هناك عملية تصدير جارية
+                if (isExporting) {
+                    showExportMessage('Export already in progress, please wait...', 'warning');
+                    return;
+                }
+
+                isExporting = true;
+                showExportLoading(true);
+
+                try {
+                    const url = getExportUrl(action);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+
+                    // تحديد اسم الملف بناءً على التاريخ والوقت الحالي
+                    const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+                    a.setAttribute('download', `Employees_Report_${timestamp}.${fileExtension}`);
+
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // إزالة العنصر بعد فترة قصيرة للتأكد من بدء التنزيل
+                    setTimeout(() => {
+                        if (document.body.contains(a)) {
+                            document.body.removeChild(a);
+                        }
+                    }, 100);
+
+                    showExportMessage(`${fileExtension.toUpperCase()} export started successfully!`, 'success');
+
+                } catch (error) {
+                    console.error('Export error:', error);
+                    showExportMessage(`Failed to export ${fileExtension.toUpperCase()}. Please try again.`, 'danger');
+                } finally {
+                    // إعادة تعيين حالة التصدير وإخفاء مؤشر التحميل بعد ثانية واحدة
+                    setTimeout(() => {
+                        isExporting = false;
+                        showExportLoading(false);
+                    }, 1000);
+                }
+            }
+
+            // دوال التصدير العامة
+            window.exportEmployeesPDF = function() {
+                exportToFile('ExportToPDF', 'pdf');
+            };
+
+            window.exportEmployeesExcel = function() {
+                exportToFile('ExportToExcel', 'xlsx');
+            };
+        });
+
+        // === MODAL FUNCTIONS (Outside DOMContentLoaded) ===
+        // Function to load employee details via AJAX
+        function loadEmployeeDetails(employeeId) {
+            // Get the modal elements
+            const modal = new bootstrap.Modal(document.getElementById('employeeDetailsModal'));
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const modalContent = document.getElementById('modalContent');
+
+            // Show the modal and loading spinner, hide content
+            modal.show();
+            loadingSpinner.style.display = 'block';
+            modalContent.style.display = 'none';
+
+            // Fetch data from the Employees controller
+            fetch(`/Employees/ViewEmployeeDetails/${employeeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        populateModalWithData(data); // Populate modal with fetched data
+                        loadingSpinner.style.display = 'none';
+                        modalContent.style.display = 'block';
+                    } else {
+                        showError('Failed to load User details: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('An error occurred while loading employee details.');
+                });
+        }
+
+        // Function to populate the modal with data
+        function populateModalWithData(data) {
+            const employee = data.employee; // The employee object from the JSON response
+
+            // Populate basic info in the header section
+            document.getElementById('modalProfilePic').src = employee.photoPath || '/images/default-avatar.png';
+            document.getElementById('modalFullName').textContent = employee.fullName || 'N/A';
+            document.getElementById('modalUsername').textContent = (employee.username ? employee.username : 'N/A');
+            document.getElementById('modalJobTitle').textContent = employee.jobTitle || 'N/A';
+
+            // Populate personal info tab
+            document.getElementById('modalEmail').textContent = employee.email || '-';
+            document.getElementById('modalPhone').textContent = employee.phoneNumber || '-';
+            document.getElementById('modalDob').textContent = employee.dateOfBirth || '-';
+            document.getElementById('modalMarital').textContent = employee.maritalStatus || '-';
+            document.getElementById('modalDepartment').textContent = employee.currentDepartment || '-';
+            document.getElementById('modalOrganizationalStructure').textContent = employee.organizationalStructure || '-';
+            document.getElementById('modalDivision').textContent = employee.division || '-';
+            document.getElementById('modalStatus').textContent = employee.employmentStatus || '-';
+            document.getElementById('modalHireDate').textContent = employee.hireDate || '-';
+            document.getElementById('modalEducation').textContent = employee.educationLevel || '-';
+            document.getElementById('modalAddress').textContent = employee.address || '-';
+            document.getElementById('modalEmergencyContact').textContent = employee.emergencyContact || '-';
+            document.getElementById('modalEmployeeOfficialID').textContent = employee.employeeOfficialID || '-';
+            document.getElementById('modalGender').textContent = employee.gender || '-';
+            
+            // Populate financial info tab
+            document.getElementById('modalCurrentSalary').textContent = employee.currentSalary ? `$${employee.currentSalary.toLocaleString()}` : '-';
+            document.getElementById('modalAnnualIncrease').textContent = employee.annualIncreasePercentage ? `${employee.annualIncreasePercentage}%` : '-';
+            document.getElementById('modalSalaryAfterIncrease').textContent = employee.salaryAfterAnnualIncrease ? `$${employee.salaryAfterAnnualIncrease.toLocaleString()}` : '-';
+            document.getElementById('modalBankAccount').textContent = employee.bankAccountNumber || '-';
+            document.getElementById('modalBankName').textContent = employee.bankName || '-';
+            document.getElementById('modalTaxId').textContent = employee.taxId || '-';
+            document.getElementById('modalInsuranceNumber').textContent = employee.insuranceNumber || '-';
+
+            // Populate tab contents and update counts
+            populateLicenses(data.licenses);
+            document.getElementById('licensesCount').textContent = data.licenses.length;
+
+            populateCertificates(data.certificates);
+            document.getElementById('certificatesCount').textContent = data.certificates.length;
+
+            populateObservations(data.observations);
+            document.getElementById('observationsCount').textContent = data.observations.length;
+
+            populateProjects(data.projects);
+            document.getElementById('projectsCount').textContent = data.projects.length;
+
+            // Helper function to show error messages (if needed)
+            function showError(message) {
+                alert(message); // You might want a more sophisticated error display
+            }
+        }
+
+        // Helper function to populate Licenses tab
+        function populateLicenses(licenses) {
+            const licensesContent = document.getElementById('licensesContent');
+            licensesContent.innerHTML = ''; // Clear previous content
+
+            if (licenses.length === 0) {
+                licensesContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-id-card"></i>
+                        <h5>No licenses found</h5>
+                        <p>This employee has no licenses on record.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'table table-striped data-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Issue Date</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>PDF</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            licenses.forEach(license => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${license.typeName || '-'}</td>
+                    <td>${license.issueDate || '-'}</td>
+                    <td>${license.expiryDate || '-'}</td>
+                    <td><span class="badge bg-${getBadgeClass(license.status)}">${license.status || '-'}</span></td>
+                    <td>${license.filePath && license.filePath !== '#' ? `<a href="${license.filePath}" target="_blank" class="btn btn-sm btn-primary"><i class="fa-solid fa-file-pdf"></i> View</a>` : '-'}</td>
+                `;
+            });
+            licensesContent.appendChild(table);
+        }
+
+        // Helper function to populate Certificates tab
+        function populateCertificates(certificates) {
+            const certificatesContent = document.getElementById('certificatesContent');
+            certificatesContent.innerHTML = ''; // Clear previous content
+
+            if (certificates.length === 0) {
+                certificatesContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-certificate"></i>
+                        <h5>No certificates found</h5>
+                        <p>This employee has no certificates on record.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'table table-striped data-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Title</th>
+                        <th>Issue Date</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>File</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            certificates.forEach(cert => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${cert.typeName || '-'}</td>
+                    <td>${cert.title || '-'}</td>
+                    <td>${cert.issueDate || '-'}</td>
+                    <td>${cert.expiryDate || '-'}</td>
+                    <td><span class="badge bg-${getBadgeClass(cert.status)}">${cert.status || '-'}</span></td>
+                    <td>${cert.filePath && cert.filePath !== '#' ? `<a href="${cert.filePath}" target="_blank" class="btn btn-sm btn-primary"><i class="fa-solid fa-file"></i> View</a>` : '-'}</td>
+                `;
+            });
+            certificatesContent.appendChild(table);
+        }
+
+        // Helper function to populate Observations tab
+        function populateObservations(observations) {
+            const observationsContent = document.getElementById('observationsContent');
+            observationsContent.innerHTML = ''; // Clear previous content
+
+            if (observations.length === 0) {
+                observationsContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-plane"></i>
+                        <h5>No observations found</h5>
+                        <p>This employee has no observations on record.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'table table-striped data-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Duration (Days)</th>
+                        <th>Depart Date</th>
+                        <th>Return Date</th>
+                        <th>License No.</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            observations.forEach(obs => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${obs.travelCountry || '-'}</td>
+                    <td>${obs.durationDays || '-'}</td>
+                    <td>${obs.departDate || '-'}</td>
+                    <td>${obs.returnDate || '-'}</td>
+                    <td>${obs.licenseNumber || '-'}</td>
+                    <td>${obs.notes || '-'}</td>
+                `;
+            });
+            observationsContent.appendChild(table);
+        }
+
+        // Helper function to populate Projects tab
+        function populateProjects(projects) {
+            const projectsContent = document.getElementById('projectsContent');
+            projectsContent.innerHTML = ''; // Clear previous content
+
+            if (projects.length === 0) {
+                projectsContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-project-diagram"></i>
+                        <h5>No projects found</h5>
+                        <p>This employee is not assigned to any projects.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const accordion = document.createElement('div');
+            accordion.className = 'accordion project-accordion';
+            accordion.id = 'projectsAccordion';
+
+            projects.forEach((project, index) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                accordionItem.innerHTML = `
+                    <h2 class="accordion-header" id="heading${project.id}">
+                        <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${project.id}" aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="collapse${project.id}">
+                            ${project.projectName || 'N/A'} <span class="badge badge-status badge-status-${project.status.toLowerCase().replace(/ /g, '')} ms-2">${project.status || 'N/A'}</span>
+                        </button>
+                    </h2>
+                    <div id="collapse${project.id}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" aria-labelledby="heading${project.id}" data-bs-parent="#projectsAccordion">
+                        <div class="accordion-body">
+                            ${project.description ? `<p class="project-description">${project.description}</p>` : ''}
+                            <div class="project-info-grid">
+                                <div class="project-info-section">
+                                    <h6>Details</h6>
+                                    <div class="info-item"><strong>Start Date:</strong> ${project.startDate || '-'}</div>
+                                    <div class="info-item"><strong>End Date:</strong> ${project.endDate || '-'}</div>
+                                    <div class="info-item"><strong>Location:</strong> ${project.location || '-'}</div>
+                                </div>
+                                <div class="project-info-section">
+                                    <h6>Participants</h6>
+                                    <ul class="participants-list">
+                                        ${project.participants && project.participants.length > 0 ?
+                                            project.participants.map(p => `<li>${p.name || '-'} ${p.role ? `<span class="role-tag">${p.role}</span>` : ''}</li>`).join('')
+                                            : '<li>No participants listed.</li>'}
+                                    </ul>
+                                </div>
+                                <div class="project-info-section">
+                                    <h6>Divisions</h6>
+                                    <div class="project-divisions">
+                                        ${project.divisions && project.divisions.length > 0 ?
+                                            project.divisions.map(d => `<span class="badge bg-info">${d || '-'}</span>`).join('')
+                                            : 'No divisions listed.'}
+                                    </div>
+                                </div>
+                            </div>
+                            ${project.files && project.files.length > 0 ? `
+                                <div class="project-files-section">
+                                    <h6>Project Files</h6>
+                                    <ul class="project-files-list">
+                                        ${project.files.map(file => `
+                                            <li>
+                                                <i class="file-icon ${getFileIconClass(file.extension)}"></i>
+                                                <div class="file-info">
+                                                    <div class="file-name">${file.name}</div>
+                                                    <div class="file-size">${file.size}</div>
+                                                </div>
+                                                <a href="${file.path}" target="_blank" class="btn btn-sm btn-outline-primary download-btn" title="Download"><i class="fa-solid fa-download"></i></a>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                accordion.appendChild(accordionItem);
+            });
+            projectsContent.appendChild(accordion);
+        }
+
+        // Helper function to get badge class based on status
+        function getBadgeClass(status) {
+            if (!status) return 'secondary';
+            status = status.toLowerCase();
+            if (status.includes('active') || status.includes('valid') || status.includes('completed')) return 'success';
+            if (status.includes('expired') || status.includes('inactive')) return 'danger';
+            if (status.includes('expiring') || status.includes('pending') || status.includes('on hold') || status.includes('planning')) return 'warning';
+            if (status.includes('in progress')) return 'primary';
+            return 'secondary';
+        }
+
+        // Helper function to get file icon class based on extension
+        function getFileIconClass(extension) {
+            if (!extension) return 'fa-solid fa-file';
+            extension = extension.toLowerCase();
+            if (extension === 'pdf') return 'fa-solid fa-file-pdf';
+            if (extension === 'doc' || extension === 'docx') return 'fa-solid fa-file-word';
+            if (extension === 'xls' || extension === 'xlsx') return 'fa-solid fa-file-excel';
+            if (extension === 'jpg' || extension === 'jpeg' || extension === 'png' || extension === 'gif') return 'fa-solid fa-file-image';
+            if (extension === 'zip' || extension === 'rar' || extension === '7z') return 'fa-solid fa-file-archive';
+            return 'fa-solid fa-file';
+        }
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}
+
+

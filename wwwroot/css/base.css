@@ -1,0 +1,143 @@
+
+
+/* === Base Styles === */
+
+/* --- Variables --- */
+/* Defined here to be globally available */
+:root {
+    /* Colors */
+    --primary-color: #3a7ca5; /* Primary blue */
+    --primary-dark: #2c5282; /* Darker primary blue */
+    --secondary-color: #f2f7fa; /* Light background/secondary */
+    --accent-color: #81b29a; /* Accent green/teal */
+    --accent-hover-color: #63b3ed; /* Lighter blue for hover/gradients */
+    --text-color: #2d3748; /* Main text color (dark gray/blue) */
+    --text-light: #6c757d; /* Lighter text (e.g., footer) */
+    --background-color: #f8fafc; /* General page background */
+    --background-dark-theme: #0c2340; /* Dark background for login */
+    --background-dark-theme-gradient-end: #153f65; /* Dark background gradient end */
+    --white-color: #ffffff;
+    --border-color: #cbd5e0; /* Default border color */
+    --border-light: #e0e0e0; /* Lighter border */
+    --danger-color: #e53e3e; /* Error/Danger red */
+    --danger-alt-color: #dc3545;
+    --success-color: #48bb78; /* Success green */
+    --warning-color: #f6ad55; /* Warning orange */
+    --table-header: #e2e8f0; /* Table header background */
+    --input-bg: #ffffff;
+    --input-placeholder-color: #adb5bd;
+
+    /* Typography */
+    --font-family-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-family-inter: 'Inter', sans-serif; /* Added from LoginStyles.css */
+    --base-font-size: 16px; /* Typically 16px */
+    --base-line-height: 1.6;
+    --base-font-weight: 400;
+    --heading-font-weight: 600;
+
+    /* Spacing (using rem for scalability) */
+    --space-xs: 0.25rem;  /* 4px */
+    --space-sm: 0.5rem;   /* 8px */
+    --space-md: 1rem;     /* 16px */
+    --space-lg: 1.5rem;   /* 24px */
+    --space-xl: 2rem;     /* 32px */
+    --space-xxl: 3rem;    /* 48px */
+
+    /* Borders and Shadows */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-medium: all 0.3s ease;
+}
+
+/* --- Global Styles --- */
+html {
+    box-sizing: border-box;
+    font-size: var(--base-font-size);
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: var(--font-family-sans); /* Default font */
+    color: var(--text-color);
+    line-height: var(--base-line-height);
+    font-weight: var(--base-font-weight);
+    background-color: var(--background-color); /* Default background */
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Basic heading styles (can be overridden) */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: var(--space-sm);
+    font-weight: var(--heading-font-weight);
+    line-height: 1.2;
+}
+
+h1 { font-size: 2.5rem; } /* 40px */
+h2 { font-size: 2rem; }   /* 32px */
+h3 { font-size: 1.75rem; }/* 28px */
+h4 { font-size: 1.5rem; } /* 24px */
+h5 { font-size: 1.25rem; }/* 20px */
+h6 { font-size: 1rem; }   /* 16px */
+
+p {
+    margin-top: 0;
+    margin-bottom: var(--space-md);
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+img, svg, video, object {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Prevent extra space below inline images */
+}
+
+/* --- Custom Scrollbar (Optional) --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--secondary-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--border-radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* --- Utility Classes (Add as needed) --- */
+.text-danger {
+    color: var(--danger-alt-color); /* Using the one from login_aviation_theme */
+    font-size: 0.85rem;
+    margin-top: var(--space-xs);
+    display: block;
+}
+

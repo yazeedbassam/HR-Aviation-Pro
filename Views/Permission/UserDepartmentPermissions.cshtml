@@ -1,0 +1,142 @@
+@model List<UserDepartmentPermissionViewModel>
+@{
+    ViewData["Title"] = "User Department Permissions";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-people-fill"></i>
+                        User Department Permissions
+                    </h3>
+                    <div class="card-tools">
+                        <a href="/Permission/CreateUserDepartmentPermission" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add User Permission
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="userPermissionsTable" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Department</th>
+                                    <th>Permission</th>
+                                    <th>Access Rights</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    <span class="text-white fw-bold">@item.UserName.Substring(0, 1).ToUpper()</span>
+                                                </div>
+                                                <div>
+                                                    <strong>@item.UserName</strong>
+                                                    <br>
+                                                    <small class="text-muted">@item.UserFullName</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">@item.DepartmentName</span>
+                                        </td>
+                                        <td>
+                                            <strong>@item.PermissionName</strong>
+                                            <br>
+                                            <small class="text-muted">@item.PermissionKey</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                @if (item.CanView)
+                                                {
+                                                    <span class="badge bg-info">View</span>
+                                                }
+                                                @if (item.CanEdit)
+                                                {
+                                                    <span class="badge bg-warning">Edit</span>
+                                                }
+                                                @if (item.CanDelete)
+                                                {
+                                                    <span class="badge bg-danger">Delete</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (item.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/Permission/EditUserDepartmentPermission/@item.UserDepartmentPermissionId" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteUserPermission(@item.UserDepartmentPermissionId)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#userPermissionsTable').DataTable({
+                "responsive": true,
+                "lengthChange": false,
+                "autoWidth": false,
+                "buttons": ["copy", "csv", "excel", "pdf", "print"]
+            }).buttons().container().appendTo('#userPermissionsTable_wrapper .col-md-6:eq(0)');
+        });
+
+        function deleteUserPermission(id) {
+            if (confirm('Are you sure you want to delete this user permission?')) {
+                // Get the anti-forgery token
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                
+                $.ajax({
+                    url: '/Permission/DeleteUserDepartmentPermission/' + id,
+                    type: 'POST',
+                    data: {
+                        __RequestVerificationToken: token
+                    },
+                    success: function (result) {
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Error deleting permission: ' + error);
+                    }
+                });
+            }
+        }
+    </script>
+} 

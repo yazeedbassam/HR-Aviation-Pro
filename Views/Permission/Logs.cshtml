@@ -1,0 +1,247 @@
+@model List<PermissionLogViewModel>
+@{
+    ViewData["Title"] = "Permission Access Logs";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-journal-text"></i>
+                        Permission Access Logs
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-info" onclick="exportLogs()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="userFilter">User:</label>
+                            <select id="userFilter" class="form-control">
+                                <option value="">All Users</option>
+                                @foreach (var user in Model.Select(l => l.UserName).Distinct())
+                                {
+                                    <option value="@user">@user</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter">Status:</label>
+                            <select id="statusFilter" class="form-control">
+                                <option value="">All Status</option>
+                                <option value="ACCESS_GRANTED">Granted</option>
+                                <option value="ACCESS_DENIED">Denied</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fromDate">From Date:</label>
+                            <input type="date" id="fromDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="toDate">To Date:</label>
+                            <input type="date" id="toDate" class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- Logs Table -->
+                    <div class="table-responsive">
+                        <table id="logsTable" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Permission</th>
+                                    <th>Department</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                    <th>User Agent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var log in Model)
+                                {
+                                    <tr>
+                                        <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>
+                                            <strong>@log.UserName</strong><br>
+                                            <small class="text-muted">@log.UserFullName</small>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.PermissionName))
+                                            {
+                                                <strong>@log.PermissionName</strong>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.DepartmentName))
+                                            {
+                                                <span class="badge badge-info">@log.DepartmentName</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (log.Status == "ACCESS_GRANTED")
+                                            {
+                                                <span class="badge badge-success">Granted</span>
+                                            }
+                                            else if (log.Status == "ACCESS_DENIED")
+                                            {
+                                                <span class="badge badge-danger">Denied</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-info">@log.Status</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.Details))
+                                            {
+                                                <small>@log.Details</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.IpAddress))
+                                            {
+                                                <code>@log.IpAddress</code>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(log.UserAgent))
+                                            {
+                                                <small class="text-muted" title="@log.UserAgent">
+                                                    @(log.UserAgent.Length > 50 ? log.UserAgent.Substring(0, 50) + "..." : log.UserAgent)
+                                                </small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#logsTable').DataTable({
+                "pageLength": 25,
+                "order": [[0, "desc"]],
+                "responsive": true,
+                "language": {
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "infoEmpty": "Showing 0 to 0 of 0 entries",
+                    "infoFiltered": "(filtered from _MAX_ total entries)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
+                }
+            });
+
+            // Filter functionality
+            $('#userFilter, #statusFilter').on('change', function() {
+                table.draw();
+            });
+
+            $('#fromDate, #toDate').on('change', function() {
+                table.draw();
+            });
+
+            // Custom filtering function
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                var userFilter = $('#userFilter').val();
+                var statusFilter = $('#statusFilter').val();
+                var fromDate = $('#fromDate').val();
+                var toDate = $('#toDate').val();
+
+                var user = data[1]; // User column
+                var status = data[4]; // Status column
+                var timestamp = data[0]; // Timestamp column
+
+                // User filter
+                if (userFilter && user.indexOf(userFilter) === -1) {
+                    return false;
+                }
+
+                // Status filter
+                if (statusFilter && status.indexOf(statusFilter) === -1) {
+                    return false;
+                }
+
+                // Date range filter
+                if (fromDate || toDate) {
+                    var logDate = new Date(timestamp);
+                    var from = fromDate ? new Date(fromDate) : null;
+                    var to = toDate ? new Date(toDate) : null;
+
+                    if (from && logDate < from) {
+                        return false;
+                    }
+                    if (to && logDate > to) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        });
+
+        function exportLogs() {
+            // Export functionality
+            var table = $('#logsTable').DataTable();
+            var data = table.data().toArray();
+            
+            // Convert to CSV
+            var csv = 'Timestamp,User,Permission,Department,Status,Details,IP Address,User Agent\n';
+            
+            data.forEach(function(row) {
+                csv += '"' + row[0] + '","' + row[1] + '","' + row[2] + '","' + row[3] + '","' + row[4] + '","' + row[5] + '","' + row[6] + '","' + row[7] + '"\n';
+            });
+            
+            // Download file
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'permission_logs_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+} 

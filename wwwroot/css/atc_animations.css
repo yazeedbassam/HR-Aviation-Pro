@@ -1,0 +1,863 @@
+﻿/* ATC Animation Styles */
+.atc-scene {
+    position: absolute;
+    top: 100px;
+    right: 50px;
+    width: 500px;
+    height: 600px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.control-tower {
+    position: absolute;
+    bottom: 50px;
+    right: 100px;
+    width: 200px;
+    height: 400px;
+    z-index: 10;
+    cursor: pointer;
+    pointer-events: all;
+    transition: transform 0.3s ease;
+}
+
+    .control-tower:hover {
+        transform: scale(1.05);
+    }
+
+.airplane-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.airplane {
+    position: absolute;
+    width: 200px;
+    height: 100px;
+    filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.speech-bubble {
+    position: absolute;
+    top: 100px;
+    right: 150px;
+    width: 300px;
+    height: 100px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Animation for radar signals */
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.signal-wave {
+    animation: pulse 3s infinite;
+}
+
+    .signal-wave:nth-child(2) {
+        animation-delay: 0.5s;
+    }
+
+/* Animation for airplane flight */
+@keyframes fly {
+    0% {
+        transform: translateX(-100%) translateY(80px) rotate(10deg);
+    }
+
+    50% {
+        transform: translateX(0%) translateY(0px) rotate(-5deg);
+    }
+
+    100% {
+        transform: translateX(100%) translateY(20px) rotate(10deg);
+    }
+}
+
+.flying-airplane {
+    animation: fly 15s infinite linear;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .atc-scene {
+        transform: scale(0.8);
+        right: 0;
+    }
+}
+
+@media (max-width: 992px) {
+    .atc-scene {
+        transform: scale(0.6);
+        top: 50px;
+        right: -50px;
+    }
+}
+
+@media (max-width: 768px) {
+    .atc-scene {
+        display: none; /* Hide on very small screens */
+    }
+}
+
+@keyframes radar-sweep {
+    0% {
+        transform: rotate(0deg) translate(-50%, -50%);
+    }
+
+    100% {
+        transform: rotate(360deg) translate(-50%, -50%);
+    }
+}
+
+@keyframes radar-blip {
+    0%, 100% {
+        opacity: 0.2;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes panelPop {
+    0% {
+        transform: scale(.88);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes planeMove1 {
+    0% {
+        left: 9vw;
+    }
+
+    100% {
+        left: 90vw;
+    }
+}
+
+@keyframes planeMove2 {
+    0% {
+        left: 60vw;
+    }
+
+    100% {
+        left: 15vw;
+    }
+}
+
+@keyframes landing {
+    0% {
+        top: 35px;
+        opacity: 0;
+    }
+
+    30% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 120px;
+        opacity: 0;
+    }
+}
+
+/* --- Mobile Responsive --- */
+@media (max-width: 991px) {
+    .d-none-mobile {
+        display: none !important;
+    }
+
+    .d-only-mobile {
+        display: block !important;
+    }
+
+    @media (min-width: 992px) {
+        .d-only-mobile {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 991px) {
+        .login-body {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .login-container {
+            margin-left: 0;
+        }
+        /* Side Menu Styling */
+        .custom-side-menu {
+            position: fixed;
+            top: 50%;
+            right: 40px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            z-index: 1100;
+        }
+
+        .custom-side-btn {
+            background: linear-gradient(90deg, #2196F3 60%, #167ee6 100%);
+            color: #fff;
+            font-size: 1.09rem;
+            font-weight: bold;
+            border: none;
+            outline: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(32,100,190,0.08);
+            padding: 17px 22px 17px 24px;
+            cursor: pointer;
+            transition: background .18s, box-shadow .18s, transform .13s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 200px;
+            letter-spacing: 0.2px;
+        }
+
+            .custom-side-btn:hover {
+                background: linear-gradient(90deg, #1e77c5 70%, #135eaa 100%);
+                box-shadow: 0 7px 24px rgba(32,100,190,0.17);
+                transform: scale(1.04);
+            }
+
+            .custom-side-btn i {
+                font-size: 1.2rem;
+                margin-left: 7px;
+            }
+
+        .custom-panel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.37);
+            z-index: 1150;
+        }
+
+        .custom-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            right: 120px;
+            transform: translateY(-50%);
+            min-width: 330px;
+            max-width: 90vw;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.21);
+            z-index: 1200;
+            animation: panelPop .21s cubic-bezier(.75,-0.3,.6,1.35);
+        }
+
+        @keyframes panelPop {
+            0% {
+                transform: translateY(-60%) scale(0.95);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .custom-panel-header {
+            background: #2196F3;
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+            .custom-panel-header .close-panel {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 1.6rem;
+                cursor: pointer;
+                margin-left: 13px;
+                transition: color .15s;
+            }
+
+                .custom-panel-header .close-panel:hover {
+                    color: #ff1744;
+                }
+
+        .custom-panel-content {
+            padding: 22px 20px 19px 20px;
+            color: #222;
+            font-size: 1rem;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('/images/atc_tower.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+            overflow: hidden;
+        }
+
+            body::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 42, 85, 0.35); /* More transparency */
+                z-index: 0;
+            }
+
+        .motivational-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            background: rgba(0, 123, 255, 0.75);
+            color: #fff;
+            padding: .7rem 0;
+            text-align: center;
+            font-size: 1.1rem;
+            z-index: 99;
+        }
+
+        #motivational-text {
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .project-title-container {
+            position: fixed;
+            top: 65px;
+            left: 0;
+            width: 100vw;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .project-title {
+            font-size: 2.1rem;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0,0,0,.45);
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .atcs-logo-fixed {
+            position: fixed;
+            top: 16px;
+            right: 18px;
+            width: 75px;
+            height: 75px;
+            z-index: 110;
+            opacity: .9;
+            border-radius: 50%;
+            background: rgba(255,255,255,.25);
+            box-shadow: 0 0 12px rgba(0,0,0,0.15);
+        }
+
+            .atcs-logo-fixed img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        .login-body {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            z-index: 20;
+        }
+
+        .login-container {
+            background: #fff;
+            padding: 2.3rem 2.1rem 2.7rem 2.1rem;
+            border-radius: 8px;
+            box-shadow: 0 0 22px rgba(0,0,0,.08);
+            width: 350px;
+            max-width: 96vw;
+            text-align: center;
+            z-index: 25;
+        }
+
+        .logo-container img {
+            width: 90px;
+            height: 90px;
+            margin-bottom: 10px;
+        }
+
+        .login-container h2 {
+            color: #234;
+            margin-bottom: 1.3rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+
+            .input-group label {
+                font-size: .98rem;
+                color: #34495e;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: .7rem;
+            border: 1px solid #ced6e0;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: .2rem;
+        }
+
+        .login-button {
+            background: #007bff;
+            color: #fff;
+            padding: .85rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.09rem;
+            font-weight: bold;
+            margin-top: 8px;
+            transition: background .25s;
+        }
+
+            .login-button:hover {
+                background: #0056b3;
+            }
+
+        .text-danger {
+            color: #e74c3c;
+            font-size: .93rem;
+        }
+
+        /* --- Radar, ATC scene, only on desktop --- */
+        .radar-screen-container, .atc-scene {
+            display: block;
+        }
+
+        .radar-screen-container {
+            position: fixed;
+            top: 150px;
+            left: 10%;
+           /* transform: translateX(-50%);*/
+            width: 120px;
+            height: 120px;
+            z-index: 25;
+        }
+
+        .radar-screen {
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 40, 90, 10.7);
+            border-radius: 50%;
+            border: 2.5px solid rgba(0,255,0,0.5);
+            box-shadow: 0 0 18px rgba(0,255,0,.16);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 44%;
+            height: 2.5px;
+            background: rgba(0,255,0,0.8);
+            transform-origin: left center;
+            animation: radar-sweep 4s linear infinite;
+        }
+
+        .radar-blip {
+            position: absolute;
+            width: 7px;
+            height: 7px;
+            background: #e54;
+            border-radius: 50%;
+            animation: radar-blip 2.5s ease-in-out infinite;
+        }
+
+
+
+        /* Side menu */
+        .fixed-side-menu {
+            position: fixed;
+            top: 52%;
+            right: 22px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 150;
+        }
+
+        .side-menu-item {
+            background: rgba(0,123,255,0.85);
+            color: #fff;
+            width: 170px;
+            padding: 13px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.05rem;
+            box-shadow: 0 3px 7px rgba(0,0,0,.17);
+            transition: background .22s, transform .22s;
+        }
+
+            .side-menu-item:hover {
+                background: #0056b3;
+                transform: translateX(-4px);
+            }
+
+            .side-menu-item i {
+                font-size: 1.3rem;
+                margin-right: 10px;
+            }
+
+        /* Info panels */
+        .info-panels {
+            position: fixed;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 400;
+            width: 380px;
+            max-width: 95vw;
+            display: none;
+        }
+
+        .info-panel {
+            background: #fff;
+            border-radius: 7px;
+            box-shadow: 0 10px 28px rgba(0,0,0,.22);
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            animation: panelPop .23s cubic-bezier(.8,-0.2,.6,1.3);
+        }
+
+
+        .panel-header {
+            background: #007bff;
+            color: #fff;
+            padding: 13px 17px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 7px 7px 0 0;
+        }
+
+            .panel-header h3 {
+                font-size: 1.21rem;
+                margin: 0;
+            }
+
+        .close-panel {
+            font-size: 1.33rem;
+            cursor: pointer;
+        }
+
+            .close-panel:hover {
+                color: #e54;
+            }
+
+        .panel-content {
+            padding: 19px 17px;
+            color: #222;
+            font-size: 1.03rem;
+        }
+
+            .panel-content ul {
+                margin: 14px 0 0 16px;
+            }
+
+        .contact-form .input-group {
+            margin-bottom: 12px;
+        }
+
+        .contact-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            height: 95px;
+            resize: vertical;
+        }
+
+        .contact-form button {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 7px;
+        }
+
+            .contact-form button:hover {
+                background: #218838;
+            }
+
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,.37);
+            z-index: 350;
+            display: none;
+        }
+
+        /* --- ATC scene (Desktop only) --- */
+        .atc-scene {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        .control-tower {
+            position: absolute;
+            bottom: 120px;
+            right: 90px;
+            width: 160px;
+            height: 300px;
+            z-index: 11;
+            transition: transform .18s;
+        }
+
+            .control-tower:hover {
+                transform: scale(1.05);
+            }
+
+        .runway-container {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 470px;
+            height: 75px;
+            z-index: 8;
+        }
+
+        .runway {
+            width: 100%;
+            height: 100%;
+        }
+
+        .airplane-container {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 100vw;
+            height: 80px;
+            z-index: 15;
+        }
+
+        .airplane {
+            position: absolute;
+            width: 120px;
+            height: 44px;
+            background: url('/images/airplane_static.svg') no-repeat center/contain;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,.13));
+        }
+
+        .airplane1 {
+            left: 9vw;
+            top: 0;
+            animation: planeMove1 10s linear infinite;
+        }
+
+        .airplane2 {
+            left: 60vw;
+            top: 0;
+            animation: planeMove2 11s linear infinite;
+        }
+
+        .airplane3 {
+            left: 40vw;
+            top: 35px;
+            animation: landing 13s linear infinite;
+        }
+
+
+        .login-body {
+            flex-direction: column;
+            gap: 2.3rem;
+            height: auto;
+        }
+
+        .project-title-container {
+            top: 56px;
+        }
+
+        .radar-screen-container {
+            display: none;
+        }
+
+        .atc-scene {
+            display: none;
+        }
+
+        .atcs-logo-fixed {
+            width: 57px;
+            height: 57px;
+        }
+
+        .fixed-side-menu {
+            display: none;
+        }
+    }
+
+
+    .mobile-menu-btn {
+        position: fixed;
+        top: 16px;
+        right: 12px;
+        z-index: 200;
+        display: none;
+    }
+
+        .mobile-menu-btn button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            font-size: 2rem;
+            padding: 10px 17px;
+            border-radius: 7px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.17);
+            cursor: pointer;
+        }
+
+    .mobile-menu {
+        display: none;
+        position: absolute;
+        top: 53px;
+        right: 0;
+        background: #fff;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.11);
+        border-radius: 7px;
+        min-width: 180px;
+    }
+
+        .mobile-menu .side-menu-item {
+            width: 100%;
+            background: #007bff;
+            color: #fff;
+            border-radius: 0;
+            margin: 0;
+            box-shadow: none;
+            font-size: 1.05rem;
+            padding: 14px 18px;
+        }
+
+            .mobile-menu .side-menu-item + .side-menu-item {
+                border-top: 1px solid #eee;
+            }
+
+            .mobile-menu .side-menu-item:hover {
+                background: #0056b3;
+            }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* غير الخلفية للصورة الجديدة: */
+        background: url('/images/CARC222.jpg') no-repeat center center fixed;
+        background-size: cover;
+        position: relative;
+        overflow: hidden;
+    }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 42, 85, 0.30); /* شفافية فوق الخلفية */
+            z-index: 0;
+        }
+
+    .login-body {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start; /* يسار */
+        gap: 3rem;
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        z-index: 20;
+    }
+
+    .login-container {
+        background: #fff;
+        padding: 2.3rem 2.1rem 2.7rem 2.1rem;
+        border-radius: 8px;
+        box-shadow: 0 0 22px rgba(0,0,0,.10);
+        width: 350px;
+        max-width: 97vw;
+        text-align: center;
+        z-index: 25;
+        margin-left: 7vw;
+    }
+    /* --- باقي الكود كما هو ... --- */
+
+    /* Responsive: يرجع للوسط في الموبايل */
+
+}

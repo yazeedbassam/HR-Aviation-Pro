@@ -1,0 +1,550 @@
+﻿@{
+    ViewData["Title"] = "Home Page - AVIATION HR PRO";
+}
+<link rel="stylesheet" href="/css/atc_keyframes.css">
+<link rel="stylesheet" href="/css/aviation-hr-pro-theme.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+@* <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> *@
+
+<style>
+    /* Professional design for AVIATION HR PRO */
+    .hero-section {
+        position: relative;
+        min-height: 600px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        background: linear-gradient(rgba(30, 58, 138, 0.8), rgba(59, 130, 246, 0.6)), url('/images/aviation-hr-pro-background.jpg');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 80px 0;
+        margin-bottom: 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 10;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 20px;
+        text-align: center;
+    }
+
+    .hero-logo {
+        margin-bottom: 30px;
+        animation: fadeInDown 1s ease-out;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        animation: fadeInDown 1s ease-out 0.2s;
+        animation-fill-mode: both;
+        background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-subtitle {
+        font-size: 1.6rem;
+        font-weight: 300;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        animation: fadeInUp 1s ease-out 0.4s;
+        animation-fill-mode: both;
+        color: #e2e8f0;
+    }
+
+    .cta-button {
+        display: inline-block;
+        background: var(--aviation-gradient-accent);
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 15px 35px;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        margin-top: 20px;
+        animation: fadeInUp 1s ease-out 0.6s;
+        animation-fill-mode: both;
+        border: none;
+    }
+
+    .cta-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(245, 158, 11, 0.6);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Features section */
+    .features-section {
+        padding: 80px 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-radius: 16px;
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        text-align: center;
+        font-size: 2.8rem;
+        font-weight: 700;
+        margin-bottom: 60px;
+        color: var(--aviation-primary);
+        position: relative;
+    }
+
+    .section-title::after {
+        content: "";
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: var(--aviation-gradient-accent);
+        border-radius: 2px;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 40px;
+        margin: 0 auto;
+        max-width: 1200px;
+        padding: 0 20px;
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--aviation-gradient-primary);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 25px;
+        color: var(--aviation-primary);
+        background: var(--aviation-gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .feature-title {
+        font-size: 1.6rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: var(--aviation-primary);
+    }
+
+    .feature-description {
+        color: var(--aviation-gray);
+        line-height: 1.7;
+        font-size: 1.1rem;
+    }
+
+    /* Stats section */
+    .stats-section {
+        padding: 80px 0;
+        background: var(--aviation-gradient-primary);
+        color: white;
+        text-align: center;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stats-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('/images/aviation-pattern.svg') repeat;
+        opacity: 0.1;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-item {
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-number {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        background: var(--aviation-gradient-accent);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+
+    /* Quote section */
+    .quote-section {
+        padding: 100px 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        text-align: center;
+        border-radius: 16px;
+        margin-bottom: 40px;
+    }
+
+    .quote-content {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .quote-text {
+        font-size: 2rem;
+        font-style: italic;
+        line-height: 1.6;
+        color: var(--aviation-primary);
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .quote-text::before,
+    .quote-text::after {
+        content: '"';
+        font-size: 4rem;
+        color: var(--aviation-accent);
+        position: absolute;
+        top: -20px;
+    }
+
+    .quote-text::before {
+        left: -30px;
+    }
+
+    .quote-text::after {
+        right: -30px;
+    }
+
+    .quote-author {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--aviation-gray);
+    }
+
+    /* Call to action section */
+    .cta-section {
+        padding: 80px 0;
+        background: linear-gradient(rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.8)), url('/images/aviation-hr-pro-cta-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        text-align: center;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .cta-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .cta-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 25px;
+        background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .cta-description {
+        font-size: 1.3rem;
+        margin-bottom: 40px;
+        line-height: 1.7;
+        color: #e2e8f0;
+    }
+
+    /* Animations */
+
+
+    /* Animated aircraft effects */
+    .animated-aircraft-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .animated-aircraft {
+        position: absolute;
+        opacity: 0.8;
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
+        will-change: transform, opacity;
+    }
+
+    .aircraft-1 {
+        width: 140px;
+        height: 70px;
+        top: 20%;
+        left: -140px;
+        animation: fly-right 25s linear infinite;
+    }
+
+    .aircraft-2 {
+        width: 120px;
+        height: 60px;
+        top: 65%;
+        right: -120px;
+        animation: fly-left 20s linear infinite;
+        animation-delay: 8s;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+        }
+        
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<section class="hero-section">
+    <div class="animated-aircraft-container">
+        <div class="animated-aircraft aircraft-1">
+            <svg class="airplane-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                <path class="airplane-body" d="M20,25 L80,25 L90,20 L80,15 L20,15 L10,20 L20,25 Z" fill="white" stroke="#3b82f6" stroke-width="2" />
+                <path class="airplane-wing" d="M40,15 L60,5 L70,15 L40,15 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+                <path class="airplane-wing" d="M40,25 L60,35 L70,25 L40,25 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+                <path class="airplane-tail" d="M80,15 L90,5 L90,20 L80,25 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+            </svg>
+        </div>
+
+        <div class="animated-aircraft aircraft-2">
+            <svg class="airplane-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                <path class="airplane-body" d="M20,25 L80,25 L90,20 L80,15 L20,15 L10,20 L20,25 Z" fill="white" stroke="#3b82f6" stroke-width="2" />
+                <path class="airplane-wing" d="M40,15 L60,5 L70,15 L40,15 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+                <path class="airplane-wing" d="M40,25 L60,35 L70,25 L40,25 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+                <path class="airplane-tail" d="M80,15 L90,5 L90,20 L80,25 Z" fill="#e2e8f0" stroke="#3b82f6" stroke-width="1" />
+            </svg>
+        </div>
+    </div>
+
+    <div class="hero-content">
+        <!-- New AVIATION HR PRO Logo -->
+        <div class="hero-logo">
+            <div class="aviation-logo mx-auto" style="width: fit-content;">
+                <div class="aviation-logo-icon" style="width: 80px; height: 80px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); opacity: 0.9;">
+                </div>
+                <div class="aviation-logo-text">
+                    <div class="aviation-logo-main" style="font-size: 36px; color: white;">AVIATION HR PRO</div>
+                    <div class="aviation-logo-subtitle" style="color: #e2e8f0;">Professional Human Resources Management</div>
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="hero-title">Professional Aviation HR Management</h1>
+        <p class="hero-subtitle">
+            Discover the future of aviation human resources management! AVIATION HR PRO is your comprehensive solution for managing aviation personnel, licenses, certifications, training, and performance. Streamline your HR operations with our advanced platform designed specifically for the aviation industry.
+        </p>
+        <a href="#features" class="cta-button">Explore Features</a>
+    </div>
+</section>
+
+<section id="features" class="features-section">
+    <h2 class="section-title">System Features</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="feature-title">Employee Management</h3>
+            <p class="feature-description">
+                Comprehensive employee database with advanced search, filtering, and management capabilities for aviation personnel across all departments.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <h3 class="feature-title">License & Certification Tracking</h3>
+            <p class="feature-description">
+                Automated tracking of aviation licenses, certifications, and qualifications with smart expiry alerts and renewal notifications.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h3 class="feature-title">Training Management</h3>
+            <p class="feature-description">
+                Complete training program management including course scheduling, progress tracking, and certification management.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-plane"></i>
+            </div>
+            <h3 class="feature-title">Travel & Assignment Tracking</h3>
+            <p class="feature-description">
+                Monitor business travel, assignments, and duty schedules with real-time updates and compliance tracking.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="feature-title">Performance Analytics</h3>
+            <p class="feature-description">
+                Advanced analytics and reporting tools to track employee performance, training effectiveness, and organizational metrics.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 class="feature-title">Advanced Security</h3>
+            <p class="feature-description">
+                Enterprise-grade security with role-based access control, data encryption, and comprehensive audit trails for compliance.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number">1,500+</div>
+            <div class="stat-label">Aviation Professionals</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">Departments Managed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">99.9%</div>
+            <div class="stat-label">System Uptime</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Technical Support</div>
+        </div>
+    </div>
+</section>
+
+<section class="quote-section">
+    <div class="quote-content">
+        <p class="quote-text">
+            AVIATION HR PRO has revolutionized how we manage our aviation personnel. The comprehensive features and professional interface have significantly improved our operational efficiency and compliance management.
+        </p>
+        <p class="quote-author">- Director of Human Resources, Saudi Air Navigation Services</p>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="cta-content">
+        <h2 class="cta-title">Ready to Transform Your Aviation HR?</h2>
+        <p class="cta-description">
+            Join leading aviation organizations that trust AVIATION HR PRO for their human resources management. Experience the power of professional aviation HR management with our comprehensive platform.
+        </p>
+        <a href="/Account/Login" class="cta-button">Get Started Now</a>
+    </div>
+</section>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // تحقق إذا فيه أخطاء ModelState
+        var hasError = $('.text-danger').filter(function() { return $(this).text().trim().length > 0; }).length > 0;
+        if (hasError) {
+            var editModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            editModal.show();
+        }
+    });
+</script>

@@ -1,0 +1,379 @@
+﻿@model WebApplication1.Models.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@if (!string.IsNullOrEmpty(ViewBag.SuccessMessage as string))
+{
+    <div class="alert alert-success alert-dismissible fade show mt-2 mb-3 rounded-3 shadow" role="alert" style="font-size:1.1em;">
+        <i class="fa-solid fa-circle-check"></i>
+        @ViewBag.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<style>
+    .modal-content {
+        border-radius: 1.5rem !important;
+    }
+
+    .modal-header {
+        border-bottom: none;
+        background: linear-gradient(120deg, #e0eaff 0%, #f8f9fa 100%);
+    }
+
+    .modal-footer {
+        border-top: none;
+    }
+
+    .rounded-4 {
+        border-radius: 1.5rem !important;
+    }
+
+    .table thead th {
+        font-weight: bold;
+        background-color: #f2f8fa !important;
+        border-top: none !important;
+    }
+
+    .profile-label {
+        font-weight: bold;
+        font-size: 0.93rem;
+        color: #555;
+    }
+
+    .accordion-button:not(.collapsed) {
+        color: #0c63e4;
+        background-color: #e7f1ff;
+    }
+
+    .accordion-body ul {
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+</style>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+{
+    <div class="alert alert-danger">
+        <strong>Please correct the following errors:</strong>
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+
+<!-- Main Profile Card -->
+<div class="container mt-4" style="max-width:900px;">
+    <div class="card shadow-lg rounded-4 p-4 mb-4">
+        <div class="row g-0 align-items-center">
+            <div class="col-md-3 text-center mb-3 mb-md-0">
+                <img src="@(!string.IsNullOrEmpty(Model.PhotoPath) ? Url.Content(Model.PhotoPath) : "/images/default-avatar.png")"
+                     class="rounded-circle border border-3 shadow-sm"
+                     style="width:120px; height:120px; object-fit:cover;"
+                     alt="Profile"
+                     onerror="this.onerror=null;this.src='/images/default-avatar.png';" />
+                <h4 class="mt-3 fw-bold">@Model.FullName</h4>
+                @if (!string.IsNullOrEmpty(Model.JobTitle))
+                {
+                    <div class="badge bg-primary bg-opacity-75 text-light px-3 py-2 rounded-3 mb-2">@Model.JobTitle</div>
+                }
+            </div>
+            <div class="col-md-9">
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-outline-primary px-4 fw-bold"
+                            data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-borderless table-sm mb-0">
+                        <tbody>
+                            <tr><th class="w-25 text-end profile-label">Job Title:</th><td class="profile-value">@Model.JobTitle</td></tr>
+                            <tr><th class="text-end profile-label">Department:</th><td class="profile-value">@Model.CurrentDepartment</td></tr>
+                            <tr><th class="text-end profile-label">Email:</th><td class="profile-value">@Model.Email</td></tr>
+                            <tr><th class="text-end profile-label">Phone:</th><td class="profile-value">@Model.PhoneNumber</td></tr>
+                            <tr><th class="text-end profile-label">Hire Date:</th><td class="profile-value">@(Model.HireDate?.ToString("dd MMM, yyyy") ?? "-")</td></tr>
+                            
+                            @if (Model.UserType == "Controller")
+                            {
+                                <tr><th class="text-end profile-label">Education Level:</th><td class="profile-value">@Model.EducationLevel</td></tr>
+                                <tr><th class="text-end profile-label">Date of Birth:</th><td class="profile-value">@(Model.DateOfBirth?.ToString("dd MMM, yyyy") ?? "-")</td></tr>
+                                <tr><th class="text-end profile-label">Marital Status:</th><td class="profile-value">@Model.MaritalStatus</td></tr>
+                            }
+                            else if (Model.UserType == "Employee")
+                            {
+                                <tr><th class="text-end profile-label">Gender:</th><td class="profile-value">@Model.Gender</td></tr>
+                                <tr><th class="text-end profile-label">Location:</th><td class="profile-value">@Model.Location</td></tr>
+                            }
+
+                            <tr><th class="text-end profile-label">Address:</th><td class="profile-value">@Model.Address</td></tr>
+                            <tr><th class="text-end profile-label">Employment Status:</th><td class="profile-value">@Model.EmploymentStatus</td></tr>
+                            <tr><th class="text-end profile-label">Emergency Contact:</th><td class="profile-value">@Model.EmergencyContact</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Licenses, Certificates, Observations, and Projects -->
+    <div class="card shadow rounded-4 p-3">
+        <ul class="nav nav-tabs nav-justified mb-3" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="licenses-tab" data-bs-toggle="tab" data-bs-target="#licenses" type="button" role="tab"><i class="fa-solid fa-id-card"></i> Licenses</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="certs-tab" data-bs-toggle="tab" data-bs-target="#certs" type="button" role="tab"><i class="fa-solid fa-certificate"></i> Certificates</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="obs-tab" data-bs-toggle="tab" data-bs-target="#obs" type="button" role="tab"><i class="fa-solid fa-plane-departure"></i> Observations</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab"><i class="fa-solid fa-diagram-project"></i> My Projects</button></li>
+        </ul>
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Licenses Tab -->
+            <div class="tab-pane fade show active" id="licenses" role="tabpanel">@if(Model.Licenses != null && Model.Licenses.Any()){
+            <div class="table-responsive"><table class="table table-bordered align-middle text-center"><thead class="table-light"><tr><th>#</th><th>Type</th><th>Issue Date</th><th>Expiry Date</th><th>File</th></tr></thead><tbody>@foreach (var (lic, i) in Model.Licenses.Select((item, index) => (item, index))) {
+            <tr><td>@(i + 1)</td><td>@lic.TypeName</td><td>@(lic.IssueDate?.ToString("dd-MMM-yyyy") ?? "-")</td><td>@(lic.ExpiryDate?.ToString("dd-MMM-yyyy") ?? "-")</td><td>@if (!string.IsNullOrEmpty(lic.FilePath)) {
+            <a href="@Url.Content(lic.FilePath)" target="_blank" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-download"></i></a>
+                        } else
+            {
+
+                <span class="text-muted small">N/A</span>
+            }
+</td></tr>
+                        }
+</tbody></table></div>
+                        } else
+            {
+
+                <div class="alert alert-light text-center">No licenses found.</div>
+            }
+</div>
+            <!-- Certificates Tab -->
+            <div class="tab-pane fade" id="certs" role="tabpanel">@if(Model.Certificates != null && Model.Certificates.Any()){
+            <div class="table-responsive"><table class="table table-bordered align-middle text-center"><thead class="table-light"><tr><th>#</th><th>Type</th><th>Title</th><th>Status</th><th>File</th></tr></thead><tbody>@foreach (var (cert, i) in Model.Certificates.Select((item, index) => (item, index))) {
+            <tr><td>@(i + 1)</td><td>@cert.TypeName</td><td>@cert.Title</td><td>@cert.Status</td><td>@if (!string.IsNullOrEmpty(cert.FilePath)) {
+            <a href="@Url.Content(cert.FilePath)" target="_blank" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-download"></i></a>
+                        } else
+            {
+
+                <span class="text-muted small">N/A</span>
+            }
+</td></tr>
+                        }
+</tbody></table></div>
+                        } else
+            {
+
+                <div class="alert alert-light text-center">No certificates found.</div>
+            }
+</div>
+            <!-- Observations Tab -->
+            <div class="tab-pane fade" id="obs" role="tabpanel">@if(Model.Observations != null && Model.Observations.Any()){
+            <div class="table-responsive"><table class="table table-bordered align-middle text-center"><thead class="table-light"><tr><th>#</th><th>Country</th><th>License No.</th><th>Duration</th><th>Depart Date</th><th>Return Date</th></tr></thead><tbody>@foreach (var (obs, i) in Model.Observations.Select((item, index) => (item, index))) {
+            <tr><td>@(i + 1)</td><td>@obs.TravelCountry</td><td>@obs.LicenseNumber</td><td>@obs.DurationDays days</td><td>@obs.DepartDate?.ToString("dd-MMM-yyyy")</td><td>@obs.ReturnDate?.ToString("dd-MMM-yyyy")</td></tr>
+                        }
+</tbody></table></div>
+                        } else
+            {
+
+                <div class="alert alert-light text-center">No observations found.</div>
+            }
+</div>
+
+            <!-- PROJECTS TAB WITH ACCORDION - CORRECTED -->
+            <div class="tab-pane fade" id="projects" role="tabpanel">
+                @if (Model.Projects != null && Model.Projects.Any())
+                {
+                    <div class="accordion" id="projectsAccordion">
+                        @foreach (var (pvm, index) in Model.Projects.Select((item, i) => (item, i)))
+                        {
+                            var project = pvm.Project;
+                            string collapseId = $"collapse-{project.ProjectId}";
+                            string headerId = $"header-{project.ProjectId}";
+                            var statusBadge = project.Status switch
+                            {
+                                "Completed" => "badge bg-success",
+                                "In Progress" => "badge bg-primary",
+                                "On Hold" => "badge bg-secondary",
+                                "Cancelled" => "badge bg-danger",
+                                _ => "badge bg-warning text-dark"
+                            };
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="@headerId">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                                        <span class="fw-bold me-auto">#@(index + 1) - @project.ProjectName</span>
+                                        <span class="@statusBadge">@project.Status</span>
+                                    </button>
+                                </h2>
+                                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headerId" data-bs-parent="#projectsAccordion">
+                                    <div class="accordion-body">
+                                        @if (!string.IsNullOrEmpty(project.Description))
+                                        {
+                                            string displayDescription = project.Description;
+                                            int maxLength = 150; // يمكنك تعديل هذا الرقم حسب الحاجة
+                                            if (displayDescription.Length > maxLength)
+                                            {
+                                                displayDescription = displayDescription.Substring(0, maxLength) + "...";
+                                            }
+                                            <p class="text-danger"
+                                               data-bs-toggle="popover"
+                                               data-bs-trigger="hover focus"
+                                               data-bs-placement="top"
+                                               data-bs-title="Project Description"
+                                               data-bs-content="@project.Description">
+                                                <strong>Description:</strong>
+                                                @displayDescription
+                                            </p>
+                                            <hr />
+                                        }
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <h6><i class="fa-solid fa-info-circle text-primary"></i> Main Info</h6>
+                                                <p class="mb-1"><small><strong>Start:</strong> @(project.StartDate?.ToString("dd MMM, yyyy") ?? "-")</small></p>
+                                                <p class="mb-1"><small><strong>End:</strong> @(project.EndDate?.ToString("dd MMM, yyyy") ?? "-")</small></p>
+                                                <p class="mb-0"><small><strong>Location:</strong> @(project.Location ?? "N/A")</small></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                @if (pvm.Participants.Any())
+                                                {
+                                                    <h6><i class="fa-solid fa-users text-primary"></i> Participants</h6>
+                                                    
+                                                        // بناء النص المختصر للمشاركين
+                                                        string summaryText = string.Join(", ", pvm.Participants.Take(5));
+                                                        if (pvm.Participants.Count > 5)
+                                                        {
+                                                            summaryText += $" (+{pvm.Participants.Count - 5} more)";
+                                                        }
+
+                                                        // بناء محتوى HTML الكامل للـ Popover
+                                                        System.Text.StringBuilder fullParticipantsHtmlBuilder = new System.Text.StringBuilder();
+                                                        fullParticipantsHtmlBuilder.Append("<ul>");
+                                                        foreach (var participant in pvm.Participants)
+                                                        {
+                                                            fullParticipantsHtmlBuilder.Append($"<li>{participant}</li>");
+                                                        }
+                                                        fullParticipantsHtmlBuilder.Append("</ul>");
+                                                        string fullParticipantsHtml = fullParticipantsHtmlBuilder.ToString();
+                                                    
+                                                    <p data-bs-toggle="popover"
+                                                       data-bs-trigger="hover focus"
+                                                       data-bs-placement="top"
+                                                       data-bs-title="Project Participants"
+                                                       data-bs-content="@Html.Raw(fullParticipantsHtml)"
+                                                       data-bs-html="true">
+                                                        <small>@summaryText</small>
+                                                    </p>
+                                                }
+                                            </div>
+                                        </div>
+                                        @if (pvm.Divisions.Any())
+                                        {
+                                            <hr />
+                                            <h6><i class="fa-solid fa-building text-primary"></i> Divisions</h6>
+                                            <div>
+                                                @foreach (var division in pvm.Divisions)
+                                                {
+                                                    <span class="badge bg-light text-dark me-1">@division</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center">You are not currently assigned to any projects.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <form asp-action="Profile" asp-controller="Account" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel"><i class="fa-solid fa-user-pen"></i> Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="UserId" type="hidden" /> @* Changed from ControllerId to UserId *@
+                    <input asp-for="UserType" type="hidden" /> @* Added hidden field for UserType *@
+
+                    <div class="row g-3">
+                        <div class="col-md-12"><h6>Personal Information</h6><hr class="mt-1"></div>
+                        <div class="col-md-6"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /></div>
+                        <div class="col-md-6"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
+                        <div class="col-md-6"><label asp-for="PhoneNumber" class="form-label"></label><input asp-for="PhoneNumber" class="form-control" /></div>
+                        
+                        @if (Model.UserType == "Controller")
+                        {
+                            <div class="col-md-6"><label asp-for="DateOfBirth" class="form-label"></label><input asp-for="DateOfBirth" type="date" class="form-control" value="@Model.DateOfBirth?.ToString("yyyy-MM-dd")" /></div>
+                            <div class="col-md-6"><label asp-for="MaritalStatus" class="form-label"></label><select asp-for="MaritalStatus" class="form-select"><option value="">Select...</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>
+                        }
+                        else if (Model.UserType == "Employee")
+                        {
+                            <div class="col-md-6"><label asp-for="Gender" class="form-label"></label><select asp-for="Gender" class="form-select"><option value="">Select...</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                            <div class="col-md-6"><label asp-for="Location" class="form-label"></label><input asp-for="Location" class="form-control" /></div>
+                        }
+
+                        <div class="col-md-6"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" /></div>
+                        <div class="col-md-12"><label asp-for="EmergencyContact" class="form-label"></label><input asp-for="EmergencyContact" class="form-control" /></div>
+
+                        <div class="col-md-12 mt-4"><h6>Professional Information</h6><hr class="mt-1"></div>
+                        @if (Model.UserType == "Controller")
+                        {
+                            <div class="col-md-6"><label asp-for="EducationLevel" class="form-label"></label><select asp-for="EducationLevel" class="form-select"><option value="">Select...</option><option value="High School">High School</option><option value="Diploma">Diploma</option><option value="Bachelor">Bachelor</option><option value="Master">Master</option><option value="PhD">PhD</option><option value="Other">Other</option></select></div>
+                        }
+                        <div class="col-md-6"><label asp-for="PhotoFile" class="form-label">Update Profile Picture</label><input asp-for="PhotoFile" class="form-control" type="file" /></div>
+
+                        <div class="col-md-12 mt-4"><h6>Security</h6><hr class="mt-1"></div>
+                        <div class="col-md-12">
+                            <label asp-for="Password" class="form-label">New Password (leave blank to keep current)</label>
+                            <input asp-for="Password" class="form-control" type="password" placeholder="Enter new password" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-12 mt-4"><h6>Read-only Information</h6><hr class="mt-1"></div>
+                        <div class="col-md-4"><label class="form-label">Job Title</label><input asp-for="JobTitle" class="form-control" readonly /></div>
+                        <div class="col-md-4"><label class="form-label">Department</label><input asp-for="CurrentDepartment" class="form-control" readonly /></div>
+                        <div class="col-md-4"><label class="form-label">Username</label><input asp-for="Username" class="form-control" readonly /></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-4 fw-bold"><i class="fa-solid fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // This script runs when the page is ready.
+            // It checks if there are any validation errors returned from the server.
+            if ('@(!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)' == 'True') {
+                // If there are errors, it finds the modal by its ID and shows it.
+                var editModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+                editModal.show();
+            }
+
+            // تهيئة جميع Bootstrap Popovers في الصفحة
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl)
+            })
+        });
+    </script>
+}

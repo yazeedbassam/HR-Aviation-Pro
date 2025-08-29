@@ -1,0 +1,438 @@
+@model WebApplication1.Models.MenuVisibilityViewModel
+@{
+    ViewData["Title"] = "رؤية القائمة";
+    Layout = "~/Views/Shared/_AdvancedLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-list-check"></i>
+                        رؤية القائمة - @Model.CurrentUserName
+                    </h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Dashboard", "AdvancedPermission")" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- ملخص رؤية القائمة -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary">
+                                    <i class="bi bi-list"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">إجمالي العناصر</span>
+                                    <span class="info-box-number">@Model.TotalMenuItems</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="bi bi-eye"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">العناصر المرئية</span>
+                                    <span class="info-box-number">@Model.VisibleMenuItems</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="bi bi-eye-slash"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">العناصر المخفية</span>
+                                    <span class="info-box-number">@Model.HiddenMenuItems</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="bi bi-diagram-3"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">المجموعات الفرعية</span>
+                                    <span class="info-box-number">@Model.SubMenuItems</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- عناصر القائمة المرئية -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-list-check"></i>
+                                        عناصر القائمة المرئية
+                                    </h5>
+                                    <div class="card-tools">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="expandAll()">
+                                                <i class="bi bi-arrows-expand"></i> توسيع الكل
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">
+                                                <i class="bi bi-arrows-collapse"></i> طي الكل
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.MenuItems.Any())
+                                    {
+                                        <div class="menu-tree">
+                                            @foreach (var menuItem in Model.MenuItems)
+                                            {
+                                                <div class="menu-item">
+                                                    <div class="menu-header" data-toggle="collapse" data-target="#menu-@menuItem.Key.Replace(" ", "-")" aria-expanded="false">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="bi bi-chevron-right menu-icon"></i>
+                                                            <i class="@menuItem.IconClass menu-icon-main"></i>
+                                                            <span class="menu-text">@menuItem.DisplayName</span>
+                                                            @if (menuItem.SubItems.Any())
+                                                            {
+                                                                <span class="badge badge-info ml-auto">@menuItem.SubItems.Count</span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    @if (menuItem.SubItems.Any())
+                                                    {
+                                                        <div class="collapse" id="menu-@menuItem.Key.Replace(" ", "-")">
+                                                            <div class="sub-menu">
+                                                                @foreach (var subItem in menuItem.SubItems)
+                                                                {
+                                                                    <div class="sub-menu-item">
+                                                                        <div class="d-flex align-items-center">
+                                                                            <i class="@subItem.IconClass sub-menu-icon"></i>
+                                                                            <span class="sub-menu-text">@subItem.DisplayName</span>
+                                                                            <span class="badge badge-success ml-auto">
+                                                                                <i class="bi bi-check-circle"></i> مرئي
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="sub-menu-details">
+                                                                            <small class="text-muted">
+                                                                                <strong>المفتاح:</strong> @subItem.Key |
+                                                                                <strong>الرابط:</strong> @subItem.Action/@subItem.Controller
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="menu-details">
+                                                            <small class="text-muted">
+                                                                <strong>المفتاح:</strong> @menuItem.Key |
+                                                                <strong>الرابط:</strong> @menuItem.Action/@menuItem.Controller
+                                                            </small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            لا توجد عناصر قائمة مرئية لك
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- تحليل الصلاحيات -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-shield-check"></i>
+                                        الصلاحيات المطلوبة للقائمة
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.RequiredPermissions.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>الصلاحية</th>
+                                                        <th>الوصف</th>
+                                                        <th>الحالة</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var permission in Model.RequiredPermissions)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <span class="badge badge-primary">@permission.PermissionKey</span>
+                                                            </td>
+                                                            <td>@permission.Description</td>
+                                                            <td>
+                                                                <span class="badge badge-success">
+                                                                    <i class="bi bi-check-circle"></i> مفعلة
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle"></i>
+                                            لا توجد صلاحيات مطلوبة لعرض القائمة
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-graph-up"></i>
+                                        إحصائيات القائمة
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-primary">
+                                                    <i class="bi bi-speedometer2"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">لوحة التحكم</span>
+                                                    <span class="info-box-number">@(Model.MenuItems.Any(m => m.Key == "DASHBOARD") ? "مرئية" : "مخفية")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-success">
+                                                    <i class="bi bi-bell"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">الإشعارات</span>
+                                                    <span class="info-box-number">@(Model.MenuItems.Any(m => m.Key == "NOTIFICATIONS") ? "مرئية" : "مخفية")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-warning">
+                                                    <i class="bi bi-people"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">المراقبون</span>
+                                                    <span class="info-box-number">@(Model.MenuItems.Any(m => m.Key == "CONTROLLERS") ? "مرئية" : "مخفية")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info">
+                                                    <i class="bi bi-clipboard-data"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">الملاحظات</span>
+                                                    <span class="info-box-number">@(Model.MenuItems.Any(m => m.Key == "OBSERVATIONS") ? "مرئية" : "مخفية")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- معلومات إضافية -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-info-circle"></i>
+                                        معلومات إضافية
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info">
+                                                    <i class="bi bi-clock"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">آخر تحديث للقائمة</span>
+                                                    <span class="info-box-number">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-success">
+                                                    <i class="bi bi-shield-check"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">نوع الحساب</span>
+                                                    <span class="info-box-number">@Model.UserRole</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-warning">
+                                                    <i class="bi bi-building"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">القسم الحالي</span>
+                                                    <span class="info-box-number">@Model.UserDepartment</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.menu-tree {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.menu-item {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+}
+
+.menu-header {
+    padding: 15px;
+    cursor: pointer;
+    background-color: #e9ecef;
+    border-radius: 5px 5px 0 0;
+    transition: background-color 0.3s;
+}
+
+.menu-header:hover {
+    background-color: #dee2e6;
+}
+
+.menu-icon {
+    margin-right: 10px;
+    transition: transform 0.3s;
+}
+
+.menu-icon-main {
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+
+.menu-text {
+    font-weight: 600;
+    color: #495057;
+}
+
+.sub-menu {
+    padding: 15px;
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+}
+
+.sub-menu-item {
+    padding: 10px;
+    border-bottom: 1px solid #f1f3f4;
+    margin-bottom: 5px;
+}
+
+.sub-menu-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.sub-menu-icon {
+    margin-right: 10px;
+    color: #6c757d;
+}
+
+.sub-menu-text {
+    font-weight: 500;
+    color: #495057;
+}
+
+.sub-menu-details {
+    margin-top: 5px;
+    padding-left: 25px;
+}
+
+.menu-details {
+    padding: 10px 15px;
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+    border-radius: 0 0 5px 5px;
+}
+
+.collapsed .menu-icon {
+    transform: rotate(90deg);
+}
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // تفعيل tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+            
+            // تفعيل popovers
+            $('[data-toggle="popover"]').popover();
+            
+            // تفعيل collapse للقوائم
+            $('.menu-header').on('click', function() {
+                var icon = $(this).find('.menu-icon');
+                icon.toggleClass('collapsed');
+            });
+        });
+        
+        function expandAll() {
+            $('.collapse').collapse('show');
+            $('.menu-icon').addClass('collapsed');
+        }
+        
+        function collapseAll() {
+            $('.collapse').collapse('hide');
+            $('.menu-icon').removeClass('collapsed');
+        }
+    </script>
+} 

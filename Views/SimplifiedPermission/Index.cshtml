@@ -1,0 +1,632 @@
+@model WebApplication1.Models.PermissionManagerViewModel
+@{
+    ViewData["Title"] = "إدارة الصلاحيات المبسطة";
+    Layout = "~/Views/Shared/_AdvancedLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-shield-check"></i>
+                        إدارة الصلاحيات المبسطة - @Model.CurrentUserName
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-success" onclick="saveAllPermissions()">
+                            <i class="bi bi-save"></i> حفظ جميع التغييرات
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- ملخص سريع -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary">
+                                    <i class="bi bi-people"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">إجمالي المستخدمين</span>
+                                    <span class="info-box-number">@Model.Users.Count</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="bi bi-list-check"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">الأقسام المتاحة</span>
+                                    <span class="info-box-number">@Model.AvailableSections.Count</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="bi bi-gear"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">الإجراءات المتاحة</span>
+                                    <span class="info-box-number">5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="bi bi-clock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">آخر تحديث</span>
+                                    <span class="info-box-number">@DateTime.Now.ToString("HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- قوالب سريعة -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-lightning"></i>
+                                        قوالب سريعة
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-primary" onclick="applyTemplate('admin')">
+                                            <i class="bi bi-person-check"></i> مدير كامل
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success" onclick="applyTemplate('controller')">
+                                            <i class="bi bi-person-badge"></i> مراقب جوي
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning" onclick="applyTemplate('viewer')">
+                                            <i class="bi bi-eye"></i> مستعرض فقط
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" onclick="applyTemplate('limited')">
+                                            <i class="bi bi-lock"></i> صلاحيات محدودة
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- جدول إدارة الصلاحيات -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-table"></i>
+                                        إدارة صلاحيات المستخدمين
+                                    </h5>
+                                    <div class="card-tools">
+                                        <div class="input-group input-group-sm" style="width: 250px;">
+                                            <input type="text" id="userSearch" class="form-control float-right" placeholder="بحث في المستخدمين...">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-default">
+                                                    <i class="bi bi-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped" id="permissionsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 200px;">المستخدم</th>
+                                                    <th style="width: 120px;">الوظيفة</th>
+                                                    <th style="width: 120px;">القسم</th>
+                                                    @foreach (var section in Model.AvailableSections)
+                                                    {
+                                                        <th class="text-center" style="min-width: 150px;">
+                                                            <div class="d-flex flex-column align-items-center">
+                                                                <i class="@(section.SectionIcon) mb-1"></i>
+                                                                <small>@(section.SectionName)</small>
+                                                            </div>
+                                                        </th>
+                                                    }
+                                                    <th style="width: 100px;">إجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var user in Model.Users)
+                                                {
+                                                    <tr data-user-id="@user.UserId">
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="avatar-sm mr-2">
+                                                                    <span class="avatar-title rounded-circle bg-primary">
+                                                                        @user.UserName.Substring(0, 1).ToUpper()
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <strong>@user.UserName</strong>
+                                                                    <br>
+                                                                    <small class="text-muted">@user.UserFullName</small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge badge-secondary">@user.UserRole</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge badge-info text-white font-weight-bold">@user.UserDepartment</span>
+                                                        </td>
+                                                        @foreach (var section in user.SectionPermissions)
+                                                        {
+                                                            <td class="text-center">
+                                                                <div class="permission-section" data-user-id="@user.UserId" data-section="@(section.SectionKey)">
+                                                                    <!-- Section Visibility Toggle -->
+                                                                    <div class="mb-2">
+                                                                        <div class="custom-control custom-switch">
+                                                                            <input type="checkbox" class="custom-control-input section-toggle" 
+                                                                                   id="section_@user.UserId@(section.SectionKey)"
+                                                                                   data-user-id="@user.UserId" 
+                                                                                   data-section="@(section.SectionKey)"
+                                                                                   @(section.IsVisible ? "checked" : "")>
+                                                                            <label class="custom-control-label" for="section_@user.UserId@(section.SectionKey)">
+                                                                                <small>رؤية القسم</small>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <!-- Action Permissions -->
+                                                                    <div class="action-permissions">
+                                                                        @foreach (var action in section.Actions)
+                                                                        {
+                                                                            <div class="mb-1">
+                                                                                <div class="custom-control custom-checkbox">
+                                                                                    <input type="checkbox" class="custom-control-input action-checkbox"
+                                                                                           id="action_@user.UserId@(section.SectionKey)@action.ActionKey"
+                                                                                           data-user-id="@user.UserId"
+                                                                                           data-section="@(section.SectionKey)"
+                                                                                           data-action="@action.ActionKey"
+                                                                                           @(action.CanView ? "checked" : "")>
+                                                                                    <label class="custom-control-label" for="action_@user.UserId@(section.SectionKey)@action.ActionKey">
+                                                                                        <small>
+                                                                                            <i class="@action.ActionIcon"></i>
+                                                                                            @action.ActionName
+                                                                                        </small>
+                                                                                    </label>
+                                                                                </div>
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        }
+                                                        <td>
+                                                            <div class="btn-group" role="group">
+                                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editUserPermissions(@user.UserId)">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-success" onclick="copyUserPermissions(@user.UserId)">
+                                                                    <i class="bi bi-copy"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-info" onclick="viewUserSummary(@user.UserId)">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for User Summary -->
+<div class="modal fade" id="userSummaryModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-circle"></i>
+                    ملخص صلاحيات المستخدم
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="userSummaryContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.permission-section {
+    min-height: 120px;
+}
+
+.action-permissions {
+    font-size: 0.8em;
+}
+
+.custom-control-label {
+    font-size: 0.75em;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+}
+
+.avatar-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#permissionsTable th {
+    vertical-align: top;
+    text-align: center;
+}
+
+#permissionsTable td {
+    vertical-align: middle;
+}
+
+.section-toggle:checked + .custom-control-label {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.action-checkbox:checked + .custom-control-label {
+    color: #007bff;
+    font-weight: bold;
+}
+
+/* تحسين وضوح النص */
+#permissionsTable td {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+#permissionsTable th {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.badge-info {
+    background-color: #17a2b8 !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-size: 0.8rem !important;
+}
+
+.badge-secondary {
+    background-color: #6c757d !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-size: 0.8rem !important;
+}
+
+.custom-control-label {
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    color: #495057 !important;
+}
+
+.custom-control-label small {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+}
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // تفعيل tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+            
+            // تفعيل البحث
+            $('#userSearch').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                $('#permissionsTable tbody tr').filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+
+            // تفعيل تبديل رؤية القسم
+            $('.section-toggle').on('change', function() {
+                var userId = $(this).data('user-id');
+                var section = $(this).data('section');
+                var isVisible = $(this).is(':checked');
+                
+                updateSectionVisibility(userId, section, isVisible);
+            });
+
+            // تفعيل تبديل الإجراءات
+            $('.action-checkbox').on('change', function() {
+                var userId = $(this).data('user-id');
+                var section = $(this).data('section');
+                var action = $(this).data('action');
+                var isChecked = $(this).is(':checked');
+                
+                updateUserPermission(userId, section, action, isChecked);
+            });
+        });
+
+        function updateSectionVisibility(userId, section, isVisible) {
+            $.ajax({
+                url: '@Url.Action("UpdateSectionVisibility", "SimplifiedPermission")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    userId: userId,
+                    sectionKey: section,
+                    isVisible: isVisible
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('success', response.message);
+                    } else {
+                        showNotification('error', response.message);
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'حدث خطأ أثناء تحديث رؤية القسم');
+                }
+            });
+        }
+
+        function updateUserPermission(userId, section, action, isChecked) {
+            $.ajax({
+                url: '@Url.Action("UpdateUserPermission", "SimplifiedPermission")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    userId: userId,
+                    sectionKey: section,
+                    actionKey: action,
+                    canView: isChecked,
+                    canAdd: isChecked,
+                    canEdit: isChecked,
+                    canDelete: isChecked,
+                    canExport: isChecked
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('success', response.message);
+                    } else {
+                        showNotification('error', response.message);
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'حدث خطأ أثناء تحديث الصلاحية');
+                }
+            });
+        }
+
+        function applyTemplate(templateName) {
+            var selectedUsers = [];
+            $('#permissionsTable tbody tr').each(function() {
+                var userId = $(this).data('user-id');
+                selectedUsers.push(userId);
+            });
+
+            if (selectedUsers.length === 0) {
+                showNotification('warning', 'يرجى تحديد مستخدم واحد على الأقل');
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("ApplyTemplateToUser", "SimplifiedPermission")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    userId: selectedUsers[0], // For now, apply to first user
+                    templateName: templateName
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('success', response.message);
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showNotification('error', response.message);
+                    }
+                },
+                error: function() {
+                    showNotification('error', 'حدث خطأ أثناء تطبيق القالب');
+                }
+            });
+        }
+
+        function saveAllPermissions() {
+            // Remove any existing notifications
+            $('.alert').remove();
+            
+            showNotification('info', 'جاري حفظ جميع التغييرات...');
+            
+            // Collect all changes
+            var changes = [];
+            $('#permissionsTable tbody tr').each(function() {
+                var userId = parseInt($(this).data('user-id'));
+                var sectionPermissions = [];
+                
+                $(this).find('.permission-section').each(function() {
+                    var section = $(this).data('section');
+                    var isVisible = $(this).find('.section-toggle').is(':checked');
+                    
+                    var actions = [];
+                    $(this).find('.action-checkbox').each(function() {
+                        var action = $(this).data('action');
+                        var isChecked = $(this).is(':checked');
+                        actions.push({
+                            actionKey: action,
+                            canView: isChecked,
+                            canAdd: isChecked,
+                            canEdit: isChecked,
+                            canDelete: isChecked,
+                            canExport: isChecked
+                        });
+                    });
+                    
+                    sectionPermissions.push({
+                        sectionKey: section,
+                        isVisible: isVisible,
+                        actions: actions
+                    });
+                });
+                
+                if (sectionPermissions.length > 0) {
+                    changes.push({
+                        userId: userId,
+                        sectionPermissions: sectionPermissions
+                    });
+                }
+            });
+            
+            console.log('Sending changes:', changes);
+            
+            // Send changes to server
+            $.ajax({
+                url: '@Url.Action("SaveAllPermissions", "SimplifiedPermission")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(changes),
+                timeout: 60000, // 60 seconds timeout
+                success: function(response) {
+                    console.log('Server response:', response);
+                    
+                    if (response.success) {
+                        showNotification('success', 'تم حفظ جميع التغييرات بنجاح');
+                        // Reload page after 2 seconds
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        showNotification('error', response.message || 'فشل في حفظ التغييرات');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('Error:', xhr.responseText);
+                    console.log('Status:', status);
+                    console.log('Error:', error);
+                    
+                    var errorMessage = 'حدث خطأ أثناء حفظ التغييرات';
+                    if (xhr.responseText) {
+                        try {
+                            var errorResponse = JSON.parse(xhr.responseText);
+                            if (errorResponse.message) {
+                                errorMessage = errorResponse.message;
+                            }
+                        } catch (e) {
+                            errorMessage += ': ' + error;
+                        }
+                    }
+                    
+                    showNotification('error', errorMessage);
+                }
+            });
+        }
+
+        function editUserPermissions(userId) {
+            showNotification('info', 'فتح صفحة تعديل صلاحيات المستخدم...');
+            // Redirect to detailed edit page
+            window.location.href = '@Url.Action("UserPermissionManager", "AdvancedPermission")?userId=' + userId;
+        }
+
+        function copyUserPermissions(userId) {
+            showNotification('info', 'تم نسخ صلاحيات المستخدم إلى الحافظة');
+        }
+
+        function viewUserSummary(userId) {
+            $('#userSummaryContent').html('<div class="text-center"><i class="bi bi-hourglass-split"></i> جاري التحميل...</div>');
+            $('#userSummaryModal').modal('show');
+            
+            // Load user summary content
+            setTimeout(function() {
+                $('#userSummaryContent').html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>الصلاحيات الممنوحة</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    لوحة التحكم
+                                    <span class="badge badge-success badge-pill">مفعلة</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    المراقبون
+                                    <span class="badge badge-success badge-pill">مفعلة</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    الرخص
+                                    <span class="badge badge-warning badge-pill">محدودة</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>إحصائيات سريعة</h6>
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="bi bi-shield-check"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">إجمالي الصلاحيات</span>
+                                    <span class="info-box-number">15</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }, 500);
+        }
+
+        function showNotification(type, message) {
+            // Remove existing notifications
+            $('.alert').remove();
+            
+            var alertClass = type === 'success' ? 'alert-success' : 
+                           type === 'error' ? 'alert-danger' : 
+                           type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            var alert = $(`
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            `);
+            
+            $('.card-body').prepend(alert);
+            
+            // Auto-remove after 3 seconds for info, 5 seconds for others
+            var timeout = type === 'info' ? 3000 : 5000;
+            setTimeout(function() {
+                alert.fadeOut(500, function() {
+                    $(this).remove();
+                });
+            }, timeout);
+        }
+    </script>
+} 

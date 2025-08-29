@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVIATION HR PRO - Logo Preview</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="css/aviation-hr-pro-theme.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .logo-showcase {
+            padding: 4rem 0;
+        }
+        
+        .logo-variants {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .logo-variant {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .logo-variant:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .variant-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 1rem;
+        }
+        
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .color-swatch {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .primary-color { background: #1e3a8a; }
+        .secondary-color { background: #3b82f6; }
+        .accent-color { background: #f59e0b; }
+        .success-color { background: #10b981; }
+        .danger-color { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-showcase">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold aviation-text-primary mb-3">
+                    AVIATION HR PRO
+                </h1>
+                <p class="lead text-muted">
+                    Professional Aviation Human Resources Management System
+                </p>
+                <div class="aviation-logo mx-auto" style="width: fit-content;">
+                    <div class="aviation-logo-icon"></div>
+                    <div class="aviation-logo-text">
+                        <div class="aviation-logo-main">AVIATION HR PRO</div>
+                        <div class="aviation-logo-subtitle">Professional HR Management</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Palette -->
+            <div class="row justify-content-center mb-5">
+                <div class="col-md-8">
+                    <h3 class="text-center mb-4 aviation-text-primary">Brand Color Palette</h3>
+                    <div class="color-palette">
+                        <div class="color-swatch primary-color" title="Primary Blue">Primary</div>
+                        <div class="color-swatch secondary-color" title="Secondary Blue">Secondary</div>
+                        <div class="color-swatch accent-color" title="Accent Orange">Accent</div>
+                        <div class="color-swatch success-color" title="Success Green">Success</div>
+                        <div class="color-swatch danger-color" title="Danger Red">Danger</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logo Variants -->
+            <div class="logo-variants">
+                <!-- Main Logo -->
+                <div class="logo-variant">
+                    <div class="variant-title">Main Logo</div>
+                    <div class="aviation-logo mx-auto" style="width: fit-content;">
+                        <div class="aviation-logo-icon"></div>
+                        <div class="aviation-logo-text">
+                            <div class="aviation-logo-main">AVIATION HR PRO</div>
+                            <div class="aviation-logo-subtitle">Professional HR Management</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compact Logo -->
+                <div class="logo-variant">
+                    <div class="variant-title">Compact Logo</div>
+                    <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div class="aviation-logo-icon" style="width: 40px; height: 40px;">
+                            <div style="font-size: 20px;">✈️</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1e3a8a;">AVIATION HR PRO</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Icon Only -->
+                <div class="logo-variant">
+                    <div class="variant-title">Icon Only</div>
+                    <div class="aviation-logo-icon mx-auto" style="width: 80px; height: 80px;">
+                        <div style="font-size: 40px;">✈️</div>
+                    </div>
+                </div>
+
+                <!-- Dark Background -->
+                <div class="logo-variant" style="background: #1e3a8a;">
+                    <div class="variant-title" style="color: white;">Dark Background</div>
+                    <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div style="width: 48px; height: 48px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <div style="font-size: 24px;">✈️</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 24px; font-weight: 700; color: white;">AVIATION HR PRO</div>
+                            <div style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;">Professional HR Management</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Button Examples -->
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-8">
+                    <h3 class="text-center mb-4 aviation-text-primary">Button Styles</h3>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <button class="btn-aviation-primary">Primary Button</button>
+                        <button class="btn-aviation-secondary">Secondary Button</button>
+                        <button class="btn-aviation-accent">Accent Button</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Examples -->
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-8">
+                    <h3 class="text-center mb-4 aviation-text-primary">Card Components</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="aviation-card">
+                                <div class="aviation-card-header">
+                                    <i class="fas fa-users me-2"></i>
+                                    Employee Management
+                                </div>
+                                <div class="aviation-card-body">
+                                    <p class="mb-0">Comprehensive employee data management with advanced search and filtering capabilities.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="aviation-stats-card">
+                                <div class="aviation-stats-number">1,247</div>
+                                <div class="aviation-stats-label">Total Employees</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

@@ -1,0 +1,168 @@
+-- SQL Script to Add Financial and Personal Information Fields to Employees Table (Safe Version)
+-- This script checks if columns exist before adding them to avoid errors
+-- Execute this script in your SQL Server database
+
+USE [HR-Aviation]; -- Replace with your actual database name
+GO
+
+-- Function to check if column exists
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ColumnExists]') AND type in (N'FN', N'IF', N'TF', N'FS', N'FT'))
+BEGIN
+    EXEC('CREATE FUNCTION [dbo].[ColumnExists](@TableName NVARCHAR(128), @ColumnName NVARCHAR(128))
+    RETURNS BIT
+    AS
+    BEGIN
+        DECLARE @Result BIT = 0
+        IF EXISTS (
+            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = @TableName AND COLUMN_NAME = @ColumnName
+        )
+            SET @Result = 1
+        RETURN @Result
+    END')
+END
+GO
+
+-- Add new personal information fields (only if they don't exist)
+IF dbo.ColumnExists('Employees', 'DateOfBirth') = 0
+BEGIN
+    ALTER TABLE Employees ADD DateOfBirth DATE NULL;
+    PRINT 'Added DateOfBirth column';
+END
+ELSE
+    PRINT 'DateOfBirth column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'MaritalStatus') = 0
+BEGIN
+    ALTER TABLE Employees ADD MaritalStatus NVARCHAR(50) NULL;
+    PRINT 'Added MaritalStatus column';
+END
+ELSE
+    PRINT 'MaritalStatus column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'EducationLevel') = 0
+BEGIN
+    ALTER TABLE Employees ADD EducationLevel NVARCHAR(100) NULL;
+    PRINT 'Added EducationLevel column';
+END
+ELSE
+    PRINT 'EducationLevel column already exists';
+GO
+
+-- Add new financial information fields (only if they don't exist)
+IF dbo.ColumnExists('Employees', 'CurrentSalary') = 0
+BEGIN
+    ALTER TABLE Employees ADD CurrentSalary DECIMAL(18,2) NULL;
+    PRINT 'Added CurrentSalary column';
+END
+ELSE
+    PRINT 'CurrentSalary column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'AnnualIncreasePercentage') = 0
+BEGIN
+    ALTER TABLE Employees ADD AnnualIncreasePercentage DECIMAL(5,2) NULL;
+    PRINT 'Added AnnualIncreasePercentage column';
+END
+ELSE
+    PRINT 'AnnualIncreasePercentage column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'SalaryAfterAnnualIncrease') = 0
+BEGIN
+    ALTER TABLE Employees ADD SalaryAfterAnnualIncrease DECIMAL(18,2) NULL;
+    PRINT 'Added SalaryAfterAnnualIncrease column';
+END
+ELSE
+    PRINT 'SalaryAfterAnnualIncrease column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'BankAccountNumber') = 0
+BEGIN
+    ALTER TABLE Employees ADD BankAccountNumber NVARCHAR(100) NULL;
+    PRINT 'Added BankAccountNumber column';
+END
+ELSE
+    PRINT 'BankAccountNumber column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'BankName') = 0
+BEGIN
+    ALTER TABLE Employees ADD BankName NVARCHAR(100) NULL;
+    PRINT 'Added BankName column';
+END
+ELSE
+    PRINT 'BankName column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'TaxId') = 0
+BEGIN
+    ALTER TABLE Employees ADD TaxId NVARCHAR(50) NULL;
+    PRINT 'Added TaxId column';
+END
+ELSE
+    PRINT 'TaxId column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'InsuranceNumber') = 0
+BEGIN
+    ALTER TABLE Employees ADD InsuranceNumber NVARCHAR(50) NULL;
+    PRINT 'Added InsuranceNumber column';
+END
+ELSE
+    PRINT 'InsuranceNumber column already exists';
+GO
+
+-- Add Photo and License fields (only if they don't exist)
+IF dbo.ColumnExists('Employees', 'PhotoPath') = 0
+BEGIN
+    ALTER TABLE Employees ADD PhotoPath NVARCHAR(500) NULL;
+    PRINT 'Added PhotoPath column';
+END
+ELSE
+    PRINT 'PhotoPath column already exists';
+GO
+
+IF dbo.ColumnExists('Employees', 'NeedLicense') = 0
+BEGIN
+    ALTER TABLE Employees ADD NeedLicense BIT NOT NULL DEFAULT 1;
+    PRINT 'Added NeedLicense column';
+END
+ELSE
+    PRINT 'NeedLicense column already exists';
+GO
+
+-- Verify all required columns exist
+PRINT '=== Verifying all columns exist ===';
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    CASE 
+        WHEN COLUMN_NAME IN ('DateOfBirth', 'MaritalStatus', 'EducationLevel',
+                           'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+                           'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+                           'PhotoPath', 'NeedLicense') 
+        THEN 'Required Column'
+        ELSE 'Existing Column'
+    END as Status
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'Employees' 
+AND COLUMN_NAME IN (
+    'DateOfBirth', 'MaritalStatus', 'EducationLevel',
+    'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+    'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+    'PhotoPath', 'NeedLicense'
+)
+ORDER BY COLUMN_NAME;
+GO
+
+-- Clean up the helper function
+DROP FUNCTION IF EXISTS [dbo].[ColumnExists];
+GO
+
+PRINT 'Employee table update completed successfully!';
+PRINT 'All required columns are now available for the enhanced Employee management system.';
+GO 

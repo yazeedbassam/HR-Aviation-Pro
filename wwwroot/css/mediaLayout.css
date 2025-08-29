@@ -1,0 +1,611 @@
+﻿body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('https://images.unsplash.com/photo-1569154941061-e231b4725ef1?q=80&w=1920');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+    z-index: -1;
+}
+
+/* Navbar ثابت */
+.atc-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(193, 213, 211, 0.3);
+    z-index: 1300;
+}
+
+/* Sidebar الأساسي */
+.atc-sidebar {
+    width: 200px;
+    height: calc(100vh - 60px);
+    background: linear-gradient(135deg, #f5fafc 80%, #d8f4f4 100%);
+    box-shadow: 2px 0 15px 0 #dde6e9c9;
+    border-right: 1.5px solid #e1efed;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    padding-top: 15px !important;
+    transition: transform 0.22s, width 0.2s;
+    transform: translateX(0); /* مفتوح افتراضياً */
+    overflow: hidden;
+}
+
+/* تحسين السكرول للبانال الجانبي */
+.atc-sidebar .nav::-webkit-scrollbar,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar {
+    width: 10px;
+}
+
+.atc-sidebar .nav::-webkit-scrollbar-track,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 5px;
+    border: 1px solid rgba(19, 120, 101, 0.2);
+    margin: 2px;
+}
+
+.atc-sidebar .nav::-webkit-scrollbar-thumb,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #137865 0%, #0d423a 100%);
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    min-height: 40px;
+}
+
+.atc-sidebar .nav::-webkit-scrollbar-thumb:hover,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0d423a 0%, #0a2f28 100%);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+    transform: scale(1.05);
+}
+
+.atc-sidebar .nav::-webkit-scrollbar-thumb:active,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #0a2f28 0%, #061a16 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* إظهار السكرول دائماً */
+.atc-sidebar .nav::-webkit-scrollbar-corner,
+.atc-sidebar .nav.flex-column::-webkit-scrollbar-corner {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* تحسين محتوى البانال الجانبي */
+.atc-sidebar .nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 50px;
+    width: 100%;
+    max-width: 100%;
+    height: calc(100vh - 200px);
+    scrollbar-width: thin;
+    scrollbar-color: #137865 transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 0;
+    position: relative;
+    max-height: calc(100vh - 200px);
+}
+
+/* تحسين المسافات بين العناصر */
+.atc-sidebar .nav > li:last-child {
+    margin-bottom: 50px;
+}
+
+/* إصلاح Bootstrap classes */
+.atc-sidebar .nav.flex-column {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - 200px) !important;
+    max-height: calc(100vh - 200px) !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #137865 transparent !important;
+    min-height: 0 !important;
+    position: relative !important;
+}
+
+/* إصلاح السكرول داخل الكولابس */
+.sidebar-section-content .nav-link {
+    padding-left: 20px;
+    font-size: 0.9em;
+    margin-bottom: 2px;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ضمان عمل السكرول على جميع العناصر */
+.atc-sidebar .nav > * {
+    flex-shrink: 0;
+}
+
+/* تحسين السكرول للكولابس */
+.sidebar-section {
+    flex-shrink: 0;
+    position: relative;
+}
+
+.sidebar-section-content {
+    flex-shrink: 0;
+    position: relative;
+}
+
+.sidebar-section-content .nav-link {
+    flex-shrink: 0;
+    position: relative;
+}
+
+.atc-sidebar .nav.gap-1 {
+    gap: 0.25rem !important;
+}
+
+.atc-sidebar .nav.gap-2 {
+    gap: 0.5rem !important;
+}
+
+.atc-sidebar .nav.gap-3 {
+    gap: 1rem !important;
+}
+
+/* إضافة مساحة إضافية في نهاية البانال */
+.atc-sidebar .nav::after {
+    content: '';
+    display: block;
+    height: 50px;
+    width: 100%;
+}
+
+
+
+/* محتوى رئيسي يأخذ مساحة السايدبار */
+.atc-main-content {
+    margin-left: 200px; /* margin افتراضياً للقائمة المفتوحة */
+    margin-top: 60px;
+    transition: margin-left 0.2s;
+    padding-top: 20px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #137865 transparent;
+}
+
+/* سكرول الصفحة الرئيسية */
+.atc-main-content::-webkit-scrollbar {
+    width: 12px;
+}
+
+.atc-main-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    border: 1px solid rgba(19, 120, 101, 0.2);
+    margin: 2px;
+}
+
+.atc-main-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #137865 0%, #0d423a 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    min-height: 40px;
+}
+
+.atc-main-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0d423a 0%, #0a2f28 100%);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+    transform: scale(1.05);
+}
+
+.atc-main-content::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #0a2f28 0%, #061a16 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.atc-main-content::-webkit-scrollbar-corner {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* زر القائمة للموبايل */
+#openSidebarBtn {
+    display: none;
+    position: fixed;
+    left: 15px;
+    top: 70px;
+    z-index: 1250;
+    background: #198754;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5em;
+    box-shadow: 0 1px 6px #b5d1cd34;
+}
+
+.overlay-bg {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(80,105,110,0.13);
+    z-index: 1199;
+    display: none;
+}
+
+    .overlay-bg.active {
+        display: block;
+    }
+
+/* media query: عند الشاشات الصغيرة */
+@media (max-width: 991px) {
+    .atc-sidebar {
+        transform: translateX(-100%);
+        width: 200px;
+        height: calc(100vh - 60px);
+        top: 60px;
+    }
+
+        .atc-sidebar.active {
+            transform: translateX(0);
+        }
+
+    #openSidebarBtn {
+        display: block;
+    }
+
+    .atc-main-content {
+        margin-left: 0 !important;
+        margin-top: 60px;
+    }
+    
+    /* تحسين السكرول للشاشات الصغيرة */
+    .atc-sidebar .nav {
+        max-height: calc(100vh - 200px);
+    }
+    
+    /* تحسين السكرول للشاشات الصغيرة */
+    .atc-sidebar .nav::-webkit-scrollbar,
+    .atc-sidebar .nav.flex-column::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .atc-sidebar .nav::-webkit-scrollbar-thumb,
+    .atc-sidebar .nav.flex-column::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #137865 0%, #0d423a 100%);
+        border-radius: 4px;
+    }
+    
+    /* سكرول الصفحة الرئيسية للشاشات الصغيرة */
+    .atc-main-content::-webkit-scrollbar {
+        width: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .atc-sidebar {
+        width: 190px;
+        overflow: hidden;
+    }
+    
+    /* سكرول الصفحة الرئيسية للشاشات المتوسطة */
+    .atc-main-content::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .atc-sidebar .nav-link {
+        font-size: 0.9em;
+        padding: 8px 10px;
+        gap: 10px;
+        overflow-x: hidden;
+    }
+    
+    .atc-sidebar .bi {
+        font-size: 1.05em;
+        flex-shrink: 0;
+    }
+    
+    .sidebar-logo {
+        font-size: 1.1em;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+        overflow-x: hidden;
+    }
+    
+    .sidebar-section-header {
+        font-size: 0.8em;
+        padding: 7px 8px;
+        overflow-x: hidden;
+    }
+}
+
+@media (max-width: 600px) {
+    .atc-sidebar {
+        width: 180px;
+        padding: 5px 2px !important;
+        overflow-x: hidden;
+    }
+
+        .atc-sidebar .nav-link {
+            font-size: 0.85em;
+            padding: 7px 8px;
+            gap: 8px;
+            overflow-x: hidden;
+        }
+        
+        .atc-sidebar .bi {
+            font-size: 1em;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-logo {
+            font-size: 1em;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            overflow-x: hidden;
+        }
+        
+        .sidebar-section-header {
+            font-size: 0.75em;
+            padding: 6px 7px;
+            overflow-x: hidden;
+        }
+        
+        .sidebar-section-content .nav-link {
+            padding-left: 15px;
+            font-size: 0.8em;
+            overflow-x: hidden;
+        }
+}
+
+@media (max-width: 480px) {
+    .atc-sidebar {
+        width: 170px;
+        padding: 4px 1px !important;
+        overflow-x: hidden;
+    }
+
+        .atc-sidebar .nav-link {
+            font-size: 0.8em;
+            padding: 6px 7px;
+            gap: 7px;
+            overflow-x: hidden;
+        }
+        
+        .atc-sidebar .bi {
+            font-size: 0.95em;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-logo {
+            font-size: 0.95em;
+            padding-bottom: 7px;
+            margin-bottom: 8px;
+            overflow-x: hidden;
+        }
+        
+        .sidebar-section-header {
+            font-size: 0.7em;
+            padding: 5px 6px;
+            overflow-x: hidden;
+        }
+        
+        .sidebar-section-content .nav-link {
+            padding-left: 12px;
+            font-size: 0.75em;
+            overflow-x: hidden;
+        }
+        
+    /* تحسين السكرول للشاشات الصغيرة جداً */
+    .atc-sidebar .nav::-webkit-scrollbar,
+    .atc-sidebar .nav.flex-column::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .atc-sidebar .nav::-webkit-scrollbar-thumb,
+    .atc-sidebar .nav.flex-column::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #137865 0%, #0d423a 100%);
+        border-radius: 3px;
+    }
+    
+    /* سكرول الصفحة الرئيسية للشاشات الصغيرة جداً */
+    .atc-main-content::-webkit-scrollbar {
+        width: 8px;
+    }
+}
+
+/* Sidebar Links */
+.atc-sidebar .nav-link {
+    color: #195c4d;
+    font-size: 0.95em;
+    border-radius: 8px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    transition: background 0.15s, color 0.14s;
+    letter-spacing: .1px;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
+}
+
+    .atc-sidebar .nav-link.active,
+    .atc-sidebar .nav-link:hover,
+    .atc-sidebar .nav-link:focus {
+        background: #e1f6f4;
+        color: #0d423a !important;
+        font-weight: 600;
+    }
+
+/* Collapse Sections */
+.sidebar-section {
+    margin-bottom: 8px;
+}
+
+.sidebar-section-header {
+    color: #137865;
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 10px;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 6px;
+    transition: background 0.15s, transform 0.1s;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
+}
+
+.sidebar-section-header:hover {
+    background: #e8f5f3;
+    transform: translateX(2px);
+}
+
+.sidebar-section-header:active {
+    transform: translateX(1px);
+}
+
+.sidebar-section-header .bi-chevron-down {
+    transition: transform 0.2s ease-in-out;
+    font-size: 0.8em;
+}
+
+.sidebar-section-header.collapsed .bi-chevron-down {
+    transform: rotate(-90deg);
+}
+
+.sidebar-section-content {
+    max-height: none;
+    overflow: visible;
+    transition: all 0.3s ease-in-out;
+    opacity: 1;
+    transform: translateY(0);
+    position: relative;
+}
+
+.sidebar-section-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-10px);
+    position: relative;
+}
+
+.sidebar-section-content .nav-link:hover {
+    padding-left: 22px;
+    background: #f0f9f8;
+}
+
+.atc-sidebar .bi {
+    font-size: 1.1em;
+    opacity: 0.88;
+    flex-shrink: 0;
+    min-width: 1.1em;
+}
+
+.atc-sidebar ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.atc-sidebar li + li {
+    margin-top: 3px;
+}
+
+.atc-sidebar li {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.sidebar-logo {
+    font-size: 1.15em;
+    font-weight: 800;
+    color: #137865;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1.3px solid #dbedec;
+    margin-bottom: 15px;
+    letter-spacing: .6px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* حالات القائمة الجانبية */
+.atc-sidebar.open {
+    transform: translateX(0);
+}
+
+.atc-main-content.sidebar-open {
+    margin-left: 200px;
+}
+
+/* زر فتح القائمة الجانبية */
+.sidebar-toggle {
+    position: fixed;
+    top: 70px;
+    left: 10px;
+    z-index: 1300;
+    background: #137865;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.sidebar-toggle:hover {
+    background: #0d423a;
+    transform: scale(1.1);
+}
+
+.sidebar-toggle.hidden {
+    display: none;
+}

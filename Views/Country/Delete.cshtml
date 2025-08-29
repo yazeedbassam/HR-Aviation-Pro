@@ -1,0 +1,20 @@
+﻿@model WebApplication1.Models.Country
+
+<a class="btn btn-secondary btn-sm mb-3" href="/Country">Back to List</a>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+            <h3>Delete Country</h3>
+        </div>
+        <div class="card-body">
+            <p>Are you sure you want to delete the country: <strong>@Model.CountryName</strong>?</p>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="CountryId" />
+                <button type="submit" class="btn btn-danger">Delete</button>
+                <a href="/Country" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

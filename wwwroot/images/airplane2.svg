@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100">
+  <!-- Airplane 2 - Private Jet -->
+  <g id="airplane2">
+    <!-- Fuselage -->
+    <path d="M250,50 L200,45 L180,45 L170,40 L80,45 L70,48 L80,50 L170,55 L180,50 L200,50 Z" fill="#e0e0e0" stroke="#333" stroke-width="1" />
+    
+    <!-- Wings -->
+    <path d="M180,45 L150,25 L130,22 L120,25 L160,47 Z" fill="#d0d0d0" stroke="#333" stroke-width="1" />
+    <path d="M180,50 L150,70 L130,73 L120,70 L160,48 Z" fill="#c0c0c0" stroke="#333" stroke-width="1" />
+    
+    <!-- Tail -->
+    <path d="M250,50 L265,35 L270,35 L265,50 L270,65 L265,65 Z" fill="#d0d0d0" stroke="#333" stroke-width="1" />
+    <path d="M240,50 L250,35 L245,30 L235,45 Z" fill="#c0c0c0" stroke="#333" stroke-width="1" />
+    
+    <!-- Windows -->
+    <circle cx="90" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="100" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="110" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="120" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="130" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="140" cy="47" r="1.5" fill="#87CEEB" />
+    <circle cx="150" cy="47" r="1.5" fill="#87CEEB" />
+    
+    <!-- Engines -->
+    <ellipse cx="220" cy="48" rx="10" ry="4" fill="#555" stroke="#333" stroke-width="1" />
+    
+    <!-- Cockpit -->
+    <path d="M80,45 L70,48 L80,50 L90,47 Z" fill="#87CEEB" stroke="#333" stroke-width="1" />
+    
+    <!-- Animation path for the airplane - landing approach -->
+    <animateMotion
+      dur="25s"
+      repeatCount="indefinite"
+      path="M-150,0 C0,0 100,50 200,80 L300,90"
+      rotate="auto" />
+  </g>
+</svg>

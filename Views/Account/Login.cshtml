@@ -1,0 +1,528 @@
+﻿@model WebApplication1.Models.LoginViewModel
+@{
+    Layout = "_LayoutLogin";
+    ViewData["Title"] = "AVIATION HR PRO - Login";
+}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVIATION HR PRO - Login</title>
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/login-page.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <link rel="stylesheet" href="/css/atc_keyframes.css">
+    <link rel="stylesheet" href="/css/aviation-hr-pro-theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+    <style>
+        /* Updated background styles with new image and transparency */
+        body.login-page-layout {
+            background-image: url('/images/carcBB.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Keep background fixed during scroll */
+        }
+
+            /* Adjust the overlay opacity to make background more visible but still readable */
+            body.login-page-layout::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient( to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 20, 40, 0.2) 50%, rgba(0, 0, 0, 0.3) 100% );
+                backdrop-filter: blur(1px);
+                z-index: 1;
+            }
+
+        /* Move login card to the left side */
+        .login-area {
+            justify-content: flex-start;
+            padding-left: 1%;
+            padding-top: 10%;
+        }
+
+        /* Add animated aircraft elements */
+        .animated-aircraft-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none; /* Allow clicks to pass through */
+            overflow: hidden;
+        }
+
+        .animated-aircraft {
+            position: absolute;
+            opacity: 0.7; /* Semi-transparent */
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+
+        .aircraft-1 {
+            width: 120px;
+            height: 60px;
+            top: 15%;
+            left: -120px; /* Start off-screen */
+            animation: fly-right 30s linear infinite;
+        }
+
+        .aircraft-2 {
+            width: 100px;
+            height: 50px;
+            top: 40%;
+            right: -100px; /* Start off-screen */
+            animation: fly-left 25s linear infinite;
+            animation-delay: 5s;
+        }
+
+        .aircraft-3 {
+            width: 90px;
+            height: 45px;
+            top: 60%;
+            left: -90px;
+            animation: fly-diagonal 35s linear infinite;
+            animation-delay: 15s;
+        }
+
+        .helicopter {
+            width: 80px;
+            height: 50px;
+            top: 25%;
+            left: -80px; /* Start off-screen */
+            animation: helicopter-path 40s linear infinite;
+            animation-delay: 10s;
+        }
+
+
+        /* SVG styles */
+        .airplane-svg {
+            width: 100%;
+            height: 100%;
+            shape-rendering: geometricPrecision;
+        }
+
+        .airplane-body {
+            fill: rgba(255, 255, 255, 0.8);
+            stroke: rgba(0, 123, 255, 0.9);
+            stroke-width: 2;
+        }
+
+        .airplane-wing {
+            fill: rgba(230, 230, 230, 0.8);
+            stroke: rgba(0, 123, 255, 0.9);
+            stroke-width: 1;
+        }
+
+        .airplane-tail {
+            fill: rgba(200, 200, 200, 0.8);
+            stroke: rgba(0, 123, 255, 0.9);
+            stroke-width: 1;
+        }
+
+        .helicopter-svg {
+            width: 100%;
+            height: 100%;
+            shape-rendering: geometricPrecision;
+        }
+
+        .helicopter-body {
+            fill: rgba(255, 255, 255, 0.8);
+            stroke: rgba(0, 123, 255, 0.9);
+            stroke-width: 2;
+        }
+
+        .helicopter-rotor {
+            fill: rgba(200, 200, 200, 0.7);
+            transform-origin: center;
+            animation: rotate-rotor 0.15s linear infinite;
+        }
+
+        .helicopter-tail {
+            fill: rgba(255, 255, 255, 0.8);
+            stroke: rgba(0, 123, 255, 0.9);
+            stroke-width: 1;
+        }
+
+        .helicopter-tail-rotor {
+            fill: rgba(200, 200, 200, 0.7);
+            transform-origin: center;
+            animation: rotate-rotor 0.3s linear infinite;
+        }
+
+
+
+        /* Aircraft trail effects */
+        .aircraft-1::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -50px;
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(255, 255, 255, 0.7), transparent);
+            z-index: -1;
+        }
+
+        .aircraft-2::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -50px;
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.7), transparent);
+            z-index: -1;
+        }
+
+        .aircraft-3::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -40px;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(255, 255, 255, 0.7), transparent);
+            z-index: -1;
+            transform: rotate(-15deg);
+        }
+
+        /* Improved login card visibility */
+        .login-card {
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Enhanced project title visibility */
+        .project-title {
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+            font-weight: 600;
+        }
+
+        /* Enhanced logo visibility */
+        .aviation-logo {
+            animation: logoGlow 2s ease-in-out infinite alternate;
+        }
+
+        @@keyframes logoGlow {
+            from {
+                filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.3));
+            }
+            to {
+                filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
+            }
+        }
+
+        .aviation-logo-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .aviation-logo-icon:hover {
+            transform: scale(1.05);
+        }
+
+    </style>
+</head>
+<body class="login-page-layout">
+    <header class="motivational-header" aria-label="Motivational Banner">
+        <p id="motivational-text">
+            AVIATION HR PRO: Professional Aviation Human Resources Management System
+        </p>
+    </header>
+
+    <div class="project-title-container">
+        <div class="aviation-logo" style="width: fit-content; margin: 0 auto; text-align: center;">
+            <div class="aviation-logo-icon" style="width: 100px; height: 100px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 12px 35px rgba(30, 58, 138, 0.4); overflow: hidden;">
+                <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); opacity: 0.9;">
+            </div>
+            <div class="aviation-logo-text">
+                <div class="aviation-logo-main" style="font-size: 42px; color: white; font-weight: 700; text-shadow: 0 3px 8px rgba(0,0,0,0.5); margin-bottom: 10px;">AVIATION HR PRO</div>
+                <div class="aviation-logo-subtitle" style="color: #e2e8f0; font-size: 18px; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Professional Human Resources Management</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated Aircraft Container -->
+    <div class="animated-aircraft-container">
+        <!-- Airplane 1 -->
+        <div class="animated-aircraft aircraft-1">
+            <svg class="airplane-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                <path class="airplane-body" d="M20,25 L80,25 L90,20 L80,15 L20,15 L10,20 L20,25 Z" />
+                <path class="airplane-wing" d="M40,15 L60,5 L70,15 L40,15 Z" />
+                <path class="airplane-wing" d="M40,25 L60,35 L70,25 L40,25 Z" />
+                <path class="airplane-tail" d="M80,15 L90,5 L90,20 L80,25 Z" />
+            </svg>
+        </div>
+
+        <!-- Airplane 2 -->
+        <div class="animated-aircraft aircraft-2">
+            <svg class="airplane-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                <path class="airplane-body" d="M20,25 L80,25 L90,20 L80,15 L20,15 L10,20 L20,25 Z" />
+                <path class="airplane-wing" d="M40,15 L60,5 L70,15 L40,15 Z" />
+                <path class="airplane-wing" d="M40,25 L60,35 L70,25 L40,25 Z" />
+                <path class="airplane-tail" d="M80,15 L90,5 L90,20 L80,25 Z" />
+            </svg>
+        </div>
+
+        <!-- Airplane 3 -->
+        <div class="animated-aircraft aircraft-3">
+            <svg class="airplane-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                <path class="airplane-body" d="M20,25 L80,25 L90,20 L80,15 L20,15 L10,20 L20,25 Z" />
+                <path class="airplane-wing" d="M40,15 L60,5 L70,15 L40,15 Z" />
+                <path class="airplane-wing" d="M40,25 L60,35 L70,25 L40,25 Z" />
+                <path class="airplane-tail" d="M80,15 L90,5 L90,20 L80,25 Z" />
+            </svg>
+        </div>
+
+        <!-- Helicopter -->
+        <div class="animated-aircraft helicopter">
+            <svg class="helicopter-svg" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+                <ellipse class="helicopter-body" cx="50" cy="40" rx="30" ry="15" />
+                <rect class="helicopter-tail" x="80" y="35" width="15" height="10" />
+                <circle class="helicopter-rotor" cx="50" cy="25" r="25" />
+                <circle class="helicopter-tail-rotor" cx="95" cy="40" r="5" />
+            </svg>
+        </div>
+    </div>
+
+    <main class="login-area">
+        <section class="login-card" aria-labelledby="login-heading">
+            <header class="login-header">
+                <div class="logo-container" aria-hidden="true">
+                    <div class="aviation-logo" style="width: fit-content; margin: 0 auto; text-align: center;">
+                        <div class="aviation-logo-icon" style="width: 80px; height: 80px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; box-shadow: 0 8px 25px rgba(30, 58, 138, 0.3); overflow: hidden;">
+                            <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); opacity: 0.9;">
+                        </div>
+                        <div class="aviation-logo-text">
+                            <div class="aviation-logo-main" style="font-size: 28px; color: #1e3a8a; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 5px;">AVIATION HR PRO</div>
+                            <div class="aviation-logo-subtitle" style="color: #64748b; font-size: 14px; font-weight: 500;">Professional Human Resources Management</div>
+                        </div>
+                    </div>
+                </div>
+                <h2 id="login-heading">Login</h2>
+            </header>
+            <div class="login-body">
+                <form asp-action="Login" asp-controller="Account" method="post" id="loginForm" aria-label="User Login Form">
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                    <div class="form-group">
+                        <label asp-for="Username">Username</label>
+                        <div class="input-group">
+                            <input asp-for="Username" class="form-control" placeholder="Enter your username" required aria-required="true" />
+                        </div>
+                        <span asp-validation-for="Username" class="text-danger" role="alert"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Password">Password</label>
+                        <div class="input-group">
+                            <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" required aria-required="true" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger" role="alert"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-submit">Sign In</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <aside class="fixed-side-menu" aria-label="Information Menu">
+        <div class="side-menu-item" id="about-us-trigger" data-panel="about-us-panel" role="button" tabindex="0" aria-haspopup="dialog">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <span>About Us</span>
+        </div>
+        <div class="side-menu-item" id="vision-mission-trigger" data-panel="vision-mission-panel" role="button" tabindex="0" aria-haspopup="dialog">
+            <i class="fas fa-bullseye" aria-hidden="true"></i>
+            <span>Vision/Mission</span>
+        </div>
+        <div class="side-menu-item" id="contact-us-trigger" data-panel="contact-us-panel" role="button" tabindex="0" aria-haspopup="dialog">
+            <i class="fas fa-envelope" aria-hidden="true"></i>
+            <span>Contact Us</span>
+        </div>
+    </aside>
+
+    <div class="info-panels-container" aria-hidden="true">
+        <div class="panel-overlay" title="Close Panel"></div>
+
+        <section class="info-panel" id="about-us-panel" role="dialog" aria-labelledby="about-us-heading" aria-modal="true">
+            <header class="panel-header">
+                <h3 id="about-us-heading">About Us</h3>
+                <button class="close-panel" aria-label="Close About Us Panel">&times;</button>
+            </header>
+            <div class="panel-content">
+                <p> 
+                    In the aviation industry, safety and precision rest on the shoulders of its experts:
+                     pilots, engineers, technicians, and ground staff.
+                      We understand that the readiness of every individual is key to the sector's success.
+.
+                </p>
+                <h4>Your Partners in Empowering the Aviation Sectorres:</h4>
+                <ul>
+                    <li>Expertise: We are a team of aviation and technology experts born from a deep understanding of industry challenges.</li>
+                    <li>Mission: To automate the complex management of licenses, certifications, and training data.</li>
+                    <li>Value: We provide tools for clarity and confidence, empowering you to focus on safe and efficient operations.</li>
+                    <li>Standard: Our platform is designed to meet the highest international standards, driving the digital transformation of aviation HR.</li>
+                    <li>Professional reports exportable to PDF/Excel</li>
+                    <li>Advanced permissions system ensuring data confidentiality and security</li>
+                    <li>Technical support and integration services with other governmental and institutional systems</li>
+                <li>Identity: We are not just a service provider; we are an integral part of the aviation safety ecosystem.</li>
+                </ul>
+                <p>The system is designed to meet the highest international standards in the aviation sector and to be a turning point towards comprehensive digital transformation in the management of technical human resources, with ease and security.</p>
+            </div>
+        </section>
+
+        <section class="info-panel" id="vision-mission-panel" role="dialog" aria-labelledby="vision-mission-heading" aria-modal="true">
+            <header class="panel-header">
+                <h3 id="vision-mission-heading">Vision & Mission</h3>
+                <button class="close-panel" aria-label="Close Vision and Mission Panel">&times;</button>
+            </header>
+            <div class="panel-content">
+                <h4>Our Vision</h4>
+                <p>To be the leading and trusted platform in the Professional Aviation Human Resources Management System of Aviation Staff resources at the national and regional levels, contributing to achieving the highest levels of safety and efficiency in the civil aviation sector.</p>
+                <h4>Our Mission</h4>
+                <p>To develop and provide innovative and comprehensive digital solutions for managing the data, training, and licensing of air traffic controllers, and to enable regulatory authorities to make informed decisions and enhance compliance with international standards.</p>
+            </div>
+        </section>
+
+        <section class="info-panel" id="contact-us-panel" role="dialog" aria-labelledby="contact-us-heading" aria-modal="true">
+            <header class="panel-header">
+                <h3 id="contact-us-heading">Contact Us</h3>
+                <button class="close-panel" aria-label="Close Contact Us Panel">&times;</button>
+            </header>
+            <div class="panel-content">
+                <div class="contact-info">
+                    <p>Our technical support and customer service team for the Air Traffic Controller Management System is always ready to answer your inquiries, receive your suggestions, and support you in using the system optimally.</p>
+                    <p><strong>Contact Methods:</strong></p>
+                    <ul>
+                        <li><strong>Email:</strong> <a href="mailto:yazeedbassam@yahoo.com">info@HRAviation.com</a></li>
+                        <li><strong>Phone:</strong> 00962 7 76619258</li>
+                        <li><strong>Address:</strong> Professional Aviation Human Resources Management System</li>
+                    </ul>
+                    <p>You can also fill out the form below, and we will contact you as soon as possible.</p>
+                </div>
+                @* <form class="contact-form" id="contactForm" asp-controller="ContactViewModel" asp-action="SubmitContactForm" method="post" aria-label="Contact Form"> *@
+                <form asp-action="SubmitContactForm" asp-controller="Account" method="post" id="contactForm" aria-label="User Login Form">
+                    <div class="form-group">
+                        <label for="contact-name" class="required-field">Name:</label>
+                        <input type="text" id="contact-name" name="Name" class="form-control" placeholder="Enter your name" required aria-required="true">
+                        <div class="invalid-feedback"></div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-email" class="required-field">Email:</label>
+                        <input type="email" id="contact-email" name="Email" class="form-control" placeholder="Enter your email" required aria-required="true">
+                        <div class="invalid-feedback"></div>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-message" class="required-field">Message:</label>
+                        <textarea id="contact-message" name="Message" class="form-control" placeholder="Enter your message" required aria-required="true"></textarea>
+                        <div class="invalid-feedback"></div>
+                        <span asp-validation-for="Message" class="text-danger"></span>
+                    </div>
+                    <button type="submit" id="sendEmailBtn" class="btn btn-primary">Send</button>
+                    <div id="contact-feedback" role="status" aria-live="polite"></div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div id="atcs-logo-fixed" class="atcs-logo-fixed" aria-hidden="true">
+        <div class="aviation-logo" style="width: fit-content; display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); backdrop-filter: blur(10px);">
+            <div class="aviation-logo-icon" style="width: 32px; height: 32px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 24px; height: 24px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); opacity: 0.9;">
+            </div>
+            <div class="aviation-logo-text">
+                <div class="aviation-logo-main" style="font-size: 14px; color: #1e3a8a; font-weight: 600;">AVIATION HR PRO</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="radar-screen-container" aria-hidden="true">
+        <div class="radar-screen">
+            <div class="radar-sweep"></div>
+            <div class="radar-blip" id="blip1"></div>
+            <div class="radar-blip" id="blip2"></div>
+            <div class="radar-blip" id="blip3"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Basic Panel Interactivity
+        document.addEventListener('DOMContentLoaded', () => {
+            const panelTriggers = document.querySelectorAll('.side-menu-item[data-panel]');
+            const panelsContainer = document.querySelector('.info-panels-container');
+            const panels = document.querySelectorAll('.info-panel');
+            const closeButtons = document.querySelectorAll('.close-panel');
+            const overlay = document.querySelector('.panel-overlay');
+
+            function closeAllPanels() {
+                panels.forEach(p => p.classList.remove('active'));
+                if (panelsContainer) {
+                    panelsContainer.classList.remove('active');
+                    panelsContainer.setAttribute('aria-hidden', 'true');
+                }
+            }
+
+            panelTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const panelId = trigger.getAttribute('data-panel');
+                    const targetPanel = document.getElementById(panelId);
+                    if (targetPanel && panelsContainer) {
+                        closeAllPanels(); // Close any open panel first
+                        targetPanel.classList.add('active');
+                        panelsContainer.classList.add('active');
+                        panelsContainer.setAttribute('aria-hidden', 'false');
+                        targetPanel.focus(); // Focus the panel for accessibility
+                    }
+                });
+
+                // Add keyboard accessibility for triggers
+                trigger.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        trigger.click();
+                    }
+                });
+            });
+
+            closeButtons.forEach(button => {
+                button.addEventListener('click', closeAllPanels);
+            });
+
+            if (overlay) {
+                overlay.addEventListener('click', closeAllPanels);
+            }
+
+            // Close panel with Escape key
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && panelsContainer && panelsContainer.classList.contains('active')) {
+                    closeAllPanels();
+                }
+            });
+
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) {
+                document.body.classList.add('reduced-motion');
+            }
+            });
+    </script>
+    
+</body>

@@ -1,0 +1,177 @@
+@model WebApplication1.Models.UserPermissionManagerViewModel
+@{
+    ViewData["Title"] = "إدارة صلاحيات المستخدم";
+    Layout = "_AdvancedLayout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-gear"></i>
+                        إدارة صلاحيات المستخدم: @Model.CurrentUserName
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">معلومات المستخدم</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>الاسم:</strong> @Model.CurrentUserName</p>
+                                    <p><strong>الوظيفة:</strong> @(Model.Users.FirstOrDefault()?.UserRole ?? "غير محدد")</p>
+                                    <p><strong>القسم:</strong> @(Model.Users.FirstOrDefault()?.UserDepartment ?? "غير محدد")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">الصلاحيات الحالية</h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.UserPermissions != null && Model.UserPermissions.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>الصلاحية</th>
+                                                        <th>القسم</th>
+                                                        <th>الحالة</th>
+                                                        <th>الإجراءات</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var permission in Model.Permissions)
+                                                    {
+                                                        <tr>
+                                                            <td>@permission.PermissionName</td>
+                                                            <td>@(permission.Category ?? "غير محدد")</td>
+                                                            <td>
+                                                                <span class="badge bg-success">مفعلة</span>
+                                                            </td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-danger" onclick="removePermission(@permission.PermissionId)">
+                                                                    <i class="bi bi-trash"></i> إزالة
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle"></i>
+                                            لا توجد صلاحيات محددة لهذا المستخدم
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">إضافة صلاحية جديدة</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form asp-action="AddUserPermission" method="post">
+                                        <input type="hidden" name="userId" value="@Model.CurrentUserId" />
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label">الصلاحية</label>
+                                                    <select name="permissionId" class="form-select" required>
+                                                        <option value="">اختر الصلاحية</option>
+                                                        @if (ViewBag.Permissions != null)
+                                                        {
+                                                            @foreach (var permission in ViewBag.Permissions)
+                                                            {
+                                                                <option value="@permission.Value">@permission.Text</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label">القسم</label>
+                                                    <select name="departmentId" class="form-select" required>
+                                                        <option value="">اختر القسم</option>
+                                                        @if (ViewBag.Departments != null)
+                                                        {
+                                                            @foreach (var dept in ViewBag.Departments)
+                                                            {
+                                                                <option value="@dept.Value">@dept.Text</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label">&nbsp;</label>
+                                                    <button type="submit" class="btn btn-primary d-block">
+                                                        <i class="bi bi-plus-circle"></i>
+                                                        إضافة صلاحية
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function removePermission(permissionId) {
+            if (confirm('هل أنت متأكد من إزالة هذه الصلاحية؟')) {
+                // إرسال طلب AJAX لإزالة الصلاحية
+                $.post('/AdvancedPermission/RemoveUserPermission', {
+                    userId: @Model.CurrentUserId,
+                    permissionId: permissionId
+                })
+                .done(function() {
+                    location.reload();
+                })
+                .fail(function() {
+                    alert('حدث خطأ أثناء إزالة الصلاحية');
+                });
+            }
+        }
+    </script>
+} 

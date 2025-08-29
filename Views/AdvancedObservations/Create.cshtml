@@ -1,0 +1,259 @@
+@model WebApplication1.Models.Observation
+@{
+    ViewData["Title"] = "إضافة ملاحظة جديدة - نظام الصلاحيات المتقدم";
+    Layout = "_AdvancedLayout";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-plus-circle text-success"></i>
+                إضافة ملاحظة جديدة
+            </h2>
+            <p class="text-muted mb-0">نظام الصلاحيات المتقدم</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Index", "AdvancedObservations")" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> العودة للقائمة
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text"></i>
+                        تفاصيل الملاحظة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <!-- Person Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ControllerId" class="form-label">
+                                    <i class="bi bi-person-badge"></i> المراقب الجوي
+                                </label>
+                                <select asp-for="ControllerId" class="form-select" asp-items="ViewBag.Controllers">
+                                    <option value="">-- اختر المراقب الجوي --</option>
+                                </select>
+                                <span asp-validation-for="ControllerId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EmployeeId" class="form-label">
+                                    <i class="bi bi-person"></i> الموظف
+                                </label>
+                                <select asp-for="EmployeeId" class="form-select" asp-items="ViewBag.Employees">
+                                    <option value="">-- اختر الموظف --</option>
+                                </select>
+                                <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Flight Details -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FlightNo" class="form-label">
+                                    <i class="bi bi-airplane"></i> رقم الرحلة
+                                </label>
+                                <input asp-for="FlightNo" class="form-control" placeholder="أدخل رقم الرحلة" />
+                                <span asp-validation-for="FlightNo" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TravelCountry" class="form-label">
+                                    <i class="bi bi-globe"></i> البلد
+                                </label>
+                                <input asp-for="TravelCountry" class="form-control" placeholder="أدخل اسم البلد" />
+                                <span asp-validation-for="TravelCountry" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Duration -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DurationDays" class="form-label">
+                                    <i class="bi bi-calendar-range"></i> عدد الأيام
+                                </label>
+                                <input asp-for="DurationDays" class="form-control" type="number" min="1" placeholder="عدد الأيام" />
+                                <span asp-validation-for="DurationDays" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LicenseNumber" class="form-label">
+                                    <i class="bi bi-card-text"></i> رقم الترخيص
+                                </label>
+                                <input asp-for="LicenseNumber" class="form-control" placeholder="أدخل رقم الترخيص" />
+                                <span asp-validation-for="LicenseNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Dates -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DepartDate" class="form-label">
+                                    <i class="bi bi-calendar-event"></i> تاريخ المغادرة
+                                </label>
+                                <input asp-for="DepartDate" class="form-control" type="date" />
+                                <span asp-validation-for="DepartDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ReturnDate" class="form-label">
+                                    <i class="bi bi-calendar-check"></i> تاريخ العودة
+                                </label>
+                                <input asp-for="ReturnDate" class="form-control" type="date" />
+                                <span asp-validation-for="ReturnDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="mb-3">
+                            <label asp-for="UploadFile" class="form-label">
+                                <i class="bi bi-file-earmark-arrow-up"></i> رفع ملف
+                            </label>
+                            <input asp-for="UploadFile" class="form-control" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                            <div class="form-text">يمكن رفع ملفات PDF, Word, أو صور</div>
+                            <span asp-validation-for="UploadFile" class="text-danger"></span>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">
+                                <i class="bi bi-sticky"></i> ملاحظات
+                            </label>
+                            <textarea asp-for="Notes" class="form-control" rows="4" placeholder="أدخل الملاحظات هنا..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> حفظ الملاحظة
+                            </button>
+                            <a href="@Url.Action("Index", "AdvancedObservations")" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Permission Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-shield-check"></i>
+                        معلومات الصلاحيات
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>إنشاء ملاحظات جديدة</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>رفع الملفات</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>الوصول للبيانات المصرح بها</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        تعليمات
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-1-circle text-primary me-2"></i>
+                            اختر إما مراقب جوي أو موظف
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-2-circle text-primary me-2"></i>
+                            املأ جميع الحقول المطلوبة
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-3-circle text-primary me-2"></i>
+                            تأكد من صحة التواريخ
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-4-circle text-primary me-2"></i>
+                            يمكن رفع ملف واحد فقط
+                        </li>
+                        <li>
+                            <i class="bi bi-5-circle text-primary me-2"></i>
+                            احفظ الملاحظة عند الانتهاء
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Form validation
+        $(document).ready(function() {
+            $('form').on('submit', function(e) {
+                var controllerId = $('#ControllerId').val();
+                var employeeId = $('#EmployeeId').val();
+                
+                if (!controllerId && !employeeId) {
+                    e.preventDefault();
+                    alert('يجب اختيار إما مراقب جوي أو موظف');
+                    return false;
+                }
+                
+                if (controllerId && employeeId) {
+                    e.preventDefault();
+                    alert('يمكن اختيار إما مراقب جوي أو موظف واحد فقط');
+                    return false;
+                }
+            });
+
+            // Auto-calculate return date based on depart date and duration
+            $('#DepartDate, #DurationDays').on('change', function() {
+                var departDate = $('#DepartDate').val();
+                var durationDays = $('#DurationDays').val();
+                
+                if (departDate && durationDays) {
+                    var depart = new Date(departDate);
+                    var returnDate = new Date(depart.getTime() + (durationDays * 24 * 60 * 60 * 1000));
+                    $('#ReturnDate').val(returnDate.toISOString().split('T')[0]);
+                }
+            });
+
+            // File size validation
+            $('#UploadFile').on('change', function() {
+                var file = this.files[0];
+                var maxSize = 10 * 1024 * 1024; // 10MB
+                
+                if (file && file.size > maxSize) {
+                    alert('حجم الملف يجب أن يكون أقل من 10 ميجابايت');
+                    this.value = '';
+                }
+            });
+        });
+    </script>
+} 

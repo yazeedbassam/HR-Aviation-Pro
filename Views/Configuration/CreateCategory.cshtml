@@ -1,0 +1,109 @@
+@model WebApplication1.Models.ConfigurationCategoryViewModel
+@{
+    ViewData["Title"] = "Add Configuration Category";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-folder-plus"></i> Add New Configuration Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="CreateCategory" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CategoryName" class="form-label">Category Name</label>
+                                    <input asp-for="CategoryName" class="form-control" placeholder="e.g., NewCategory" required />
+                                    <small class="form-text text-muted">Internal name (no spaces, used in code)</small>
+                                    <span asp-validation-for="CategoryName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayName" class="form-label">Display Name</label>
+                                    <input asp-for="DisplayName" class="form-control" placeholder="e.g., New Category" required />
+                                    <small class="form-text text-muted">Name shown to users</small>
+                                    <span asp-validation-for="DisplayName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label asp-for="Description" class="form-label">Description</label>
+                                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe what this category is for..."></textarea>
+                                    <small class="form-text text-muted">Optional description of this category's purpose</small>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="DisplayOrder" class="form-label">Display Order</label>
+                                    <input asp-for="DisplayOrder" type="number" class="form-control" value="0" min="0" />
+                                    <small class="form-text text-muted">Order in category list (lower numbers appear first)</small>
+                                    <span asp-validation-for="DisplayOrder" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                                                        <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" id="IsActiveCheckbox" class="form-check-input" checked />
+                                        <input type="hidden" asp-for="IsActiveString" id="IsActiveHidden" value="true" />
+                                        <label for="IsActiveCheckbox" class="form-check-label">
+                                            Active
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">Inactive categories won't appear in the system</small>
+                                </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Configuration
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Create Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        @section Scripts {
+            <script>
+                $(document).ready(function() {
+                    // Handle checkbox change
+                    $('#IsActiveCheckbox').on('change', function() {
+                        $('#IsActiveHidden').val(this.checked ? 'true' : 'false');
+                    });
+
+                    // Auto-generate Category Name from Display Name
+                    $('#DisplayName').on('input', function() {
+                        var displayName = $(this).val();
+                        var categoryName = displayName.replace(/[^A-Za-z0-9]/g, '');
+                        $('#CategoryName').val(categoryName);
+                    });
+
+                    // Form validation
+                    $('form').on('submit', function(e) {
+                        var categoryName = $('#CategoryName').val();
+                        if (categoryName && !/^[A-Za-z0-9]+$/.test(categoryName)) {
+                            e.preventDefault();
+                            alert('Category Name must contain only letters and numbers (no spaces or special characters).');
+                            return false;
+                        }
+                    });
+                });
+            </script>
+        } 

@@ -1,0 +1,1135 @@
+﻿using DocuSign.eSign.Model;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using SendGrid.Helpers.Mail;
+using System;
+//using Oracle.ManagedDataAccess.Client;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data; // Required for DBNull.Value
+using System.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
+using System.Drawing; // لعمليات الصورة إذا أردت
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using WebApplication1.DataAccess;
+using WebApplication1.DataAccess; // تأكد من أنك تستخدم SqlDb هنا
+using WebApplication1.DataAccess; // Assume _db is of type SqlDb
+using WebApplication1.Models;
+using WebApplication1.Models;
+using WebApplication1.Services;
+using Color = System.Drawing.Color; // Assume 'model' is of a Controller-related type
+
+
+[Authorize(Roles = "Admin")]
+public class ControllerUserController : Controller
+{
+    private readonly SqlServerDb _db;
+    private readonly IPasswordHasher<ControllerUser> _hasher; // لاحظ ControllerUserViewModel
+    private readonly IHostEnvironment _hostEnvironment;
+
+    public ControllerUserController(
+        SqlServerDb db,
+        IPasswordHasher<ControllerUser> hasher, // لاحظ ControllerUserViewModel
+        IHostEnvironment hostEnvironment)
+    {
+        _db = db;
+        _hasher = hasher;
+        _hostEnvironment = hostEnvironment; // تأكد أن هذا السطر موجود
+    }
+    // GET: /ControllerUser
+    public IActionResult Index()
+    {
+        // The SQL query now includes a JOIN with the Countries table
+        const string sql = @"
+        SELECT 
+            c.controllerid, c.fullname, c.username, c.airportid,
+            a.airportname, a.icao_code AS airporticao,
+            co.CountryName,  -- The new column
+            c.licensepath, c.photopath, c.job_title, c.education_level,
+            c.date_of_birth, c.marital_status, c.phone_number, c.email,
+            c.address, c.hire_date, c.employment_status, c.current_department,
+            c.transfer_date, c.emergency_contact, c.LicenseNumber
+        FROM 
+            controllers c
+        LEFT JOIN 
+            airports a ON c.airportid = a.airportid
+        LEFT JOIN
+            Countries co ON a.CountryId = co.CountryId"; // The new JOIN
+
+        var dt = _db.ExecuteQuery(sql);
+
+        var list = dt.Rows.Cast<DataRow>()
+            .Select(r => new ControllerUser
+            {
+                ControllerId = Convert.ToInt32(r["controllerid"]),
+                FullName = r["fullname"].ToString(),
+                Username = r["username"].ToString(),
+                AirportId = r["airportid"] != DBNull.Value ? Convert.ToInt32(r["airportid"]) : 0,
+                AirportName = r["airportname"].ToString(),
+                icao_code = r["airporticao"].ToString(),
+                CountryName = r["CountryName"].ToString(), // Mapping the new property
+                LicensePath = r["licensepath"].ToString(),
+                PhotoPath = r["photopath"].ToString(),
+                JobTitle = r["job_title"].ToString(),
+                EducationLevel = r["education_level"].ToString(),
+                DateOfBirth = r["date_of_birth"] as DateTime?,
+                MaritalStatus = r["marital_status"].ToString(),
+                PhoneNumber = r["phone_number"].ToString(),
+                Email = r["email"].ToString(),
+                Address = r["address"].ToString(),
+                HireDate = r["hire_date"] as DateTime?,
+                EmploymentStatus = r["employment_status"].ToString(),
+                CurrentDepartment = r["current_department"].ToString(),
+                TransferDate = r["transfer_date"] as DateTime?,
+                EmergencyContact = r["emergency_contact"].ToString(),
+                LicenseNumber = r["LicenseNumber"].ToString(),
+            })
+            .ToList();
+
+        return View(list);
+    }
+
+
+    // GET: /ControllerUser/Create
+    [HttpGet]
+    public IActionResult Create()
+    {
+        LoadCountriesAndAirports();
+        LoadRoles();
+        LoadJobTitle();
+        LoadEducationLevel();
+        LoadEmploymentStatusLevel();
+        LoadMaritalStatusLevel();
+        LoadCurrentDepartment();
+        return View(new ControllerUser());
+    }
+
+    // POST: /ControllerUser/Create
+    // POST: /ControllerUser/Create
+    [HttpPost, ValidateAntiForgeryToken]
+    public IActionResult Create(ControllerUser model)
+    {
+        LoadCountriesAndAirports();
+        LoadRoles();
+        LoadJobTitle();
+        LoadEducationLevel();
+        LoadEmploymentStatusLevel();
+        LoadMaritalStatusLevel();
+        LoadCurrentDepartment();
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        // 1) منع تكرار اليوزر
+        if (_db.GetUserByUsername(model.Username) != null)
+        {
+            ModelState.AddModelError("Username", "This username is already taken.");
+            return View(model);
+        }
+
+        // 2) إنشاء حساب المستخدم
+        _db.CreateUser(model.Username, model.Password, model.Role);
+        var userRec = _db.GetUserByUsername(model.Username);
+        int userId = userRec?.userId ?? 0;
+
+        // 3) رفع الملفات
+        string sanitized = SanitizeFolderName(model.Username);
+        string photoPath = SaveUploadedFile(model.PhotoFile, "uploads", sanitized, "default.jpg");
+        string licensePath = SaveUploadedFile(model.LicenseFile, "licenses", sanitized, "default.pdf");
+
+        // 4) INSERT مع الحقول الجديدة و sequence
+        const string sql = @"
+INSERT INTO controllers (
+    fullname,
+    username,
+    password,
+    airportid,
+    photopath,
+    licensepath,
+    userid,
+    job_title,
+    education_level,
+    date_of_birth,
+    marital_status,
+    phone_number,
+    email,
+    address,
+    hire_date,
+    employment_status,
+    current_department,
+    transfer_date,
+    emergency_contact,
+    LicenseNumber,
+    NeedLicense,
+    IsActive,
+    CurrentSalary,
+    AnnualIncreasePercentage,
+    SalaryAfterAnnualIncrease,
+    BankAccountNumber,
+    BankName,
+    TaxId,
+    InsuranceNumber
+) VALUES (
+    @fullName,
+    @userName,
+    @password,
+    @airportId,
+    @photoPath,
+    @licensePath,
+    @userId,
+    @jobTitle,
+    @educationLevel,
+    @dateOfBirth,
+    @maritalStatus,
+    @phoneNumber,
+    @email,
+    @address,
+    @hireDate,
+    @employmentStatus,
+    @currentDepartment,
+    @transferDate,
+    @emergencyContact,
+    @LicenseNumber,
+    @NeedLicense,
+    @IsActive,
+    @CurrentSalary,
+    @AnnualIncreasePercentage,
+    @SalaryAfterAnnualIncrease,
+    @BankAccountNumber,
+    @BankName,
+    @TaxId,
+    @InsuranceNumber
+)"; // <== تم التعديل هنا
+
+        var parameters = new[]
+       {
+    new Microsoft.Data.SqlClient.SqlParameter("@fullName",           model.FullName),
+    new Microsoft.Data.SqlClient.SqlParameter("@userName",            model.Username),
+    new Microsoft.Data.SqlClient.SqlParameter("@password",            model.Password), // هذا عادةً يكون هاش كلمة المرور، وليس كلمة المرور الخام
+    new Microsoft.Data.SqlClient.SqlParameter("@airportId",           model.AirportId),
+    new Microsoft.Data.SqlClient.SqlParameter("@photoPath",           (object?)photoPath            ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@licensePath",         (object?)licensePath          ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@userId",              userId), // تأكد أن userId تم تعريفه وجلب قيمته مسبقاً
+    new Microsoft.Data.SqlClient.SqlParameter("@jobTitle",            (object?)model.JobTitle       ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@educationLevel",      (object?)model.EducationLevel ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@dateOfBirth",         (object?)model.DateOfBirth    ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@maritalStatus",       (object?)model.MaritalStatus  ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@phoneNumber",         (object?)model.PhoneNumber    ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@email",               (object?)model.Email          ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@address",             (object?)model.Address        ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@hireDate",            (object?)model.HireDate       ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@employmentStatus",    (object?)model.EmploymentStatus ?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@currentDepartment",   (object?)model.CurrentDepartment?? DBNull.Value),
+    new Microsoft.Data.SqlClient.SqlParameter("@transferDate",        (object?)model.TransferDate   ?? DBNull.Value),
+         new Microsoft.Data.SqlClient.SqlParameter("@emergencyContact",    (object?)model.EmergencyContact ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@LicenseNumber",    (object?)model.LicenseNumber ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@NeedLicense",    model.NeedLicense),
+     new Microsoft.Data.SqlClient.SqlParameter("@IsActive",    model.IsActive),
+     new Microsoft.Data.SqlClient.SqlParameter("@CurrentSalary",    (object?)model.CurrentSalary ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@AnnualIncreasePercentage",    (object?)model.AnnualIncreasePercentage ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@SalaryAfterAnnualIncrease",    (object?)model.SalaryAfterAnnualIncrease ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@BankAccountNumber",    (object?)model.BankAccountNumber ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@BankName",    (object?)model.BankName ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@TaxId",    (object?)model.TaxId ?? DBNull.Value),
+     new Microsoft.Data.SqlClient.SqlParameter("@InsuranceNumber",    (object?)model.InsuranceNumber ?? DBNull.Value)
+};
+
+        int rows = _db.ExecuteNonQuery(sql, parameters);
+        if (rows > 0)
+        {
+            TempData["SuccessMessage"] = "Controller created successfully!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ModelState.AddModelError("", "Failed to save controller.");
+        return View(model);
+    }
+
+
+    /// <summary>
+    /// *============ HELPER METHODS ============
+
+    private void LoadRoles()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.Roles = configService.GetDropdownValues("Roles");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.Roles = new List<SelectListItem>
+            {
+                new SelectListItem("Controller","Controller"),
+                new SelectListItem("OJAI Tower Access","SuperVisor OJAI"),
+                new SelectListItem("OJAM Access","SuperVisor OJAM"),
+                new SelectListItem("OJAQ Access","SuperVisor OJAQ"),
+                new SelectListItem("Amman TACC Access","SuperVisor TACC"),
+                new SelectListItem("DANS Queen","DANS Queen"),
+                new SelectListItem("AIS","AIS"),
+                new SelectListItem("Employee","User"),
+                new SelectListItem("CARC-Admin","Admin")
+            };
+        }
+    }
+
+    private void LoadJobTitle()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.JobTitle = configService.GetDropdownValues("JobTitles");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.JobTitle = new List<SelectListItem>
+             {
+                    new SelectListItem("ATC OJTI","ATC OJTI"),
+                    new SelectListItem("ATC","ATC"),
+                    new SelectListItem("Training Supervisor OJAI","Training Supervisor OJAI"),
+                    new SelectListItem("Training Supervisor  OJAM","Training Supervisor  OJAM"),
+                    new SelectListItem("Training Supervisor TACC","Training Supervisor TACC"),
+                    new SelectListItem("Head of Department OJAI-Tower","Head of Department OJAI-Tower"),
+                    new SelectListItem("Head of Department OJAM-Tower","Head of Department OJAM-Tower"),
+                    new SelectListItem("Head of Department-TACC","Head of Department-TACC"),
+                    new SelectListItem("OJAI DANS","OJAI DANS"),
+                    new SelectListItem("OJAM DANS","OJAM DANS"),
+                    new SelectListItem("OJAQ DANS","OJAQ DANS"),
+                    new SelectListItem("CARC DANS","CARC DANS"),
+                     new SelectListItem("Others","Others"),
+                };
+        }
+    }
+
+    private void LoadEducationLevel()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.EducationLevel = configService.GetConfigurationSelectListWithDefault("EducationLevels");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.EducationLevel = new List<SelectListItem> {
+                new SelectListItem("Diploma", "Diploma"),
+                new SelectListItem("Bachelor", "Bachelor"),
+                new SelectListItem("Master", "Master"),
+                new SelectListItem("Dr", "Dr"),
+                new SelectListItem("Other", "Other")
+            };
+        }
+    }
+    private void LoadEmploymentStatusLevel()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.EmploymentStatus = configService.GetConfigurationSelectListWithDefault("EmploymentStatus");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.EmploymentStatus = new List<SelectListItem> {
+                new SelectListItem("OJTI", "OJTI"),
+                new SelectListItem("ATC", "ATC"),
+                new SelectListItem("SuperVisor", "SuperVisor"),
+                new SelectListItem("Instructor", "Instructor"),
+                new SelectListItem("Examiner", "Examiner"),
+                new SelectListItem("Manager", "Manager"),
+                new SelectListItem("Others", "Others")
+            };
+        }
+    }
+    private void LoadMaritalStatusLevel()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.MaritalStatus = configService.GetConfigurationSelectListWithDefault("MaritalStatus");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.MaritalStatus = new List<SelectListItem> {
+                new SelectListItem("Single", "Single"),
+                new SelectListItem("Married", "Married"),
+                new SelectListItem("Other", "Other")
+            };
+        }
+    }
+    private void LoadCurrentDepartment()
+    {
+        // Use Configuration Service instead of hardcoded values
+        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
+        if (configService != null)
+        {
+            ViewBag.CurrentDepartment = configService.GetConfigurationSelectListWithDefault("Departments");
+        }
+        else
+        {
+            // Fallback to hardcoded values if service is not available
+            ViewBag.CurrentDepartment = new List<SelectListItem> {
+                new SelectListItem("Queen", "Queen "),
+                new SelectListItem("Aqaba", "Aqaba"),
+                new SelectListItem("Amman ", "Amman"),
+                new SelectListItem("TACC", "TACC"),
+                new SelectListItem("CARC", "CARC")
+            };
+        }
+    }
+
+    private void LoadCountriesAndAirports()
+    {
+        // Countries
+        var dtC = _db.ExecuteQuery("SELECT countryid,countryname FROM countries ORDER BY countryname");
+        ViewBag.Countries = dtC.Rows.Cast<DataRow>()
+            .Select(r => new SelectListItem
+            {
+                Value = r["countryid"].ToString(),
+                Text = r["countryname"].ToString()
+            }).ToList();
+
+        // Airports (with ICAO code)
+        var dtA = _db.ExecuteQuery(
+            "SELECT airportid,airportname,icao_code FROM airports ORDER BY airportname");
+        ViewBag.Airports = dtA.Rows.Cast<DataRow>()
+            .Select(r => new SelectListItem
+            {
+                Value = r["airportid"].ToString(),
+                Text = $"{r["airportname"]} ({r["icao_code"]})"
+            }).ToList();
+    }
+
+    private string SaveUploadedFile(IFormFile file, string folderCategory, string userFolder, string defaultFileName)
+    {
+        if (file == null || file.Length == 0)
+            return $"/{folderCategory}/default_user_{defaultFileName}";
+
+        // اضمن وجود المجلد
+        string root = Directory.GetCurrentDirectory();
+        string target = Path.Combine(root, "wwwroot", folderCategory, userFolder);
+        Directory.CreateDirectory(target);
+
+        // اسم فريد
+        string unique = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+        string full = Path.Combine(target, unique);
+        using var fs = new FileStream(full, FileMode.Create);
+        file.CopyTo(fs);
+
+        return $"/{folderCategory}/{userFolder}/{unique}";
+    }
+
+    private string SanitizeFolderName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "default_user";
+        string invalid = new string(Path.GetInvalidFileNameChars())
+                       + new string(Path.GetInvalidPathChars());
+        return Regex.Replace(name, $"[{Regex.Escape(invalid)}]", "_");
+    }
+
+    private List<SelectListItem> GetCountrySelectList()
+    {
+        var dt = _db.ExecuteQuery("SELECT countryid, countryname FROM countries");
+        return dt.Rows.Cast<DataRow>()
+                 .Select(r => new SelectListItem
+                 {
+                     Value = r["countryid"].ToString(),
+                     Text = r["countryname"].ToString()
+                 })
+                 .ToList();
+    }
+
+    private DataTable GetAirportsFromDb()
+    {
+        // هذا مجرد مثال، استبدله بطريقة جلب المطارات الفعلية من قاعدة بياناتك
+        // يجب أن يرجع هذا DataTable أعمدة مثل AirportId, AirportName, CountryId
+        string airportQuery = "SELECT AirportId, AirportName,icao_code, CountryId FROM Airports"; // تأكد أن أسماء الأعمدة صحيحة
+        return _db.ExecuteQuery(airportQuery); // افترض أن _db هو كائن الوصول لقاعدة البيانات
+    }
+
+    private void PopulateAirportsViewBag()
+    {
+        DataTable dtAirports = GetAirportsFromDb();
+        var airportsList = new List<object>();
+        foreach (DataRow row in dtAirports.Rows)
+        {
+            airportsList.Add(new
+            {
+                AirportId = Convert.ToInt32(row["AirportId"]),
+                AirportName = row["AirportName"].ToString(),
+                icao_code = row["icao_code"].ToString(), // تم إضافة icao_code هنا
+                CountryId = Convert.ToInt32(row["CountryId"])
+            });
+        }
+        ViewBag.Airports = airportsList;
+    }
+
+    private string ComputeSha256Hash(string raw)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        byte[] bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(raw));
+        return Convert.ToBase64String(bytes);
+    }
+
+
+
+    /// </summary>
+
+    //*********************************************
+    // GET: /ControllerUser/Edit
+    [HttpGet]
+    public IActionResult Edit(int id)
+    {
+        // 1) جلب البيانات مع الدور من جدول USERS
+        const string sql = @"
+    SELECT c.controllerid,
+            c.fullname,
+            c.username,
+            u.passwordhash AS password,
+            c.airportid,
+            a.CountryId, -- <<== هذا هو الحقل الجديد الذي نحتاجه
+            u.rolename AS role,
+            c.job_title,
+            c.education_level,
+            c.date_of_birth,
+            c.marital_status,
+            c.phone_number,
+            c.email,
+            c.address,
+            c.hire_date,
+            c.employment_status,
+            c.current_department,
+            c.transfer_date,
+            c.emergency_contact,
+            c.LicenseNumber,
+            c.NeedLicense,
+            c.IsActive,
+            c.CurrentSalary,
+            c.AnnualIncreasePercentage,
+            c.SalaryAfterAnnualIncrease,
+            c.BankAccountNumber,
+            c.BankName,
+            c.TaxId,
+            c.InsuranceNumber
+            FROM controllers c
+            JOIN users u ON c.userid = u.userid
+            LEFT JOIN airports a ON c.airportid = a.airportid -- <<== وهذا هو الربط الجديد
+        WHERE c.controllerid = @ControllerId";
+        var dt = _db.ExecuteQuery(sql, new Microsoft.Data.SqlClient.SqlParameter("@ControllerId", id)); // <== تم التعديل
+
+
+        if (dt.Rows.Count == 0)
+            return NotFound();
+
+        var row = dt.Rows[0];
+        var model = new ControllerUser
+        {
+            ControllerId = Convert.ToInt32(row["controllerid"]),
+            FullName = row["fullname"].ToString()!,
+            Username = row["username"].ToString()!,
+            Password = row["password"].ToString()!,   // هذا هو الهاش الحالي
+            Role = row["role"].ToString()!,
+            AirportId = Convert.ToInt32(row["airportid"]),
+
+            // PhotoPath = row["photopath"].ToString(),
+            //LicensePath = row["licensepath"].ToString(),
+
+            JobTitle = row["job_title"].ToString(),
+            EducationLevel = row["education_level"].ToString(),
+            DateOfBirth = row["date_of_birth"] as DateTime?,
+            MaritalStatus = row["marital_status"].ToString(),
+            PhoneNumber = row["phone_number"].ToString(),
+            Email = row["email"].ToString(),
+            Address = row["address"].ToString(),
+            HireDate = row["hire_date"] as DateTime?,
+            EmploymentStatus = row["employment_status"].ToString(),
+            CurrentDepartment = row["current_department"].ToString(),
+            TransferDate = row["transfer_date"] as DateTime?,
+            EmergencyContact = row["emergency_contact"].ToString(),
+            LicenseNumber = row["LicenseNumber"].ToString(),
+            NeedLicense = Convert.ToBoolean(row["NeedLicense"]),
+            IsActive = Convert.ToBoolean(row["IsActive"]),
+            CurrentSalary = row["CurrentSalary"] != DBNull.Value ? Convert.ToDecimal(row["CurrentSalary"]) : null,
+            AnnualIncreasePercentage = row["AnnualIncreasePercentage"] != DBNull.Value ? Convert.ToDecimal(row["AnnualIncreasePercentage"]) : null,
+            SalaryAfterAnnualIncrease = row["SalaryAfterAnnualIncrease"] != DBNull.Value ? Convert.ToDecimal(row["SalaryAfterAnnualIncrease"]) : null,
+            BankAccountNumber = row["BankAccountNumber"]?.ToString(),
+            BankName = row["BankName"]?.ToString(),
+            TaxId = row["TaxId"]?.ToString(),
+            InsuranceNumber = row["InsuranceNumber"]?.ToString()
+        };
+        ViewBag.SelectedCountryId = row["CountryId"] != DBNull.Value ? Convert.ToInt32(row["CountryId"]) : 0;
+
+        LoadCountriesAndAirports();
+        LoadRoles();
+        LoadJobTitle();
+        LoadEducationLevel();
+        LoadEmploymentStatusLevel();
+        LoadMaritalStatusLevel();
+        LoadCurrentDepartment();
+        return View(model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public IActionResult Edit(ControllerUser model)
+    {
+        LoadCountriesAndAirports();
+        LoadRoles();
+        LoadJobTitle();
+        LoadEducationLevel();
+        LoadEmploymentStatusLevel();
+        LoadMaritalStatusLevel();
+        LoadCurrentDepartment();
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        // اجلب الباسورد هاش الحالي إذا لم يدخل كلمة سر جديدة
+        string newHashedPassword = string.IsNullOrEmpty(model.Password)
+            ? _db.GetUserPasswordHashByUserId(model.UserId)
+            : _hasher.HashPassword(model, model.Password);
+
+        // رفع ملفات جديدة إن وجدت
+        string sanitizedUsername = SanitizeFolderName(model.Username);
+        string photoPath = model.PhotoPath;
+        string licensePath = model.LicensePath;
+
+        if (model.PhotoFile != null && model.PhotoFile.Length > 0)
+            photoPath = SaveUploadedFile(model.PhotoFile, "uploads", sanitizedUsername, "default.jpg");
+        if (model.LicenseFile != null && model.LicenseFile.Length > 0)
+            licensePath = SaveUploadedFile(model.LicenseFile, "licenses", sanitizedUsername, "default.pdf");
+
+        // استخدم ترانزاكشن لضمان سلامة البيانات في الجدولين
+        using (var conn = _db.GetConnection())
+        {
+            conn.Open();
+            using (var tx = conn.BeginTransaction())
+            {
+                // 1) تحديث users دائمًا
+                const string updUser = @"
+                UPDATE users SET passwordhash=@pwdHash, rolename=@role WHERE username=@username";
+                using (var cmdUser = new Microsoft.Data.SqlClient.SqlCommand(updUser, conn, tx))
+                {
+                    cmdUser.Parameters.AddWithValue("@pwdHash", newHashedPassword);
+                    cmdUser.Parameters.AddWithValue("@role", model.Role ?? (object)DBNull.Value);
+                    cmdUser.Parameters.AddWithValue("@username", model.Username);
+                    cmdUser.ExecuteNonQuery();
+                }
+
+                // 2) تحديث controllers دائمًا
+                const string updCtrl = @"
+                UPDATE controllers SET
+                    fullname = @fullName,
+                    airportid = @airportId,
+                   -- photopath = @photoPath,
+                   -- licensepath = @licensePath,
+                    job_title = @jobTitle,
+                    education_level = @educationLevel,
+                    date_of_birth = @dateOfBirth,
+                    marital_status = @maritalStatus,
+                    phone_number = @phoneNumber,
+                    email = @email,
+                    address = @address,
+                    hire_date = @hireDate,
+                    employment_status = @employmentStatus,
+                    current_department = @currentDepartment,
+                    transfer_date = @transferDate,
+                    emergency_contact = @emergencyContact,
+                    LicenseNumber =@LicenseNumber,
+                    NeedLicense = @NeedLicense,
+                    IsActive = @IsActive,
+                    CurrentSalary = @CurrentSalary,
+                    AnnualIncreasePercentage = @AnnualIncreasePercentage,
+                    SalaryAfterAnnualIncrease = @SalaryAfterAnnualIncrease,
+                    BankAccountNumber = @BankAccountNumber,
+                    BankName = @BankName,
+                    TaxId = @TaxId,
+                    InsuranceNumber = @InsuranceNumber,
+                    password = @pwdHash
+                WHERE controllerid = @ControllerId";
+                using (var cmdCtrl = new Microsoft.Data.SqlClient.SqlCommand(updCtrl, conn, tx))
+                {
+                    cmdCtrl.Parameters.AddWithValue("@ControllerId", model.ControllerId);
+                    cmdCtrl.Parameters.AddWithValue("@pwdHash", newHashedPassword);
+                    //cmdCtrl.Parameters.AddWithValue("@role", model.Role ?? (object)DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@fullName", (object?)model.FullName ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@airportId", (object?)model.AirportId ?? DBNull.Value);
+                    //cmdCtrl.Parameters.AddWithValue("@photoPath", (object?)photoPath ?? DBNull.Value);
+                    //cmdCtrl.Parameters.AddWithValue("@licensePath", (object?)licensePath ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@jobTitle", (object?)model.JobTitle ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@educationLevel", (object?)model.EducationLevel ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@dateOfBirth", (object?)model.DateOfBirth ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@maritalStatus", (object?)model.MaritalStatus ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@phoneNumber", (object?)model.PhoneNumber ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@email", (object?)model.Email ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@address", (object?)model.Address ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@hireDate", (object?)model.HireDate ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@employmentStatus", (object?)model.EmploymentStatus ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@currentDepartment", (object?)model.CurrentDepartment ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@transferDate", (object?)model.TransferDate ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@emergencyContact", (object?)model.EmergencyContact ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@LicenseNumber", (object?)model.LicenseNumber ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@NeedLicense", model.NeedLicense);
+                    cmdCtrl.Parameters.AddWithValue("@IsActive", model.IsActive);
+                    cmdCtrl.Parameters.AddWithValue("@CurrentSalary", (object?)model.CurrentSalary ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@AnnualIncreasePercentage", (object?)model.AnnualIncreasePercentage ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@SalaryAfterAnnualIncrease", (object?)model.SalaryAfterAnnualIncrease ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@BankAccountNumber", (object?)model.BankAccountNumber ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@BankName", (object?)model.BankName ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@TaxId", (object?)model.TaxId ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@InsuranceNumber", (object?)model.InsuranceNumber ?? DBNull.Value);
+                    cmdCtrl.ExecuteNonQuery();
+                }
+
+                tx.Commit();
+            }
+        }
+
+        TempData["SuccessMessage"] = "Controller updated successfully!";
+        return RedirectToAction(nameof(Index));
+    }
+
+
+    // لا تنس دالة LoadCountriesAndAirports إذا لم تكن موجودة بالفعل
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Delete(int id)
+    {
+        try
+        {
+            int licCount = _db.GetLicenseCountByController(id);
+            // (يمكنك تمرير licCount إلى TempData أو ViewBag لعرض تحذير إن أردت)
+
+            _db.DeleteController(id);
+            TempData["Success"] = "تم حذف المراقب وجميع سجلات رخصه من قاعدة البيانات.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"تعذّر الحذف: {ex.Message}";
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    // في ملف الـ Controller الخاص بك (مثلاً ControllerUserController.cs)
+
+    // تأكد من وجود using System.Linq; في بداية الملف
+
+    public IActionResult ExportToPDF(string fullName, string username, string airportName, string icao_code,
+    string jobTitle, string educationLevel, string maritalStatus, string phoneNumber, string email, string employmentStatus, string currentDepartment)
+    {
+        // 1. تحديد الترخيص
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+        // 2. جلب البيانات المفلترة
+        var filteredControllers = _db.GetControllers(
+            fullName, username, airportName, icao_code, jobTitle, educationLevel,
+            maritalStatus, phoneNumber, email, employmentStatus, currentDepartment
+        );
+
+        // ==> نحصل على عدد السجلات هنا <==
+        var recordCount = filteredControllers.Count;
+
+        // 3. تعريف دوال التنسيق (Styles)
+        IContainer HeaderStyle(IContainer container) => container
+            .Background(Colors.Blue.Medium)
+            .PaddingVertical(4).PaddingHorizontal(6)
+            .AlignCenter()
+            .DefaultTextStyle(x => x.FontColor(Colors.White).FontSize(10).Bold());
+
+        IContainer BodyCellStyle(IContainer container) => container
+            .BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
+            .PaddingVertical(4).PaddingHorizontal(6);
+
+        // 4. إنشاء المستند
+        var document = QuestPDF.Fluent.Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(25);
+                page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                // تصميم رأس الصفحة (Header)
+                page.Header().Column(headerCol =>
+                {
+                    headerCol.Item().Row(row =>
+                    {
+                        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "carc.png");
+                        if (System.IO.File.Exists(logoPath))
+                        {
+                            var logoBytes = System.IO.File.ReadAllBytes(logoPath);
+                            row.ConstantColumn(80).Image(logoBytes).FitArea();
+                        }
+
+                        row.RelativeColumn().Column(col =>
+                        {
+                            col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(13);
+                            col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(10).FontColor(Colors.Grey.Darken1);
+                            col.Item().PaddingTop(5).AlignCenter().Text(DateTime.Now.ToString("yyyy-MM-dd HH:mm")).FontSize(9).FontColor(Colors.Grey.Darken2);
+
+                        });
+                    });
+                    headerCol.Item().PaddingTop(15);
+                    headerCol.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+                    headerCol.Item().PaddingTop(5);
+                });
+
+                // محتوى الصفحة (Content)
+                page.Content().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(30);
+                        columns.RelativeColumn(2.5f);
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn(2.5f);
+                        columns.RelativeColumn(2);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderStyle).Text("#");
+                        header.Cell().Element(HeaderStyle).Text("Full Name");
+                        header.Cell().Element(HeaderStyle).Text("User Name");
+                        header.Cell().Element(HeaderStyle).Text("Status");
+                        header.Cell().Element(HeaderStyle).Text("Location");
+                        header.Cell().Element(HeaderStyle).Text("Role");
+                    });
+
+                    int index = 1;
+                    foreach (var c in filteredControllers)
+                    {
+                        table.Cell().Element(BodyCellStyle).AlignCenter().Text(index++.ToString());
+                        table.Cell().Element(BodyCellStyle).Text(c.FullName ?? "-");
+                        table.Cell().Element(BodyCellStyle).Text(c.Username ?? "-");
+                        table.Cell().Element(BodyCellStyle).Text(c.EmploymentStatus ?? "-");
+                        table.Cell().Element(BodyCellStyle).Text(c.AirportName ?? "-");
+                        table.Cell().Element(BodyCellStyle).Text(c.Role ?? "-");
+                    }
+                });
+
+                // =============================================================
+                // ==> هنا التعديل المطلوب لإضافة عدد السجلات في التذييل <==
+                // =============================================================
+                page.Footer().Row(row =>
+                {
+                    // العنصر الأول في الصف: عدد السجلات على اليسار
+                    row.RelativeColumn().Text(txt =>
+                    {
+                        txt.DefaultTextStyle(x => x.FontSize(8).FontColor(Colors.Grey.Darken1));
+                        txt.Span($"Total Records: {recordCount}");
+                    });
+
+                    // العنصر الثاني في الصف: رقم الصفحة على اليمين
+                    row.RelativeColumn().AlignRight().Text(txt =>
+                    {
+                        txt.DefaultTextStyle(x => x.FontSize(8).FontColor(Colors.Grey.Darken1));
+                        txt.Span("Page ");
+                        txt.CurrentPageNumber();
+                        txt.Span(" of ");
+                        txt.TotalPages();
+                    });
+                });
+            });
+        });
+
+        var pdfBytes = document.GeneratePdf();
+        return File(pdfBytes, "application/pdf", $"Controllers_List_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+    public IActionResult ExportToExcel(
+    string fullName, string username, string airportName, string icao_code,
+    string jobTitle, string educationLevel, string maritalStatus,
+    string phoneNumber, string email, string employmentStatus, string currentDepartment)
+    {
+        // 1. تحديد ترخيص استخدام المكتبة
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        // 2. جلب البيانات المفلترة بنفس الطريقة
+        var controllers = _db.GetControllers(
+            fullName, username, airportName, icao_code, jobTitle, educationLevel,
+            maritalStatus, phoneNumber, email, employmentStatus, currentDepartment
+        );
+
+        // 3. إنشاء ملف الإكسل
+        using (var package = new ExcelPackage())
+        {
+            var worksheet = package.Workbook.Worksheets.Add("Air Traffic Controllers");
+
+            // --- إعدادات وتصميم الهيدر والشعار ---
+            worksheet.Cells.Style.Font.Name = "Arial";
+            worksheet.View.RightToLeft = false; // للتأكد من أن الورقة من اليسار لليمين
+
+            // إضافة الشعار
+            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "carc.png");
+            if (System.IO.File.Exists(logoPath))
+            {
+                var excelImage = worksheet.Drawings.AddPicture("Logo", logoPath);
+                excelImage.SetPosition(0, 0, 0, 15); // (row, row offset, col, col offset)
+                excelImage.SetSize(120, 65); // تعديل حجم الشعار ليكون مناسبًا
+            }
+
+            // إضافة العناوين الرئيسية
+            worksheet.Cells["C1"].Value = "هيئة تنظيم الطيران المدني الأردني";
+            worksheet.Cells["C1"].Style.Font.Bold = true;
+            worksheet.Cells["C1"].Style.Font.Size = 14;
+            worksheet.Cells["C1:H1"].Merge = true;
+            worksheet.Cells["C1:H1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+            worksheet.Cells["C2"].Value = "JORDAN CIVIL AVIATION REGULATORY COMMISSION";
+            worksheet.Cells["C2"].Style.Font.Size = 10;
+            worksheet.Cells["C2:H2"].Merge = true;
+            worksheet.Cells["C2:H2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+            worksheet.Cells["C3"].Value = $"Controllers Report - {DateTime.Now:yyyy-MM-dd}";
+            worksheet.Cells["C3"].Style.Font.Size = 9;
+            worksheet.Cells["C3"].Style.Font.Italic = true;
+            worksheet.Cells["C3:H3"].Merge = true;
+            worksheet.Cells["C3:H3"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+            // --- تحديد عناوين الجدول ---
+            var headers = new string[]
+            {
+            "#", "Full Name", "Username", "Airport", "ICAO", "Job Title",
+            "Employment Status", "Department", "Role", "Hire Date", "Date of Birth",
+            "Education", "Marital Status", "Phone Number", "Email"
+            };
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                worksheet.Cells[5, i + 1].Value = headers[i];
+            }
+
+            // تنسيق صف العناوين
+            using (var range = worksheet.Cells[5, 1, 5, headers.Length])
+            {
+                range.Style.Font.Bold = true;
+                range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                range.Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#4F81BD")); // لون أزرق
+                range.Style.Font.Color.SetColor(Color.White);
+                range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+            }
+
+            // --- إضافة البيانات ---
+            int row = 6;
+            int index = 1;
+            foreach (var c in controllers)
+            {
+                worksheet.Cells[row, 1].Value = index++;
+                worksheet.Cells[row, 2].Value = c.FullName;
+                worksheet.Cells[row, 3].Value = c.Username;
+                worksheet.Cells[row, 4].Value = c.AirportName;
+                worksheet.Cells[row, 5].Value = c.icao_code;
+                worksheet.Cells[row, 6].Value = c.JobTitle;
+                worksheet.Cells[row, 7].Value = c.EmploymentStatus;
+                worksheet.Cells[row, 8].Value = c.CurrentDepartment;
+                worksheet.Cells[row, 9].Value = c.Role;
+                worksheet.Cells[row, 10].Value = c.HireDate?.ToString("yyyy-MM-dd");
+                worksheet.Cells[row, 11].Value = c.DateOfBirth?.ToString("yyyy-MM-dd");
+                worksheet.Cells[row, 12].Value = c.EducationLevel;
+                worksheet.Cells[row, 13].Value = c.MaritalStatus;
+                worksheet.Cells[row, 14].Value = c.PhoneNumber;
+                worksheet.Cells[row, 15].Value = c.Email;
+                row++;
+            }
+
+            // تنسيق الخلايا الرقمية والتاريخية
+            worksheet.Cells[6, 10, row - 1, 11].Style.Numberformat.Format = "yyyy-mm-dd";
+            worksheet.Cells[6, 1, row - 1, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+            // جعل الأعمدة تتناسب مع المحتوى تلقائيًا
+            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+            var excelBytes = package.GetAsByteArray();
+            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Controllers_List_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+    }
+    // في NotificationsController مثلاً
+
+    [HttpGet]
+    public JsonResult GetAirports(int countryId)
+    {
+        var airports = _db.GetAirportsByCountry(countryId);
+        return Json(airports);
+    }
+
+    // إضافة هذه الدالة إلى ControllerUserController.cs
+
+   [HttpGet]
+public IActionResult ViewControllerDetails(int id)
+{
+    try
+    {
+        // جلب البيانات الأساسية للمراقب
+        var controllerData = _db.GetControllerById(id);
+        if (controllerData.Rows.Count == 0)
+        {
+            return Json(new { success = false, message = "Controller not found" });
+        }
+
+        var row = controllerData.Rows[0];
+
+        // إنشاء كائن البيانات الأساسية للمراقب
+        var controller = new ControllerUser
+        {
+            ControllerId = Convert.ToInt32(row["controllerid"]),
+            FullName = row["fullname"].ToString(),
+            Username = row["username"].ToString(),
+            JobTitle = row["job_title"]?.ToString(),
+            EducationLevel = row["education_level"]?.ToString(),
+            DateOfBirth = row["date_of_birth"] as DateTime?,
+            MaritalStatus = row["marital_status"]?.ToString(),
+            PhoneNumber = row["phone_number"]?.ToString(),
+            Email = row["email"]?.ToString(),
+            Address = row["address"]?.ToString(),
+            HireDate = row["hire_date"] as DateTime?,
+            EmploymentStatus = row["employment_status"]?.ToString(),
+            CurrentDepartment = row["current_department"]?.ToString(),
+            EmergencyContact = row["emergency_contact"]?.ToString(),
+            PhotoPath = row["photopath"]?.ToString(),
+            LicenseNumber = row["LicenseNumber"]?.ToString(),
+            // الحقول الجديدة
+            NeedLicense = row["NeedLicense"] != DBNull.Value && Convert.ToBoolean(row["NeedLicense"]),
+            IsActive = row["IsActive"] != DBNull.Value && Convert.ToBoolean(row["IsActive"]),
+            CurrentSalary = row["CurrentSalary"] != DBNull.Value ? Convert.ToDecimal(row["CurrentSalary"]) : null,
+            AnnualIncreasePercentage = row["AnnualIncreasePercentage"] != DBNull.Value ? Convert.ToDecimal(row["AnnualIncreasePercentage"]) : null,
+            SalaryAfterAnnualIncrease = row["SalaryAfterAnnualIncrease"] != DBNull.Value ? Convert.ToDecimal(row["SalaryAfterAnnualIncrease"]) : null,
+            BankAccountNumber = row["BankAccountNumber"]?.ToString(),
+            BankName = row["BankName"]?.ToString(),
+            TaxId = row["TaxId"]?.ToString(),
+            InsuranceNumber = row["InsuranceNumber"]?.ToString()
+        };
+
+        // جلب البيانات المرتبطة: الرخص، الشهادات، والملاحظات
+        var licenses = _db.GetLicensesByController(controller.Username);
+        var certificates = _db.GetCertificatesByController(controller.Username);
+        var observations = _db.GetObservationsByController(controller.Username);
+
+        // --- جلب تفاصيل المشاريع بالكامل ---
+
+        // 1. جلب قائمة المشاريع الأساسية للمراقب
+        var basicProjects = _db.GetProjectsByParticipant(controller.ControllerId, null);
+
+        // 2. إنشاء قائمة لتخزين المشاريع مع تفاصيلها الكاملة
+        var detailedProjects = new List<object>();
+
+        // 3. المرور على كل مشروع لجلب تفاصيله الإضافية
+        foreach (var project in basicProjects)
+        {
+            // استدعاء الدوال المساعدة التي قمنا بإنشائها
+            var participants = _db.GetParticipantsByProjectId(project.ProjectId);
+            var divisions = _db.GetDivisionsByProjectId(project.ProjectId);
+            var files = _db.GetFilesByProjectId(project.ProjectId);
+
+            // 4. بناء الكائن التفصيلي للمشروع
+            detailedProjects.Add(new
+            {
+                id = project.ProjectId,
+                projectName = project.ProjectName,
+                status = project.Status,
+                description = project.Description,
+                location = project.Location,
+                startDate = project.StartDate?.ToString("yyyy-MM-dd"),
+                endDate = project.EndDate?.ToString("yyyy-MM-dd"),
+                
+                // إضافة القوائم التفصيلية
+                participants = participants.Select(p => new { name = p.Name, role = p.Role }).ToList(),
+                divisions = divisions,
+                files = files.Select(f => new { name = f.Name, size = f.Size, url = f.Url }).ToList()
+            });
+        }
+        
+        // --- إنشاء الاستجابة النهائية ---
+        var response = new
+        {
+            success = true,
+            controller = new
+            {
+                fullName = controller.FullName,
+                username = controller.Username,
+                jobTitle = controller.JobTitle,
+                educationLevel = controller.EducationLevel,
+                dateOfBirth = controller.DateOfBirth?.ToString("yyyy-MM-dd"),
+                maritalStatus = controller.MaritalStatus,
+                phoneNumber = controller.PhoneNumber,
+                email = controller.Email,
+                address = controller.Address,
+                hireDate = controller.HireDate?.ToString("yyyy-MM-dd"),
+                employmentStatus = controller.EmploymentStatus,
+                currentDepartment = controller.CurrentDepartment,
+                emergencyContact = controller.EmergencyContact,
+                photoPath = Url.Content(controller.PhotoPath ?? "~/images/default-avatar.png"),
+                licenseNumber = controller.LicenseNumber,
+                // الحقول الجديدة
+                needLicense = controller.NeedLicense,
+                isActive = controller.IsActive,
+                currentSalary = controller.CurrentSalary,
+                annualIncreasePercentage = controller.AnnualIncreasePercentage,
+                salaryAfterAnnualIncrease = controller.SalaryAfterAnnualIncrease,
+                bankAccountNumber = controller.BankAccountNumber,
+                bankName = controller.BankName,
+                taxId = controller.TaxId,
+                insuranceNumber = controller.InsuranceNumber
+            },
+            licenses = licenses.Select(l => new
+            {
+                typeName = l.TypeName,
+                issueDate = l.IssueDate?.ToString("yyyy-MM-dd"),
+                expiryDate = l.ExpiryDate?.ToString("yyyy-MM-dd"),
+                filePath = Url.Content(l.FilePath ?? "#")
+            }).ToList(),
+            certificates = certificates.Select(c => new
+            {
+                typeName = c.TypeName,
+                title = c.Title,
+                issueDate = c.IssueDate?.ToString("yyyy-MM-dd"),
+                expiryDate = c.ExpiryDate?.ToString("yyyy-MM-dd"),
+                status = c.Status,
+                filePath = Url.Content(c.FilePath ?? "#")
+            }).ToList(),
+            observations = observations.Select(o => new
+            {
+                travelCountry = o.TravelCountry,
+                durationDays = o.DurationDays,
+                departDate = o.DepartDate?.ToString("yyyy-MM-dd"),
+                returnDate = o.ReturnDate?.ToString("yyyy-MM-dd"),
+                licenseNumber = o.LicenseNumber,
+                notes = o.Notes
+            }).ToList(),
+            // استخدام قائمة المشاريع التفصيلية
+            projects = detailedProjects
+        };
+
+        return Json(response);
+    }
+    catch (Exception ex)
+    {
+        // يفضل تسجيل الخطأ هنا لمساعدتك على تصحيحه
+        // Log.Error(ex, "Error in ViewControllerDetails");
+        return Json(new { success = false, message = "An error occurred while fetching details." });
+    }
+}
+
+
+}

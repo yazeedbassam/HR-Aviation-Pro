@@ -1,0 +1,223 @@
+/* === Login Page Specific Styles === */
+
+/* --- Body Background and Theme --- */
+/* Using the dark theme from aviation_radar_styles.css */
+body.login-page-layout {
+    /* font-family is in base.css */
+    /* display, align-items, justify-content, min-height, padding are in layout.css */
+    background: var(--background-dark-theme) url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='0' x2='0' y1='0' y2='100%25' gradientTransform='rotate(240)'%3E%3Cstop offset='0' stop-color='%230c2340'/%3E%3Cstop offset='1' stop-color='%23153f65'/%3E%3C/linearGradient%3E%3Cpattern patternUnits='userSpaceOnUse' id='b' width='540' height='450' x='0' y='0' viewBox='0 0 1080 900'%3E%3Cg fill-opacity='0.05'%3E%3Cpolygon fill='%23444' points='90 150 0 300 180 300'/%3E%3Cpolygon points='90 150 180 0 0 0'/%3E%3Cpolygon fill='%23AAA' points='270 150 360 0 180 0'/%3E%3Cpolygon fill='%23DDD' points='450 150 360 300 540 300'/%3E%3Cpolygon fill='%23999' points='450 150 540 0 360 0'/%3E%3Cpolygon points='630 150 540 300 720 300'/%3E%3Cpolygon fill='%23DDD' points='630 150 720 0 540 0'/%3E%3Cpolygon fill='%23444' points='810 150 720 300 900 300'/%3E%3Cpolygon fill='%23FFF' points='810 150 900 0 720 0'/%3E%3Cpolygon fill='%23DDD' points='990 150 900 300 1080 300'/%3E%3Cpolygon fill='%23444' points='990 150 1080 0 900 0'/%3E%3Cpolygon fill='%23DDD' points='90 450 0 600 180 600'/%3E%3Cpolygon points='90 450 180 300 0 300'/%3E%3Cpolygon fill='%23666' points='270 450 180 600 360 600'/%3E%3Cpolygon fill='%23AAA' points='270 450 360 300 180 300'/%3E%3Cpolygon fill='%23DDD' points='450 450 360 600 540 600'/%3E%3Cpolygon fill='%23999' points='450 450 540 300 360 300'/%3E%3Cpolygon fill='%23999' points='630 450 540 600 720 600'/%3E%3Cpolygon fill='%23FFF' points='630 450 720 300 540 300'/%3E%3Cpolygon points='810 450 720 600 900 600'/%3E%3Cpolygon fill='%23DDD' points='810 450 900 300 720 300'/%3E%3Cpolygon fill='%23AAA' points='990 450 900 600 1080 600'/%3E%3Cpolygon fill='%23444' points='990 450 1080 300 900 300'/%3E%3Cpolygon fill='%23222' points='90 750 0 900 180 900'/%3E%3Cpolygon points='270 750 180 900 360 900'/%3E%3Cpolygon fill='%23DDD' points='270 750 360 600 180 600'/%3E%3Cpolygon points='450 750 540 600 360 600'/%3E%3Cpolygon points='630 750 540 900 720 900'/%3E%3Cpolygon fill='%23444' points='630 750 720 600 540 600'/%3E%3Cpolygon fill='%23AAA' points='810 750 720 900 900 900'/%3E%3Cpolygon fill='%23666' points='810 750 900 600 720 600'/%3E%3Cpolygon fill='%23999' points='990 750 900 900 1080 900'/%3E%3Cpolygon fill='%23999' points='180 0 90 150 270 150'/%3E%3Cpolygon fill='%23444' points='360 0 270 150 450 150'/%3E%3Cpolygon fill='%23FFF' points='540 0 450 150 630 150'/%3E%3Cpolygon points='900 0 810 150 990 150'/%3E%3Cpolygon fill='%23222' points='0 300 -90 450 90 450'/%3E%3Cpolygon fill='%23FFF' points='0 300 90 150 -90 150'/%3E%3Cpolygon fill='%23FFF' points='180 300 90 450 270 450'/%3E%3Cpolygon fill='%23666' points='180 300 270 150 90 150'/%3E%3Cpolygon fill='%23222' points='360 300 270 450 450 450'/%3E%3Cpolygon fill='%23FFF' points='360 300 450 150 270 150'/%3E%3Cpolygon fill='%23444' points='540 300 450 450 630 450'/%3E%3Cpolygon fill='%23222' points='540 300 630 150 450 150'/%3E%3Cpolygon fill='%23AAA' points='720 300 630 450 810 450'/%3E%3Cpolygon fill='%23666' points='720 300 810 150 630 150'/%3E%3Cpolygon fill='%23FFF' points='900 300 810 450 990 450'/%3E%3Cpolygon fill='%23999' points='900 300 990 150 810 150'/%3E%3Cpolygon points='0 600 -90 750 90 750'/%3E%3Cpolygon fill='%23666' points='0 600 90 450 -90 450'/%3E%3Cpolygon fill='%23AAA' points='180 600 90 750 270 750'/%3E%3Cpolygon fill='%23444' points='180 600 270 450 90 450'/%3E%3Cpolygon fill='%23444' points='360 600 270 750 450 750'/%3E%3Cpolygon fill='%23999' points='360 600 450 450 270 450'/%3E%3Cpolygon fill='%23666' points='540 600 630 450 450 450'/%3E%3Cpolygon fill='%23222' points='720 600 630 750 810 750'/%3E%3Cpolygon fill='%23FFF' points='900 600 810 750 990 750'/%3E%3Cpolygon fill='%23222' points='900 600 990 450 810 450'/%3E%3Cpolygon fill='%23DDD' points='0 900 90 750 -90 750'/%3E%3Cpolygon fill='%23444' points='180 900 270 750 90 750'/%3E%3Cpolygon fill='%23FFF' points='360 900 450 750 270 750'/%3E%3Cpolygon fill='%23AAA' points='540 900 630 750 450 750'/%3E%3Cpolygon fill='%23FFF' points='720 900 810 750 630 750'/%3E%3Cpolygon fill='%23222' points='900 900 990 750 810 750'/%3E%3Cpolygon fill='%23222' points='1080 300 990 450 1170 450'/%3E%3Cpolygon fill='%23FFF' points='1080 300 1170 150 990 150'/%3E%3Cpolygon points='1080 600 990 750 1170 750'/%3E%3Cpolygon fill='%23666' points='1080 600 1170 450 990 450'/%3E%3Cpolygon fill='%23DDD' points='1080 900 1170 750 990 750'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect x='0' y='0' fill='url(%23a)' width='100%25' height='100%25'/%3E%3Crect x='0' y='0' fill='url(%23b)' width='100%25' height='100%25'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+}
+
+/* Optional: Overlay from pasted_content.txt if needed over the SVG background */
+/*
+body.login-page-layout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3); 
+    z-index: 1; 
+}
+*/
+
+/* --- Motivational Header (Top Banner) --- */
+/* From pasted_content.txt */
+.motivational-header {
+    position: absolute; /* Changed from fixed to absolute relative to body */
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0, 123, 255, 0.7); /* Semi-transparent blue */
+    color: var(--white-color);
+    padding: var(--space-sm) 0; /* 8px */
+    text-align: center;
+    z-index: 15;
+    overflow: hidden;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+#motivational-text {
+    display: inline-block; /* Needed for animation */
+    padding-left: 15%; /* Start text off-screen right */
+    animation: scroll-text 20s linear infinite; /* Animation defined in animations.css */
+}
+
+/* --- Project Title --- */
+/* From pasted_content.txt */
+.project-title-container {
+    position: absolute;
+    top: 80px; /* Adjust as needed */
+    left: 0;
+    width: 100%;
+    text-align: center;
+    z-index: 25;
+    pointer-events: none; /* Allow clicks through */
+}
+
+.project-title {
+    font-size: 2.5rem; /* 40px */
+    color: var(--white-color);
+    margin: 0;
+    padding: 0;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Add shadow for better visibility */
+    animation: glow 2s ease-in-out infinite alternate; /* Animation defined in animations.css */
+}
+
+/* --- Decorative Flight Paths (Optional) --- */
+/* From login_aviation_theme.css - Add if desired with the dark theme */
+/*
+.flight-path {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 20%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 80%, rgba(255, 255, 255, 0) 100%);
+    z-index: -1; 
+}
+
+.flight-path-1 {
+    top: 30%;
+    left: 0;
+    width: 100%;
+    transform: rotate(5deg);
+}
+
+.flight-path-2 {
+    top: 70%;
+    left: 0;
+    width: 100%;
+    transform: rotate(-3deg);
+}
+*/
+
+/* --- ATC Animation Scene Container --- */
+/* Positioning for the container holding tower, runway, planes */
+/* From atc_animations.css & pasted_content.txt */
+.atc-scene {
+    /* position: absolute; /* Positioned relative to .login-area */
+    /* top: 100px; */ /* Removed fixed positioning */
+    /* right: 50px; */
+    width: 500px; /* Adjust width as needed */
+    height: 600px; /* Adjust height as needed */
+    z-index: 5;
+    pointer-events: none; /* Default, children can override */
+    position: relative; /* Needed for absolute positioning of children */
+    flex-shrink: 0; /* Prevent shrinking in flex layout */
+}
+
+.control-tower {
+    position: absolute;
+    bottom: 50px; /* Position relative to .atc-scene */
+    right: 100px;
+    width: 200px;
+    height: 400px;
+    z-index: 10;
+    cursor: pointer;
+    pointer-events: all; /* Allow interaction */
+    transition: transform var(--transition-medium);
+}
+
+.control-tower:hover {
+    transform: scale(1.05);
+}
+
+.control-tower object {
+    width: 100%;
+    height: 100%;
+}
+
+.runway-container {
+    position: absolute;
+    bottom: 0;
+    left: 0; /* Adjust positioning */
+    width: 100%; /* Adjust width */
+    height: 50px; /* Adjust height */
+    z-index: 8;
+}
+
+.runway-container object {
+    width: 100%;
+    height: 100%;
+}
+
+.airplane-container {
+    position: absolute;
+    top: 0;
+    left: 0; /* Changed from right */
+    width: 100%;
+    height: 100%;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.airplane {
+    position: absolute;
+    width: 150px; /* Adjusted size */
+    height: 75px; /* Adjusted size */
+    filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.3));
+    /* Animation applied via specific classes or IDs */
+}
+
+.airplane object {
+    width: 100%;
+    height: 100%;
+}
+
+.speech-bubble {
+    position: absolute;
+    top: 100px; /* Position relative to .atc-scene */
+    right: 150px;
+    width: 250px; /* Adjusted size */
+    height: 80px; /* Adjusted size */
+    z-index: 20;
+    opacity: 0;
+    transition: opacity var(--transition-medium);
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+    pointer-events: none;
+}
+
+.speech-bubble object {
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Placeholder for Realistic ATC Image --- */
+.atc-realistic-image-container {
+    /* Define positioning and size later */
+    position: absolute; /* Or relative depending on placement */
+    /* Example placement: */
+    /* bottom: 20px; */
+    /* left: 20px; */
+    width: 300px; /* Example size */
+    height: auto;
+    z-index: 6; /* Above background, below interactive elements */
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.atc-realistic-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* --- Radar Blip Positioning --- */
+/* Specific positions for blips from inline styles */
+#blip1 {
+    top: 30%;
+    left: 40%;
+}
+
+#blip2 {
+    top: 60%;
+    left: 70%;
+}
+
+#blip3 {
+    top: 20%;
+    left: 80%;
+}
+

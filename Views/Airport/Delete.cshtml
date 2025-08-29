@@ -1,0 +1,42 @@
+﻿@model WebApplication1.Models.Airport
+@{
+    ViewData["Title"] = "Delete Airport";
+    int ctrlCount = ViewBag.ControllerCount ?? 0;
+}
+
+<div class="container mt-5">
+    <h2>Delete Airport</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <p>
+        Are you sure you want to delete the airport
+        <strong>@Model.AirportName</strong>?
+    </p>
+
+    @if (ctrlCount > 0)
+    {
+        <div class="alert alert-warning">
+            This Division has <strong>@ctrlCount</strong> controller(s) assigned.<br />
+            You must <strong>reassign</strong> or <strong>delete</strong> them before you can delete this airport.
+        </div>
+
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    }
+    else
+    {
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="AirportId" />
+            <button type="submit" class="btn btn-danger">
+                Yes, delete airport
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
+    }
+</div>

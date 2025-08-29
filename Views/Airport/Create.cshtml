@@ -1,0 +1,35 @@
+﻿@model WebApplication1.Models.Airport
+@{
+    ViewData["Title"] = "Create Division";
+}
+
+<div class="container mt-5">
+    <h2>Add New Division</h2>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label asp-for="AirportName" class="form-label">Division Name</label>
+            <input asp-for="AirportName" class="form-control" />
+            <span asp-validation-for="AirportName" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="IcaoCode" class="form-label">Abbreviation</label>
+            <input asp-for="IcaoCode" class="form-control" />
+            <span asp-validation-for="IcaoCode" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="CountryId" class="form-label">Organizational Structure</label>
+            <select asp-for="CountryId"
+                    class="form-select"
+                    asp-items="ViewBag.CountryList">
+                <option value="">-- Select Organizational Structure --</option>
+            </select>
+            <span asp-validation-for="CountryId" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save</button>
+        <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+    </form>
+</div>

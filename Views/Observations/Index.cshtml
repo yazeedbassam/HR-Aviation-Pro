@@ -1,0 +1,267 @@
+﻿@model WebApplication1.Models.ObservationIndexViewModel
+
+@{
+    ViewData["Title"] = "Observations";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .main-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #146c43;
+    }
+
+    .nav-tabs .nav-link {
+        font-weight: 500;
+        color: #495057;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: #146c43;
+            font-weight: 600;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+
+    .modal-body .details-list li {
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .modal-body .details-list .detail-label {
+        font-weight: 600;
+        min-width: 140px;
+        display: inline-block;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card custom-card bg-white px-3 py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div class="main-header">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                @ViewData["Title"]
+            </div>
+            <div>
+                <a asp-action="Create" class="btn btn-success btn-sm me-2">
+                    <i class="fa-solid fa-plus"></i> Add New Observation
+                </a>
+                <a href="/" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+        }
+
+        <ul class="nav nav-tabs" id="observationTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="controllers-obs-tab" data-bs-toggle="tab" data-bs-target="#controllers-obs-pane" type="button" role="tab">Controller Observati</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ais-obs-tab" data-bs-toggle="tab" data-bs-target="#ais-obs-pane" type="button" role="tab">AIS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cns-obs-tab" data-bs-toggle="tab" data-bs-target="#cns-obs-pane" type="button" role="tab">CNS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="aftn-obs-tab" data-bs-toggle="tab" data-bs-target="#aftn-obs-pane" type="button" role="tab">AFTN</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="atfm-obs-tab" data-bs-toggle="tab" data-bs-target="#atfm-obs-pane" type="button" role="tab">ATFM</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="opsstaff-obs-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-obs-pane" type="button" role="tab">Ops Staff & Admin</button>
+            </li>
+        </ul>
+
+        <div class="tab-content pt-2" id="observationTabContent">
+            <div class="tab-pane fade show active" id="controllers-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_ControllerObservationsPartial", Model.ControllerObservations)
+            </div>
+            <div class="tab-pane fade" id="ais-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_AISObservationsPartial", Model.AISObservations)
+            </div>
+            <div class="tab-pane fade" id="cns-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_CNSObservationsPartial", Model.CNSObservations)
+            </div>
+            <div class="tab-pane fade" id="aftn-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_AFTNObservationsPartial", Model.AFTNObservations)
+            </div>
+            <div class="tab-pane fade" id="atfm-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_ATFMObservationsPartial", Model.ATFMObservations)
+            </div>
+            <div class="tab-pane fade" id="opsstaff-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_OpsStaffObservationsPartial", Model.OpsStaffObservations)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="observationDetailsModal" tabindex="-1" aria-labelledby="observationDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="observationDetailsModalLabel">Observation Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-unstyled details-list">
+                    <li><strong class="detail-label">Person:</strong> <span id="modalPersonName"></span></li>
+                    <li><strong class="detail-label">Observation #:</strong> <span id="modalObsNo"></span></li>
+                    <li><strong class="detail-label">License Number:</strong> <span id="modalLicenseNo"></span></li>
+                    <hr />
+                    <li><strong class="detail-label">Flight / Mission:</strong> <span id="modalFlightNo"></span></li>
+                    <li><strong class="detail-label">Country:</strong> <span id="modalCountry"></span></li>
+                    <li><strong class="detail-label">Duration:</strong> <span id="modalDuration"></span> days</li>
+                    <li><strong class="detail-label">Depart Date:</strong> <span id="modalDepartDate"></span></li>
+                    <li><strong class="detail-label">Return Date:</strong> <span id="modalReturnDate"></span></li>
+                    <hr />
+                    <li><strong class="detail-label">Notes:</strong> <p id="modalNotes" class="d-inline"></p></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- CENTRALIZED SCRIPT FOR FILTERING AND EXPORT ---
+
+        // Function to initialize filtering for a specific table
+        function initializeTable(tableId, counterId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+
+            const filterInputs = table.querySelectorAll('.filters .filter-input');
+            const tableRows = table.querySelectorAll('tbody tr');
+            const counter = document.getElementById(counterId);
+            const clearBtn = table.querySelector('.clear-filters-btn');
+            const totalRows = tableRows.length;
+
+            function applyFilters() {
+                let visibleRowCount = 0;
+                const filters = Array.from(filterInputs).map(input => ({
+                    value: input.value.toLowerCase(),
+                    columnIndex: parseInt(input.getAttribute('data-column-index'))
+                }));
+
+                tableRows.forEach(row => {
+                    let isVisible = true;
+                    for (const filter of filters) {
+                        if (filter.value === '') continue;
+
+                        const cell = row.cells[filter.columnIndex];
+                        const cellText = cell ? cell.innerText.toLowerCase() : '';
+
+                        if (!cellText.includes(filter.value)) {
+                            isVisible = false;
+                            break;
+                        }
+                    }
+
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) {
+                        visibleRowCount++;
+                    }
+                });
+
+                if (counter) {
+                    counter.innerText = `Showing ${visibleRowCount} of ${totalRows} Records`;
+                }
+            }
+
+            filterInputs.forEach(input => {
+                input.addEventListener('keyup', applyFilters);
+            });
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    filterInputs.forEach(input => {
+                        input.value = '';
+                    });
+                    applyFilters();
+                });
+            }
+
+            // Initial call to set the counter correctly
+            applyFilters();
+        }
+
+        // Initialize both tables on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeTable('controllerObsTable', 'controller-obs-counter');
+            initializeTable('employeeObsTable', 'employee-obs-counter');
+        });
+
+        function getExportUrl(personType, action) {
+            let tableId;
+            switch(personType) {
+                case 'Controller': tableId = '#controllerObsTable'; break;
+                case 'AIS': tableId = '#aisObsTable'; break;
+                case 'CNS': tableId = '#cnsObsTable'; break;
+                case 'AFTN': tableId = '#aftnObsTable'; break;
+                case 'ATFM': tableId = '#atfmObsTable'; break;
+                case 'OpsStaff': tableId = '#opsstaffObsTable'; break;
+                default: tableId = '#employeeObsTable';
+            }
+            const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
+            const params = new URLSearchParams();
+
+            filterInputs.forEach(input => {
+                const value = input.value.trim();
+                const paramName = input.getAttribute('data-param-name');
+                if (value !== '' && paramName) params.append(paramName, value);
+            });
+
+            params.append('personType', personType);
+            return `/Observations/${action}?${params.toString()}`;
+        }
+
+        function exportToFile(personType, action, fileExtension) {
+            const url = getExportUrl(personType, action);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.setAttribute('download', `${personType}_Observations_Report_${new Date().toISOString().slice(0, 10)}.${fileExtension}`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        const detailsModal = document.getElementById('observationDetailsModal');
+        if (detailsModal) {
+            detailsModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                document.getElementById('modalPersonName').textContent = button.dataset.personName || "-";
+                document.getElementById('modalObsNo').textContent = button.dataset.obsNo || "-";
+                document.getElementById('modalLicenseNo').textContent = button.dataset.licenseNo || "-";
+                document.getElementById('modalFlightNo').textContent = button.dataset.flightNo || "-";
+                document.getElementById('modalCountry').textContent = button.dataset.country || "-";
+                document.getElementById('modalDuration').textContent = button.dataset.duration || "-";
+                document.getElementById('modalDepartDate').textContent = button.dataset.departDate || "-";
+                document.getElementById('modalReturnDate').textContent = button.dataset.returnDate || "-";
+                document.getElementById('modalNotes').textContent = button.dataset.notes || "No notes.";
+            });
+        }
+    </script>
+}

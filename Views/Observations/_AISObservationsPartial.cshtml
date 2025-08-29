@@ -1,0 +1,144 @@
+@model List<WebApplication1.Models.Observation>
+
+<style>
+    .table-compact th, .table-compact td {
+        padding: 5px 8px !important;
+        font-size: 0.78rem !important;
+    }
+
+    .action-btns .btn {
+        margin: 0 2px;
+    }
+</style>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center my-3">
+    <div class="d-flex align-items-center">
+        <h5 class="mb-0">AIS - Aeronautical Information Services</h5>
+        <span id="ais-obs-counter" class="badge bg-primary ms-3">@Model.Count() Records</span>
+    </div>
+    <div>
+        <button type="button" onclick="exportToFile('AIS', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
+        <button type="button" onclick="exportToFile('AIS', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table id="aisObsTable" class="table table-bordered table-striped table-hover align-middle table-compact">
+        <thead class="table-info">
+            <tr>
+                <th>Obs#</th>
+                <th>Employee</th>
+                <th>Flight No.</th>
+                <th>Country</th>
+                <th>Days</th>
+                <th>Depart Date</th>
+                <th>Return Date</th>
+                <th>File</th>
+                <th class="action-btns" style="min-width:130px;">Actions</th>
+            </tr>
+            <tr class="filters">
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="observationNo" data-column-index="0"></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="personName" data-column-index="1"></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="flightNo" data-column-index="2"></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="travelCountry" data-column-index="3"></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th class="text-center"><button class="btn btn-sm btn-outline-secondary clear-filters-btn" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ObservationNo</td>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.FlightNo</td>
+                    <td>@item.TravelCountry</td>
+                    <td>@item.DurationDays</td>
+                    <td>@item.DepartDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.ReturnDate?.ToString("yyyy-MM-dd")</td>
+                    <td class="text-center">
+                        @if (!string.IsNullOrEmpty(item.FilePath))
+                        {
+                            <a class="btn btn-outline-primary btn-sm" href="@Url.Content(item.FilePath)" target="_blank" title="View File"><i class="fa-solid fa-file-pdf"></i></a>
+                        }
+                    </td>
+                    <td class="action-btns">
+                        <button type="button" class="btn btn-info btn-sm" title="View Details"
+                                data-bs-toggle="modal" data-bs-target="#observationDetailsModal"
+                                data-person-name="@item.EmployeeName"
+                                data-obs-no="@item.ObservationNo"
+                                data-license-no="@item.LicenseNumber"
+                                data-flight-no="@item.FlightNo"
+                                data-country="@item.TravelCountry"
+                                data-duration="@item.DurationDays"
+                                data-depart-date="@item.DepartDate?.ToString("yyyy-MM-dd")"
+                                data-return-date="@item.ReturnDate?.ToString("yyyy-MM-dd")"
+                                data-notes="@item.Notes">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <a asp-action="Edit" asp-route-id="@item.ObservationId" class="btn btn-sm btn-warning">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ObservationId" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    (function() {
+        const container = document.getElementById('ais-obs-pane');
+        if (!container) return;
+        const table = container.querySelector('#aisObsTable');
+        const filterInputs = table.querySelectorAll('.filters .filter-input');
+        const tableRows = table.querySelectorAll('tbody tr');
+        const counter = container.querySelector('#ais-obs-counter');
+        const clearBtn = table.querySelector('.clear-filters-btn');
+
+        function applyFilters() {
+            const filters = {};
+            filterInputs.forEach(input => {
+                const value = input.value.trim().toLowerCase();
+                const paramName = input.getAttribute('data-param-name');
+                if (value) filters[paramName] = value;
+            });
+
+            let visibleCount = 0;
+            tableRows.forEach(row => {
+                let show = true;
+                const cells = row.querySelectorAll('td');
+
+                if (filters.observationNo && !cells[0].textContent.toLowerCase().includes(filters.observationNo)) show = false;
+                if (filters.personName && !cells[1].textContent.toLowerCase().includes(filters.personName)) show = false;
+                if (filters.flightNo && !cells[2].textContent.toLowerCase().includes(filters.flightNo)) show = false;
+                if (filters.travelCountry && !cells[3].textContent.toLowerCase().includes(filters.travelCountry)) show = false;
+
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            if (counter) counter.textContent = `${visibleCount} Records`;
+        }
+
+        filterInputs.forEach(input => {
+            input.addEventListener('keyup', applyFilters);
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                filterInputs.forEach(input => {
+                    input.value = '';
+                });
+                applyFilters();
+            });
+        }
+
+        applyFilters();
+    })();
+</script> 

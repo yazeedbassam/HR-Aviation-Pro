@@ -1,0 +1,409 @@
+﻿@model WebApplication1.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Strategic Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Assuming you have a layout file
+}
+
+<!-- External Libraries: Chart.js for charts and FontAwesome for icons -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+    /* Custom styles for a professional look and feel */
+    .kpi-card {
+        border-left-width: 4px;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1 ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        cursor: pointer; /* Add cursor pointer to indicate clickability */
+    }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+    .kpi-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+    }
+
+    .kpi-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+    }
+
+    .kpi-title {
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .kpi-subtitle {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    /* Color classes for SWOT analysis cards */
+    .border-swot-strengths {
+        border-color: #198754;
+    }
+
+    .border-swot-weaknesses {
+        border-color: #dc3545;
+    }
+
+    .border-swot-opportunities {
+        border-color: #0d6efd;
+    }
+
+    .border-swot-threats {
+        border-color: #ffc107;
+    }
+
+    .card-header-custom {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal {
+        z-index: 9999 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 9998 !important;
+    }
+    
+    .modal-dialog {
+        z-index: 10000 !important;
+    }
+    
+    .modal-content {
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        border-bottom: none;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        padding: 15px 20px;
+    }
+    
+    .btn-close {
+        filter: invert(1);
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="container-fluid py-4" id="dashboard-content">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i>@ViewData["Title"]</h2>
+        <div class="d-flex gap-2">
+            @Html.AntiForgeryToken()
+            <button onclick="sendWeeklyReportEmail()" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-envelope me-2"></i>Send Weekly Report
+            </button>
+            <button onclick="downloadDashboardPDF()" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-file-pdf me-2"></i>Download as PDF
+            </button>
+            <a href="@Url.Action("Index", "DataDetails")" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-info-circle me-2"></i> View All Details
+            </a>
+        </div>
+    </div>
+
+    <!-- SWOT Analysis Section -->
+    <h4 class="mb-3 text-muted">SWOT Analysis</h4>
+    <div class="row">
+        @if (Model.SwotAnalysis.Strengths != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-strengths h-100" onclick="showDetails('activeProjects')">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Strengths.Title</p>
+                            <h3 class="kpi-value text-success">@Model.SwotAnalysis.Strengths.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Strengths.Subtitle</p>
+                        </div>
+                        <i class="fas fa-rocket kpi-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Weaknesses != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-weaknesses h-100" onclick="showDetails('expiredLicenses')">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Weaknesses.Title</p>
+                            <h3 class="kpi-value text-danger">@Model.SwotAnalysis.Weaknesses.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Weaknesses.Subtitle</p>
+                        </div>
+                        <i class="fas fa-shield-alt kpi-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Opportunities != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-opportunities h-100" onclick="showDetails('staffInTraining')">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Opportunities.Title</p>
+                            <h3 class="kpi-value text-primary">@Model.SwotAnalysis.Opportunities.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Opportunities.Subtitle</p>
+                        </div>
+                        <i class="fas fa-lightbulb kpi-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.SwotAnalysis.Threats != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card border-swot-threats h-100" onclick="showDetails('licensesExpiringSoon')">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="kpi-title">@Model.SwotAnalysis.Threats.Title</p>
+                            <h3 class="kpi-value text-warning">@Model.SwotAnalysis.Threats.Value</h3>
+                            <p class="kpi-subtitle mb-0">@Model.SwotAnalysis.Threats.Subtitle</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle kpi-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Core Summaries Section -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header card-header-custom">Courses Overview</div>
+                <div class="card-body d-flex justify-content-center align-items-center p-4">
+                    <canvas id="projectStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header card-header-custom">Personnel by Division</div>
+                <div class="card-body">
+                    <canvas id="personnelByDivisionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header card-header-custom">Licenses Status</div>
+                <div class="card-body d-flex justify-content-center align-items-center p-4">
+                    <canvas id="licenseStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header card-header-custom">Top 5 Staff by Certificate Count</div>
+                <div class="card-body">
+                    <canvas id="certsByPersonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Details -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detailsModalBody">
+                <!-- Content will be loaded here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const createPieChart = (elementId, chartData, chartTitle) => {
+                const ctx = document.getElementById(elementId);
+                if (!ctx || !chartData || chartData.length === 0) return;
+                new Chart(ctx, {
+                    type: 'pie', data: { labels: chartData.map(d => d.Label), datasets: [{ data: chartData.map(d => d.Value), backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d'], borderColor: '#fff' }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, title: { display: true, text: chartTitle } } }
+                });
+            };
+            const createBarChart = (elementId, chartData, label) => {
+                const ctx = document.getElementById(elementId);
+                if (!ctx || !chartData || chartData.length === 0) return;
+                new Chart(ctx, {
+                    type: 'bar', data: { labels: chartData.map(d => d.Label), datasets: [{ label: label, data: chartData.map(d => d.Value), backgroundColor: 'rgba(23, 162, 184, 0.6)', borderColor: 'rgba(23, 162, 184, 1)', borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+                });
+            };
+
+            createPieChart('projectStatusChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.ProjectSummary.ProjectsByStatusChart)), 'Courses by Status');
+            createBarChart('personnelByDivisionChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DivisionSummary.PersonnelByDivisionChart)), '# of Personnel');
+            const licenseChartData = [{ Label: 'Expired', Value: @Model.LicenseSummary.ExpiredToday }, { Label: 'Expiring Soon', Value: @Model.LicenseSummary.ExpiringSoon }, { Label: 'Valid', Value: @(Model.LicenseSummary.TotalLicenses - Model.LicenseSummary.ExpiredToday - Model.LicenseSummary.ExpiringSoon) }];
+            createPieChart('licenseStatusChart', licenseChartData, 'Licenses by Status');
+            createBarChart('certsByPersonChart', @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CertificateSummary.CertificatesByPersonChart)), '# of Certificates');
+        });
+
+        window.sendWeeklyReportEmail = function() {
+            Swal.fire({ title: 'Sending...', text: 'Please wait.', icon: 'info', showConfirmButton: false, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            fetch('/Dashboard/SendWeeklyReportEmail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+            }).then(response => response.json()).then(data => {
+                if (data.success) { Swal.fire('Success!', 'Weekly report email sent.', 'success'); }
+                else { Swal.fire('Error!', data.error || 'An error occurred.', 'error'); }
+            }).catch(error => Swal.fire('Error!', 'A network error occurred: ' + error, 'error'));
+        }
+
+        window.downloadDashboardPDF = function() {
+            Swal.fire({ title: 'Generating PDF...', text: 'Please wait.', icon: 'info', showConfirmButton: false, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const dashboardContent = document.getElementById('dashboard-content');
+            html2canvas(dashboardContent, { scale: 2, useCORS: true }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('Strategic_Dashboard_Report.pdf');
+                Swal.close();
+            }).catch(err => Swal.fire('Error!', 'PDF generation failed: ' + err, 'error'));
+        }
+
+        // Function to show details in a modal
+        window.showDetails = function(type) {
+            let url = '';
+            let title = '';
+            let tableHeaders = [];
+
+            // Define URLs and headers based on the KPI type
+            switch (type) {
+                case 'activeProjects':
+                    url = '/Dashboard/GetActiveProjectsDetails';
+                    title = 'Active Courses Details';
+                    tableHeaders = ['Course Name', 'Status', 'Start Date', 'End Date', 'Location'];
+                    break;
+                case 'expiredLicenses':
+                    url = '/Dashboard/GetExpiredLicensesDetails'; // This is already implemented in your controller
+                    title = 'Expired Licenses Details';
+                    tableHeaders = ['Controller Name', 'License Type', 'Expiry Date'];
+                    break;
+                case 'staffInTraining':
+                    url = '/Dashboard/GetStaffInTrainingDetails'; // You need to implement this
+                    title = 'Staff in Training Details';
+                    tableHeaders = ['Name', 'Certificates Count'];
+                    break;
+                case 'licensesExpiringSoon':
+                    url = '/Dashboard/GetSoonExpiringLicensesDetails'; // This is already implemented in your controller
+                    title = 'Licenses Expiring Soon Details';
+                    tableHeaders = ['Controller Name', 'License Type', 'Expiry Date'];
+                    break;
+                // Add more cases for other types of details you want to show
+                default:
+                    Swal.fire('Info', 'Details not available for this KPI type.', 'info');
+                    return;
+            }
+
+            Swal.fire({
+                title: 'Loading Details...',
+                text: 'Please wait.',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    Swal.close();
+                    let tableHtml = `<h5 class="mb-3">${title}</h5>`;
+                    if (data && data.length > 0) {
+                        tableHtml += `<div class="table-responsive"><table class="table table-striped table-bordered"><thead><tr>`;
+                        tableHeaders.forEach(header => {
+                            tableHtml += `<th>${header}</th>`;
+                        });
+                        tableHtml += `</tr></thead><tbody>`;
+
+                        data.forEach(item => {
+                            tableHtml += `<tr>`;
+                            // Populate table rows based on the KPI type
+                            if (type === 'activeProjects') {
+                                tableHtml += `<td>${item.projectName}</td><td>${item.status}</td><td>${item.startDate ? new Date(item.startDate).toLocaleDateString() : '-'}</td><td>${item.endDate ? new Date(item.endDate).toLocaleDateString() : '-'}</td><td>${item.location || 'N/A'}</td>`;
+                            } else if (type === 'expiredLicenses' || type === 'licensesExpiringSoon') {
+                                tableHtml += `<td>${item.controllerName || item.employeeName || 'N/A'}</td><td>${item.licenseType || 'N/A'}</td><td>${item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '-'}</td>`;
+                            } else if (type === 'staffInTraining') {
+                                tableHtml += `<td>${item.label || 'N/A'}</td><td>${item.value || 0}</td>`; // Assuming ChartData structure
+                            }
+                            // Add more conditions for other types
+                            tableHtml += `</tr>`;
+                        });
+                        tableHtml += `</tbody></table></div>`;
+                    } else {
+                        tableHtml += `<div class="alert alert-info text-center">No details available.</div>`;
+                    }
+
+                    document.getElementById('detailsModalLabel').innerText = title;
+                    document.getElementById('detailsModalBody').innerHTML = tableHtml;
+                    var detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+                    detailsModal.show();
+                })
+                .catch(error => {
+                    Swal.fire('Error!', 'Failed to load details: ' + error.message, 'error');
+                });
+        };
+    </script>
+}

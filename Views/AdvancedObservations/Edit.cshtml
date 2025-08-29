@@ -1,0 +1,302 @@
+@model WebApplication1.Models.Observation
+@{
+    ViewData["Title"] = "تعديل الملاحظة - نظام الصلاحيات المتقدم";
+    Layout = "_AdvancedLayout";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-pencil-square text-warning"></i>
+                تعديل الملاحظة
+            </h2>
+            <p class="text-muted mb-0">نظام الصلاحيات المتقدم</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Index", "AdvancedObservations")" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> العودة للقائمة
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text"></i>
+                        تفاصيل الملاحظة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ObservationId" />
+                        <input type="hidden" asp-for="ControllerId" />
+                        <input type="hidden" asp-for="EmployeeId" />
+                        <input type="hidden" asp-for="ObservationNo" />
+                        
+                        <!-- Person Info (Read-only) -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-person-badge"></i> المراقب الجوي
+                                </label>
+                                <input type="text" class="form-control" value="@Model.ControllerName" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-person"></i> الموظف
+                                </label>
+                                <input type="text" class="form-control" value="@Model.EmployeeName" readonly />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Flight Details -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FlightNo" class="form-label">
+                                    <i class="bi bi-airplane"></i> رقم الرحلة
+                                </label>
+                                <input asp-for="FlightNo" class="form-control" placeholder="أدخل رقم الرحلة" />
+                                <span asp-validation-for="FlightNo" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TravelCountry" class="form-label">
+                                    <i class="bi bi-globe"></i> البلد
+                                </label>
+                                <input asp-for="TravelCountry" class="form-control" placeholder="أدخل اسم البلد" />
+                                <span asp-validation-for="TravelCountry" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Duration -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DurationDays" class="form-label">
+                                    <i class="bi bi-calendar-range"></i> عدد الأيام
+                                </label>
+                                <input asp-for="DurationDays" class="form-control" type="number" min="1" placeholder="عدد الأيام" />
+                                <span asp-validation-for="DurationDays" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LicenseNumber" class="form-label">
+                                    <i class="bi bi-card-text"></i> رقم الترخيص
+                                </label>
+                                <input asp-for="LicenseNumber" class="form-control" placeholder="أدخل رقم الترخيص" />
+                                <span asp-validation-for="LicenseNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Dates -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DepartDate" class="form-label">
+                                    <i class="bi bi-calendar-event"></i> تاريخ المغادرة
+                                </label>
+                                <input asp-for="DepartDate" class="form-control" type="date" />
+                                <span asp-validation-for="DepartDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ReturnDate" class="form-label">
+                                    <i class="bi bi-calendar-check"></i> تاريخ العودة
+                                </label>
+                                <input asp-for="ReturnDate" class="form-control" type="date" />
+                                <span asp-validation-for="ReturnDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Current File -->
+                        @if (!string.IsNullOrEmpty(Model.FilePath))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-file-earmark"></i> الملف الحالي
+                                </label>
+                                <div class="d-flex align-items-center">
+                                    <a href="@Model.FilePath" class="btn btn-outline-primary btn-sm me-2" target="_blank">
+                                        <i class="bi bi-eye"></i> عرض الملف
+                                    </a>
+                                    <span class="text-muted">@System.IO.Path.GetFileName(Model.FilePath)</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- File Upload -->
+                        <div class="mb-3">
+                            <label asp-for="UploadFile" class="form-label">
+                                <i class="bi bi-file-earmark-arrow-up"></i> رفع ملف جديد (اختياري)
+                            </label>
+                            <input asp-for="UploadFile" class="form-control" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                            <div class="form-text">اترك هذا الحقل فارغاً للاحتفاظ بالملف الحالي</div>
+                            <span asp-validation-for="UploadFile" class="text-danger"></span>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">
+                                <i class="bi bi-sticky"></i> ملاحظات
+                            </label>
+                            <textarea asp-for="Notes" class="form-control" rows="4" placeholder="أدخل الملاحظات هنا..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> حفظ التعديلات
+                            </button>
+                            <a href="@Url.Action("Index", "AdvancedObservations")" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Permission Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-shield-check"></i>
+                        معلومات الصلاحيات
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>تعديل الملاحظات</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>استبدال الملفات</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <span>الوصول للبيانات المصرح بها</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observation Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        معلومات الملاحظة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>رقم الملاحظة:</strong>
+                        <span class="text-muted">@Model.ObservationNo</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>المراقب/الموظف:</strong>
+                        <span class="text-muted">@Model.PersonName</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.FilePath))
+                    {
+                        <div class="mb-2">
+                            <strong>الملف:</strong>
+                            <span class="text-muted">@System.IO.Path.GetFileName(Model.FilePath)</span>
+                        </div>
+                    }
+                    <div>
+                        <strong>الحالة:</strong>
+                        <span class="badge bg-success">قيد التعديل</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb"></i>
+                        نصائح
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-1-circle text-primary me-2"></i>
+                            يمكن تعديل جميع الحقول
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-2-circle text-primary me-2"></i>
+                            الملف الحالي سيُحتفظ به إذا لم ترفع ملف جديد
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-3-circle text-primary me-2"></i>
+                            تأكد من صحة التواريخ
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-4-circle text-primary me-2"></i>
+                            يمكن تعديل الملاحظات في أي وقت
+                        </li>
+                        <li>
+                            <i class="bi bi-5-circle text-primary me-2"></i>
+                            احفظ التعديلات عند الانتهاء
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Form validation
+        $(document).ready(function() {
+            // Auto-calculate return date based on depart date and duration
+            $('#DepartDate, #DurationDays').on('change', function() {
+                var departDate = $('#DepartDate').val();
+                var durationDays = $('#DurationDays').val();
+                
+                if (departDate && durationDays) {
+                    var depart = new Date(departDate);
+                    var returnDate = new Date(depart.getTime() + (durationDays * 24 * 60 * 60 * 1000));
+                    $('#ReturnDate').val(returnDate.toISOString().split('T')[0]);
+                }
+            });
+
+            // File size validation
+            $('#UploadFile').on('change', function() {
+                var file = this.files[0];
+                var maxSize = 10 * 1024 * 1024; // 10MB
+                
+                if (file && file.size > maxSize) {
+                    alert('حجم الملف يجب أن يكون أقل من 10 ميجابايت');
+                    this.value = '';
+                }
+            });
+
+            // Confirm before leaving with unsaved changes
+            var formChanged = false;
+            $('form input, form textarea, form select').on('change', function() {
+                formChanged = true;
+            });
+
+            $('form').on('submit', function() {
+                formChanged = false;
+            });
+
+            $(window).on('beforeunload', function() {
+                if (formChanged) {
+                    return 'لديك تغييرات غير محفوظة. هل تريد المغادرة؟';
+                }
+            });
+        });
+    </script>
+} 

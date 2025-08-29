@@ -1,0 +1,276 @@
+@model WebApplication1.Models.UserPermissionsViewModel
+@{
+    ViewData["Title"] = "صلاحيات المستخدم";
+    Layout = "~/Views/Shared/_AdvancedLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-shield-check"></i>
+                        صلاحيات المستخدم: @Model.UserName
+                    </h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Dashboard", "AdvancedPermission")" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @Model.ErrorMessage
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- معلومات المستخدم الأساسية -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-info">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">اسم المستخدم</span>
+                                        <span class="info-box-number">@Model.UserName</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-success">
+                                        <i class="bi bi-person-badge"></i>
+                                    </span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">الوظيفة</span>
+                                        <span class="info-box-number">@Model.UserRole</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الصلاحيات الأساسية -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="bi bi-shield"></i>
+                                            الصلاحيات الأساسية
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (Model.BasicPermissions.Any())
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>الصلاحية</th>
+                                                            <th>الوصف</th>
+                                                            <th>الحالة</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var permission in Model.BasicPermissions)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="badge badge-primary">@permission.PermissionKey</span>
+                                                                </td>
+                                                                <td>@permission.Description</td>
+                                                                <td>
+                                                                    <span class="badge badge-success">
+                                                                        <i class="bi bi-check-circle"></i> مفعلة
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                لا توجد صلاحيات أساسية لهذا المستخدم
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="bi bi-building"></i>
+                                            صلاحيات الأقسام
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (Model.DepartmentPermissions.Any())
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>القسم</th>
+                                                            <th>عرض</th>
+                                                            <th>تعديل</th>
+                                                            <th>حذف</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var deptPerm in Model.DepartmentPermissions)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="badge badge-info">@deptPerm.DepartmentName</span>
+                                                                </td>
+                                                                <td>
+                                                                    @if (deptPerm.CanView)
+                                                                    {
+                                                                        <span class="badge badge-success">
+                                                                            <i class="bi bi-eye"></i>
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge badge-secondary">
+                                                                            <i class="bi bi-eye-slash"></i>
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    @if (deptPerm.CanEdit)
+                                                                    {
+                                                                        <span class="badge badge-warning">
+                                                                            <i class="bi bi-pencil"></i>
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge badge-secondary">
+                                                                            <i class="bi bi-pencil-slash"></i>
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    @if (deptPerm.CanDelete)
+                                                                    {
+                                                                        <span class="badge badge-danger">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge badge-secondary">
+                                                                            <i class="bi bi-trash-slash"></i>
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                لا توجد صلاحيات أقسام لهذا المستخدم
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- إحصائيات الصلاحيات -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="bi bi-graph-up"></i>
+                                            إحصائيات الصلاحيات
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-primary">
+                                                        <i class="bi bi-shield-check"></i>
+                                                    </span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">إجمالي الصلاحيات</span>
+                                                        <span class="info-box-number">@Model.TotalPermissions</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-success">
+                                                        <i class="bi bi-building"></i>
+                                                    </span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">الأقسام المصرح بها</span>
+                                                        <span class="info-box-number">@Model.DepartmentPermissions.Count</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-warning">
+                                                        <i class="bi bi-eye"></i>
+                                                    </span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">صلاحيات العرض</span>
+                                                        <span class="info-box-number">@Model.DepartmentPermissions.Count(d => d.CanView)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-danger">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">صلاحيات التعديل</span>
+                                                        <span class="info-box-number">@Model.DepartmentPermissions.Count(d => d.CanEdit)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // تفعيل tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+            
+            // تفعيل popovers
+            $('[data-toggle="popover"]').popover();
+        });
+    </script>
+} 

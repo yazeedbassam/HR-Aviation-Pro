@@ -1,0 +1,86 @@
+-- Script to Check Current Status of Employee Table Columns
+-- This script will show you which columns exist and which are missing
+
+USE [HR-Aviation]; -- Replace with your actual database name
+GO
+
+PRINT '=== Current Status of Employee Table Columns ===';
+PRINT '';
+
+-- Show all existing columns in the Employees table
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    CASE 
+        WHEN COLUMN_NAME IN ('DateOfBirth', 'MaritalStatus', 'EducationLevel',
+                           'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+                           'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+                           'PhotoPath', 'NeedLicense') 
+        THEN 'Required for Enhanced Features'
+        ELSE 'Original Column'
+    END as Column_Type
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'Employees' 
+ORDER BY 
+    CASE 
+        WHEN COLUMN_NAME IN ('DateOfBirth', 'MaritalStatus', 'EducationLevel',
+                           'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+                           'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+                           'PhotoPath', 'NeedLicense') 
+        THEN 1
+        ELSE 2
+    END,
+    COLUMN_NAME;
+GO
+
+PRINT '';
+PRINT '=== Checking for Required Columns ===';
+
+-- Check which required columns are missing
+DECLARE @RequiredColumns TABLE (ColumnName NVARCHAR(128));
+INSERT INTO @RequiredColumns VALUES 
+    ('DateOfBirth'), ('MaritalStatus'), ('EducationLevel'),
+    ('CurrentSalary'), ('AnnualIncreasePercentage'), ('SalaryAfterAnnualIncrease'),
+    ('BankAccountNumber'), ('BankName'), ('TaxId'), ('InsuranceNumber'),
+    ('PhotoPath'), ('NeedLicense');
+
+SELECT 
+    rc.ColumnName,
+    CASE 
+        WHEN ic.COLUMN_NAME IS NOT NULL THEN 'EXISTS'
+        ELSE 'MISSING'
+    END as Status
+FROM @RequiredColumns rc
+LEFT JOIN INFORMATION_SCHEMA.COLUMNS ic 
+    ON ic.TABLE_NAME = 'Employees' 
+    AND ic.COLUMN_NAME = rc.ColumnName
+ORDER BY rc.ColumnName;
+GO
+
+PRINT '';
+PRINT '=== Summary ===';
+DECLARE @TotalRequired INT = 12;
+DECLARE @ExistingRequired INT = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = 'Employees' 
+    AND COLUMN_NAME IN ('DateOfBirth', 'MaritalStatus', 'EducationLevel',
+                       'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+                       'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+                       'PhotoPath', 'NeedLicense')
+);
+
+PRINT 'Total Required Columns: ' + CAST(@TotalRequired AS NVARCHAR(10));
+PRINT 'Existing Required Columns: ' + CAST(@ExistingRequired AS NVARCHAR(10));
+PRINT 'Missing Required Columns: ' + CAST((@TotalRequired - @ExistingRequired) AS NVARCHAR(10));
+
+IF @ExistingRequired = @TotalRequired
+BEGIN
+    PRINT '✅ All required columns exist! The Employee table is ready for enhanced features.';
+END
+ELSE
+BEGIN
+    PRINT '⚠️  Some required columns are missing. Please run the Add_Employee_Financial_Fields_Safe.txt script.';
+END
+GO 

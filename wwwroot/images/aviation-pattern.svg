@@ -1,0 +1,21 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="aviationPattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+      <!-- Small airplane icons -->
+      <g opacity="0.1">
+        <path d="M10,25 L30,25 L35,20 L30,15 L10,15 L5,20 L10,25 Z" fill="white"/>
+        <path d="M15,15 L25,10 L30,15 L15,15 Z" fill="white"/>
+        <path d="M15,25 L25,30 L30,25 L15,25 Z" fill="white"/>
+        <path d="M30,15 L35,10 L35,20 L30,25 Z" fill="white"/>
+      </g>
+      
+      <!-- Navigation dots -->
+      <circle cx="40" cy="10" r="1" fill="white" opacity="0.3"/>
+      <circle cx="45" cy="15" r="0.5" fill="white" opacity="0.2"/>
+      <circle cx="35" cy="40" r="0.8" fill="white" opacity="0.25"/>
+      <circle cx="42" cy="45" r="0.6" fill="white" opacity="0.2"/>
+    </pattern>
+  </defs>
+  
+  <rect width="100" height="100" fill="url(#aviationPattern)"/>
+</svg> 

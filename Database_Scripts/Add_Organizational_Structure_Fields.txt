@@ -1,0 +1,64 @@
+-- SQL Script to Add Organizational Structure and Division Fields to Employees Table
+-- Execute this script in your SQL Server database
+
+USE [HR-Aviation]; -- Replace with your actual database name
+GO
+
+-- Function to check if column exists
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ColumnExists]') AND type in (N'FN', N'IF', N'TF', N'FS', N'FT'))
+BEGIN
+    EXEC('CREATE FUNCTION [dbo].[ColumnExists](@TableName NVARCHAR(128), @ColumnName NVARCHAR(128))
+    RETURNS BIT
+    AS
+    BEGIN
+        DECLARE @Result BIT = 0
+        IF EXISTS (
+            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = @TableName AND COLUMN_NAME = @ColumnName
+        )
+            SET @Result = 1
+        RETURN @Result
+    END')
+END
+GO
+
+-- Add Organizational Structure field (only if it doesn't exist)
+IF dbo.ColumnExists('Employees', 'OrganizationalStructure') = 0
+BEGIN
+    ALTER TABLE Employees ADD OrganizationalStructure NVARCHAR(100) NULL;
+    PRINT 'Added OrganizationalStructure column';
+END
+ELSE
+    PRINT 'OrganizationalStructure column already exists';
+GO
+
+-- Add Division field (only if it doesn't exist)
+IF dbo.ColumnExists('Employees', 'Division') = 0
+BEGIN
+    ALTER TABLE Employees ADD Division NVARCHAR(100) NULL;
+    PRINT 'Added Division column';
+END
+ELSE
+    PRINT 'Division column already exists';
+GO
+
+-- Verify the new columns exist
+PRINT '=== Verifying new columns exist ===';
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    'New Column' as Status
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'Employees' 
+AND COLUMN_NAME IN ('OrganizationalStructure', 'Division')
+ORDER BY COLUMN_NAME;
+GO
+
+-- Clean up the helper function
+DROP FUNCTION IF EXISTS [dbo].[ColumnExists];
+GO
+
+PRINT 'Organizational Structure fields added successfully!';
+PRINT 'The Employee table now supports Organizational Structure and Division information.';
+GO 

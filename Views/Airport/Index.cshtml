@@ -1,0 +1,238 @@
+﻿@model List<WebApplication1.Models.Airport>
+@{
+    ViewData["Title"] = "Divisions";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        font-size: 0.90rem;
+    }
+
+    .custom-header {
+        font-size: 1.04rem;
+        font-weight: 600;
+        letter-spacing: .4px;
+        color: #146c43;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .table th, .table td {
+        vertical-align: middle !important;
+        font-size: 0.85rem;
+        padding: 8px 10px;
+        line-height: 1.4;
+    }
+
+    .table thead th {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .action-btns {
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .filter-input {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 4px 6px;
+        font-size: 0.8rem;
+    }
+
+    #recordCounter {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card custom-card bg-white px-3 py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            <div class="custom-header">
+                <i class="fas fa-map-marked-alt"></i>
+                Divisions Management
+                <span id="recordCounter" class="badge bg-primary ms-3"></span>
+            </div>
+            <div>
+                @if (Html.HasAdvancedPermission("DIVISIONS_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a asp-action="Create" class="btn btn-success btn-sm me-1">
+                        <i class="fa-solid fa-plus"></i> Add New
+                    </a>
+                }
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+            </div>
+        </div>
+
+        <!-- New row for export buttons -->
+        <div class="row mb-3">
+            <div class="col-12 text-end">
+                <button type="button" onclick="exportDivisionsPDF()" class="btn btn-danger btn-sm">
+                    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                </button>
+                <button type="button" onclick="exportDivisionsExcel()" class="btn btn-success btn-sm">
+                    <i class="bi bi-file-earmark-excel"></i> Export Excel
+                </button>
+            </div>
+        </div>
+
+
+        @if (ViewBag.SuccessMessage != null)
+        {
+            <div class="alert alert-success">@ViewBag.SuccessMessage</div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+        }
+
+        <div class="table-responsive">
+            <table id="divisionsTable" class="table table-bordered table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Division ID</th>
+                        <th>Division Name</th>
+                        <th>Organizational Structure</th>
+                        <th>Abbreviation</th>
+                        <th class="action-btns">Actions</th>
+                    </tr>
+                    <tr class="filters">
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="0"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="1"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="2"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="3"></th>
+                        <th class="text-center"><button id="clearFiltersBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var airport in Model)
+                    {
+                        <tr>
+                            <td>@airport.AirportId</td>
+                            <td>@airport.AirportName</td>
+                            <td>@airport.CountryName</td>
+                            <td>@airport.IcaoCode</td>
+                            <td class="action-btns">
+                                <a asp-action="Edit" asp-route-id="@airport.AirportId" class="btn btn-warning btn-sm">Edit</a>
+                                <form asp-action="Delete" asp-route-id="@airport.AirportId" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this division?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const tableRows = document.querySelectorAll('#divisionsTable tbody tr');
+            const recordCounter = document.getElementById('recordCounter');
+            const totalRows = tableRows.length;
+
+            function applyFilters() {
+                const filters = {};
+                let visibleRowCount = 0;
+                filterInputs.forEach(input => {
+                    const columnIndex = input.getAttribute('data-column-index');
+                    if (input.value.trim() !== '') {
+                        filters[columnIndex] = input.value.toLowerCase();
+                    }
+                });
+
+                tableRows.forEach(row => {
+                    let isVisible = true;
+                    for (const colIndex in filters) {
+                        const cellText = row.cells[colIndex].innerText.toLowerCase();
+                        if (!cellText.includes(filters[colIndex])) {
+                            isVisible = false;
+                            break;
+                        }
+                    }
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) {
+                        visibleRowCount++;
+                    }
+                });
+                recordCounter.innerText = `Showing ${visibleRowCount} of ${totalRows} Records`;
+            }
+
+            filterInputs.forEach(input => {
+                input.addEventListener('keyup', applyFilters);
+            });
+            applyFilters();
+
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function () {
+                    filterInputs.forEach(input => {
+                        input.value = '';
+                    });
+                    applyFilters();
+                });
+            }
+        });
+
+        const columnIndexToParamName = {
+            '0': 'airportId',
+            '1': 'airportName',
+            '2': 'countryName',
+            '3': 'icaoCode'
+        };
+
+        function getExportUrl(action) {
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const params = new URLSearchParams();
+            filterInputs.forEach(input => {
+                const value = input.value.trim();
+                if (value !== '') {
+                    const columnIndex = input.getAttribute('data-column-index');
+                    const paramName = columnIndexToParamName[columnIndex];
+                    if (paramName) {
+                        params.append(paramName, value);
+                    }
+                }
+            });
+            // --- FIXED: Changed controller from 'Divisions' to 'Airport' ---
+            return `/Airport/${action}?${params.toString()}`;
+        }
+
+        function exportToFile(action, fileExtension) {
+            const url = getExportUrl(action);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.setAttribute('download', `Divisions_Report_${new Date().toISOString().slice(0, 10)}.${fileExtension}`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportDivisionsPDF() {
+            exportToFile('ExportToPDF', 'pdf');
+        }
+
+        function exportDivisionsExcel() {
+            exportToFile('ExportToExcel', 'xlsx');
+        }
+    </script>
+}

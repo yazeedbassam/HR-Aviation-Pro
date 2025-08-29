@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100">
+  <!-- Airplane 3 - Military Jet -->
+  <g id="airplane3">
+    <!-- Fuselage -->
+    <path d="M240,50 L190,47 L170,47 L160,45 L90,47 L80,50 L90,53 L160,55 L170,53 L190,53 Z" fill="#5a6268" stroke="#333" stroke-width="1" />
+    
+    <!-- Wings -->
+    <path d="M170,47 L140,30 L120,28 L110,30 L150,49 Z" fill="#4a5258" stroke="#333" stroke-width="1" />
+    <path d="M170,53 L140,70 L120,72 L110,70 L150,51 Z" fill="#3a4248" stroke="#333" stroke-width="1" />
+    
+    <!-- Tail -->
+    <path d="M240,50 L255,35 L260,35 L255,50 L260,65 L255,65 Z" fill="#4a5258" stroke="#333" stroke-width="1" />
+    <path d="M230,50 L240,35 L235,30 L225,45 Z" fill="#3a4248" stroke="#333" stroke-width="1" />
+    
+    <!-- Windows -->
+    <circle cx="100" cy="50" r="1.5" fill="#87CEEB" />
+    
+    <!-- Engines -->
+    <ellipse cx="210" cy="50" rx="10" ry="4" fill="#333" stroke="#222" stroke-width="1" />
+    
+    <!-- Cockpit -->
+    <path d="M90,47 L80,50 L90,53 L100,50 Z" fill="#87CEEB" stroke="#333" stroke-width="1" />
+    
+    <!-- Animation path for the airplane - landing approach -->
+    <animateMotion
+      dur="18s"
+      repeatCount="indefinite"
+      path="M-100,20 C0,30 100,60 200,85 L300,90"
+      rotate="auto" />
+  </g>
+</svg>

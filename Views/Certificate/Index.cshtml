@@ -1,0 +1,188 @@
+﻿@model WebApplication1.Models.CertificateIndexViewModel
+
+@{
+    ViewData["Title"] = "Documents & Certificates & Others";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    /* Add any shared styles here */
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .main-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #146c43;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #146c43;
+        font-weight: 600;
+    }
+
+    .modal-body .details-list li {
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .modal-body .details-list .detail-label {
+        font-weight: 600;
+        min-width: 120px;
+        display: inline-block;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card custom-card bg-white px-3 py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div class="main-header"><i class="fa-solid fa-certificate me-2"></i>@ViewData["Title"]</div>
+            <div>
+                @if (Html.HasAdvancedPermission("CERTIFICATES_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a asp-action="Create" class="btn btn-success btn-sm me-2"><i class="fa-solid fa-plus"></i> Add New</a>
+                }
+                <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Home</a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+        }
+
+        <ul class="nav nav-tabs" id="certificateTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="controllers-cert-tab" data-bs-toggle="tab" data-bs-target="#controllers-cert-pane" type="button" role="tab">Controllers</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ais-cert-tab" data-bs-toggle="tab" data-bs-target="#ais-cert-pane" type="button" role="tab">AIS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cns-cert-tab" data-bs-toggle="tab" data-bs-target="#cns-cert-pane" type="button" role="tab">CNS</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="aftn-cert-tab" data-bs-toggle="tab" data-bs-target="#aftn-cert-pane" type="button" role="tab">AFTN</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="opsstaff-cert-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-cert-pane" type="button" role="tab">Ops Staff & Admin</button>
+            </li>
+        </ul>
+
+        <div class="tab-content pt-2" id="certificateTabContent">
+            <div class="tab-pane fade show active" id="controllers-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_ControllerCertificatesPartial", Model.ControllerCertificates)
+            </div>
+            <div class="tab-pane fade" id="ais-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_AISCertificatesPartial", Model.AISCertificates)
+            </div>
+            <div class="tab-pane fade" id="cns-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_CNSCertificatesPartial", Model.CNSCertificates)
+            </div>
+            <div class="tab-pane fade" id="aftn-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_AFTNCertificatesPartial", Model.AFTNCertificates)
+            </div>
+            <div class="tab-pane fade" id="opsstaff-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_OpsStaffCertificatesPartial", Model.OpsStaffCertificates)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="certificateDetailsModal" tabindex="-1" aria-labelledby="certificateDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="certificateDetailsModalLabel">Document Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-unstyled">
+                    <li><strong class="detail-label">Person:</strong> <span id="modalPersonName"></span></li>
+                    <li><strong class="detail-label">Person Type:</strong> <span id="modalPersonType"></span></li>
+                    <hr />
+                    <li><strong class="detail-label">Type:</strong> <span id="modalTypeName"></span></li>
+                    <li><strong class="detail-label">Title:</strong> <span id="modalTitle"></span></li>
+                    <li><strong class="detail-label">Issue Date:</strong> <span id="modalIssueDate"></span></li>
+                    <li><strong class="detail-label">Expiry Date:</strong> <span id="modalExpiryDate"></span></li>
+                    <li><strong class="detail-label">Status:</strong> <span id="modalStatus"></span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function getExportUrl(personType, action) {
+            let tableId;
+            switch(personType) {
+                case 'Controller':
+                    tableId = '#controllerCertsTable';
+                    break;
+                case 'AIS':
+                    tableId = '#aisCertificatesTable';
+                    break;
+                case 'CNS':
+                    tableId = '#cnsCertificatesTable';
+                    break;
+                case 'AFTN':
+                    tableId = '#aftnCertificatesTable';
+                    break;
+                case 'OpsStaff':
+                    tableId = '#opsstaffCertificatesTable';
+                    break;
+                default:
+                    tableId = '#employeeCertsTable';
+            }
+            
+            const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
+            const params = new URLSearchParams();
+            filterInputs.forEach(input => {
+                const value = input.value.trim();
+                const paramName = input.getAttribute('data-param-name');
+                if (value !== '' && paramName) params.append(paramName, value);
+            });
+            params.append('personType', personType);
+            return `/Certificate/${action}?${params.toString()}`;
+        }
+
+        function exportToFile(personType, action, fileExtension) {
+            const url = getExportUrl(personType, action);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.setAttribute('download', `${personType}_Documents_Report_${new Date().toISOString().slice(0, 10)}.${fileExtension}`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        const certificateDetailsModal = document.getElementById('certificateDetailsModal');
+        if (certificateDetailsModal) {
+            certificateDetailsModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                document.getElementById('modalPersonName').textContent = button.getAttribute('data-person-name');
+                document.getElementById('modalPersonType').textContent = button.getAttribute('data-person-type');
+                document.getElementById('modalTypeName').textContent = button.getAttribute('data-type-name');
+                document.getElementById('modalTitle').textContent = button.getAttribute('data-title');
+                document.getElementById('modalIssueDate').textContent = button.getAttribute('data-issue-date');
+                document.getElementById('modalExpiryDate').textContent = button.getAttribute('data-expiry-date');
+                document.getElementById('modalStatus').textContent = button.getAttribute('data-status');
+            });
+        }
+    </script>
+}

@@ -1,0 +1,74 @@
+-- SQL Script to Add Financial and Personal Information Fields to Employees Table
+-- Execute this script in your SQL Server database
+
+USE [YourDatabaseName]; -- Replace with your actual database name
+GO
+
+-- Add new personal information fields
+ALTER TABLE Employees
+ADD DateOfBirth DATE NULL;
+GO
+
+ALTER TABLE Employees
+ADD MaritalStatus NVARCHAR(50) NULL;
+GO
+
+ALTER TABLE Employees
+ADD EducationLevel NVARCHAR(100) NULL;
+GO
+
+-- Add new financial information fields
+ALTER TABLE Employees
+ADD CurrentSalary DECIMAL(18,2) NULL;
+GO
+
+ALTER TABLE Employees
+ADD AnnualIncreasePercentage DECIMAL(5,2) NULL;
+GO
+
+ALTER TABLE Employees
+ADD SalaryAfterAnnualIncrease DECIMAL(18,2) NULL;
+GO
+
+ALTER TABLE Employees
+ADD BankAccountNumber NVARCHAR(100) NULL;
+GO
+
+ALTER TABLE Employees
+ADD BankName NVARCHAR(100) NULL;
+GO
+
+ALTER TABLE Employees
+ADD TaxId NVARCHAR(50) NULL;
+GO
+
+ALTER TABLE Employees
+ADD InsuranceNumber NVARCHAR(50) NULL;
+GO
+
+-- Add Photo and License fields
+ALTER TABLE Employees
+ADD PhotoPath NVARCHAR(500) NULL;
+GO
+
+ALTER TABLE Employees
+ADD NeedLicense BIT NOT NULL DEFAULT 1;
+GO
+
+-- Verify the changes
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'Employees' 
+AND COLUMN_NAME IN (
+    'DateOfBirth', 'MaritalStatus', 'EducationLevel',
+    'CurrentSalary', 'AnnualIncreasePercentage', 'SalaryAfterAnnualIncrease',
+    'BankAccountNumber', 'BankName', 'TaxId', 'InsuranceNumber',
+    'PhotoPath', 'NeedLicense'
+)
+ORDER BY COLUMN_NAME;
+GO
+
+PRINT 'Employee table updated successfully with new financial and personal information fields!'; 

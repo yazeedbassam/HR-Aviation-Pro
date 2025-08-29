@@ -1,0 +1,56 @@
+﻿@model List<WebApplication1.Models.Country>
+
+@{
+    ViewBag.Role = "SuperAdmin"; // مؤقتاً، لاحقاً نربطه بالمستخدم الحقيقي
+}
+
+<div class="container mt-5">
+
+    <h2 class="mb-4">Organizational Structure</h2>
+
+    <a class="btn btn-secondary btn-sm mb-3" href="/">Back to Home</a>
+
+    @* عرض رسالة الخطأ إذا موجود *@
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (ViewBag.Role == "SuperAdmin")
+    {
+        <a class="btn btn-success btn-sm mb-3" href="/Country/Create">Add New Organizational Structure</a>
+    }
+
+    <table class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Organizational Structure ID</th>
+                <th>Organizational Structure</th>
+               @*  @if (ViewBag.Role == "SuperAdmin")
+                { *@
+                    <th>Actions</th>
+               @*  } *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var country in Model)
+            {
+                <tr>
+                    <td>@country.CountryId</td>
+                    <td>@country.CountryName</td>
+                   @*  @if (ViewBag.Role == "SuperAdmin")
+                    { *@
+                        <td>
+                            <a class="btn btn-warning btn-sm" href="/Country/Edit/@country.CountryId">Edit</a>
+
+                            <form asp-action="Delete" asp-route-id="@country.CountryId" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this Organizational Structure?');">Delete</button>
+                            </form>
+
+                        </td>
+                   @*  } *@
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

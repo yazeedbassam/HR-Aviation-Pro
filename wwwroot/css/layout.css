@@ -1,0 +1,92 @@
+/* === Layout Styles === */
+
+/* --- Body Layout (Login Page Specific) --- */
+/* Styles for centering the login card */
+/* Note: Specific background is in login-page.css */
+body.login-page-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg); /* Add padding for smaller screens */
+    /* min-height: 100vh; is in base.css */
+    position: relative; /* Needed for absolute positioned children like animations */
+    overflow: hidden; /* Prevent scrollbars from background elements */
+}
+
+/* --- Main Container (General Wrapper) --- */
+/* .container was used in login_aviation_theme.css for the login card wrapper */
+/* .login-container is used in pasted_content.txt */
+/* We use .login-card in components.css, so this might be redundant or for a different context */
+/* Let's define a general page container if needed elsewhere */
+.page-container {
+    width: 100%;
+    max-width: 1200px; /* Example max-width */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+}
+
+/* --- Login Page Specific Layout --- */
+/* Wrapper for the main interactive area including login form and animations */
+/* Replaces .login-body from pasted_content.txt */
+.login-area {
+    display: flex;
+    flex-direction: row; /* Default layout */
+    align-items: center;
+    justify-content: center; /* Center items horizontally */
+    gap: var(--space-xxl); /* Space between login card and animation scene */
+    z-index: 10;
+    width: 100%;
+    max-width: 1400px; /* Max width for the login area */
+    position: relative; /* For positioning child elements */
+    /* height: 800px; /* Removed fixed height */
+    padding: var(--space-xl) 0; /* Add some vertical padding */
+}
+
+/* --- Dashboard Layout (from aviation_theme.css - Add if needed for other pages) --- */
+/*
+.dashboard-header {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.dashboard-sidebar {
+    width: 250px;
+    background-color: var(--white-color);
+    height: calc(100vh - 60px); 
+    position: fixed;
+    left: 0;
+    top: 60px; 
+    box-shadow: var(--shadow-sm);
+    z-index: 900;
+    transition: transform var(--transition-medium);
+}
+
+.dashboard-main-content {
+    margin-left: 250px;
+    padding: 1.5rem;
+    padding-top: calc(60px + 1.5rem); 
+    transition: margin-left var(--transition-medium);
+}
+
+/* Sidebar collapsed state */
+.sidebar-collapsed .dashboard-sidebar {
+    transform: translateX(-100%);
+}
+
+.sidebar-collapsed .dashboard-main-content {
+    margin-left: 0;
+}
+*/
+

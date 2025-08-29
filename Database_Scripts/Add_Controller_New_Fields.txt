@@ -1,0 +1,41 @@
+-- =============================================
+-- Add new fields to controllers table
+-- =============================================
+
+USE [HR-Aviation]
+GO
+
+-- Add NeedLicense column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'NeedLicense')
+BEGIN
+    ALTER TABLE controllers ADD NeedLicense BIT DEFAULT 1 NOT NULL;
+    PRINT 'تم إضافة عمود NeedLicense'
+END
+ELSE
+BEGIN
+    PRINT 'عمود NeedLicense موجود بالفعل'
+END
+
+-- Add IsActive column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME = 'IsActive')
+BEGIN
+    ALTER TABLE controllers ADD IsActive BIT DEFAULT 1 NOT NULL;
+    PRINT 'تم إضافة عمود IsActive'
+END
+ELSE
+BEGIN
+    PRINT 'عمود IsActive موجود بالفعل'
+END
+
+-- Update existing records
+UPDATE controllers SET NeedLicense = 1 WHERE NeedLicense IS NULL;
+UPDATE controllers SET IsActive = 1 WHERE IsActive IS NULL;
+
+-- Show results
+SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'controllers' AND COLUMN_NAME IN ('NeedLicense', 'IsActive')
+ORDER BY COLUMN_NAME;
+
+PRINT 'تم إضافة الأعمدة بنجاح!'
+GO 

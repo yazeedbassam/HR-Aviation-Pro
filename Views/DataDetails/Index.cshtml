@@ -1,0 +1,664 @@
+﻿@model WebApplication1.ViewModels.AllDetailsViewModel
+@using System.Linq; 
+@{
+    ViewData["Title"] = "Comprehensive Data Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Prevent browser caching -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+<style>
+    .simple-tabs {
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 20px;
+    }
+    
+    .simple-tabs .nav-link {
+        border: none;
+        background: none;
+        color: #6c757d;
+        padding: 10px 20px;
+        margin-right: 5px;
+        border-radius: 0;
+        font-weight: 500;
+    }
+    
+    .simple-tabs .nav-link.active {
+        color: #007bff;
+        background: none;
+        border-bottom: 3px solid #007bff;
+    }
+    
+    .simple-tabs .nav-link:hover {
+        color: #007bff;
+        background: none;
+    }
+    
+    .simple-table {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        width: 100%;
+    }
+    
+    .simple-table thead th {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 8px;
+        font-weight: 600;
+        text-align: left;
+    }
+    
+    .simple-table tbody td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+    
+    .simple-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    
+    .simple-table tbody tr:hover {
+        background-color: #e9ecef;
+    }
+    
+    .export-controls {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+    
+    .export-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #007bff;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        margin-left: 10px;
+        display: inline-block;
+    }
+    
+    .export-btn:hover {
+        background: #e9ecef;
+        text-decoration: none;
+        color: #0056b3;
+    }
+    
+    .export-btn.excel {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .export-btn.excel:hover {
+        background: #28a745;
+        color: white;
+    }
+    
+    .export-btn.pdf {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .export-btn.pdf:hover {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .page-header {
+        background: white;
+        padding: 20px 0;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 30px;
+    }
+    
+    .page-title {
+        color: #333;
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .tab-content {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">Comprehensive Data Details</h1>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Simple Tabs -->
+    <div class="simple-tabs">
+        <ul class="nav" id="detailsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="controllers-tab" data-bs-toggle="tab" data-bs-target="#controllers" type="button" role="tab">
+                    Controllers
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ais-employees-tab" data-bs-toggle="tab" data-bs-target="#ais-employees" type="button" role="tab">
+                    AIS Employees
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cns-employees-tab" data-bs-toggle="tab" data-bs-target="#cns-employees" type="button" role="tab">
+                    CNS Employees
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="aftn-employees-tab" data-bs-toggle="tab" data-bs-target="#aftn-employees" type="button" role="tab">
+                    AFTN Employees
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ops-employees-tab" data-bs-toggle="tab" data-bs-target="#ops-employees" type="button" role="tab">
+                    Ops Staff
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="licenses-tab" data-bs-toggle="tab" data-bs-target="#licenses" type="button" role="tab">
+                    Licenses
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="certificates-tab" data-bs-toggle="tab" data-bs-target="#certificates" type="button" role="tab">
+                    Certificates
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="observations-tab" data-bs-toggle="tab" data-bs-target="#observations" type="button" role="tab">
+                    Observations
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+                    Courses
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="detailsTabsContent">
+        <!-- Controllers Tab -->
+        <div class="tab-pane fade show active" id="controllers" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('controllersTable', 'Controllers')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('controllersTable', 'Controllers')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="controllersTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllControllers != null && Model.AllControllers.Any())
+                        {
+                            @foreach (var item in Model.AllControllers)
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Username</td>
+                                    <td>@(item.Email ?? "-")</td>
+                                    <td>@(item.PhoneNumber ?? "-")</td>
+                                    <td>@(item.JobTitle ?? "-")</td>
+                                    <td>@(item.CurrentDepartment ?? "-")</td>
+                                    <td>@(item.EmploymentStatus ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AIS Employees Tab -->
+        <div class="tab-pane fade" id="ais-employees" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('aisEmployeesTable', 'AIS_Employees')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('aisEmployeesTable', 'AIS_Employees')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="aisEmployeesTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("AIS") == true).Any() ?? false)
+                        {
+                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("AIS") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Username</td>
+                                    <td>@(item.Email ?? "-")</td>
+                                    <td>@(item.PhoneNumber ?? "-")</td>
+                                    <td>@(item.JobTitle ?? "-")</td>
+                                    <td>@(item.Department ?? "-")</td>
+                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CNS Employees Tab -->
+        <div class="tab-pane fade" id="cns-employees" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('cnsEmployeesTable', 'CNS_Employees')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('cnsEmployeesTable', 'CNS_Employees')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="cnsEmployeesTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("CNS") == true).Any() ?? false)
+                        {
+                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("CNS") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Username</td>
+                                    <td>@(item.Email ?? "-")</td>
+                                    <td>@(item.PhoneNumber ?? "-")</td>
+                                    <td>@(item.JobTitle ?? "-")</td>
+                                    <td>@(item.Department ?? "-")</td>
+                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AFTN Employees Tab -->
+        <div class="tab-pane fade" id="aftn-employees" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('aftnEmployeesTable', 'AFTN_Employees')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('aftnEmployeesTable', 'AFTN_Employees')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="aftnEmployeesTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("AFTN") == true).Any() ?? false)
+                        {
+                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("AFTN") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Username</td>
+                                    <td>@(item.Email ?? "-")</td>
+                                    <td>@(item.PhoneNumber ?? "-")</td>
+                                    <td>@(item.JobTitle ?? "-")</td>
+                                    <td>@(item.Department ?? "-")</td>
+                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Ops Staff Tab -->
+        <div class="tab-pane fade" id="ops-employees" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('opsEmployeesTable', 'Ops_Staff')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('opsEmployeesTable', 'Ops_Staff')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="opsEmployeesTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("Administration") == true || e.Department?.Contains("Safety") == true || e.Department?.Contains("Quality") == true).Any() ?? false)
+                        {
+                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("Administration") == true || e.Department?.Contains("Safety") == true || e.Department?.Contains("Quality") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Username</td>
+                                    <td>@(item.Email ?? "-")</td>
+                                    <td>@(item.PhoneNumber ?? "-")</td>
+                                    <td>@(item.JobTitle ?? "-")</td>
+                                    <td>@(item.Department ?? "-")</td>
+                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Licenses Tab -->
+        <div class="tab-pane fade" id="licenses" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('licensesTable', 'Licenses')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('licensesTable', 'Licenses')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="licensesTable">
+                    <thead>
+                        <tr>
+                            <th>Person Name</th>
+                            <th>License Type</th>
+                            <th>Issue Date</th>
+                            <th>Expiry Date</th>
+                            <th>License Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllLicenses != null && Model.AllLicenses.Any())
+                        {
+                            @foreach (var item in Model.AllLicenses)
+                            {
+                                var personName = !string.IsNullOrEmpty(item.ControllerName) ? item.ControllerName : 
+                                               !string.IsNullOrEmpty(item.EmployeeName) ? item.EmployeeName : "Unknown";
+                                var isExpired = item.ExpiryDate.HasValue && item.ExpiryDate.Value < DateTime.Now;
+                                
+                                <tr>
+                                    <td>@personName</td>
+                                    <td>@(item.LicenseType ?? "-")</td>
+                                    <td>@(item.IssueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.licensenumber ?? "-")</td>
+                                    <td>@(isExpired ? "Expired" : "Valid")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Certificates Tab -->
+        <div class="tab-pane fade" id="certificates" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('certificatesTable', 'Certificates')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('certificatesTable', 'Certificates')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="certificatesTable">
+                    <thead>
+                        <tr>
+                            <th>Person Name</th>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Issue Date</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllCertificates != null && Model.AllCertificates.Any())
+                        {
+                            @foreach (var item in Model.AllCertificates)
+                            {
+                                var personName = !string.IsNullOrEmpty(item.ControllerName) ? item.ControllerName : 
+                                               !string.IsNullOrEmpty(item.EmployeeName) ? item.EmployeeName : "Unknown";
+                                
+                                <tr>
+                                    <td>@personName</td>
+                                    <td>@(item.TypeName ?? "-")</td>
+                                    <td>@(item.Title ?? "-")</td>
+                                    <td>@(item.IssueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.Status ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Observations Tab -->
+        <div class="tab-pane fade" id="observations" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('observationsTable', 'Observations')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('observationsTable', 'Observations')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="observationsTable">
+                    <thead>
+                        <tr>
+                            <th>Person Name</th>
+                            <th>Observation No.</th>
+                            <th>Flight No.</th>
+                            <th>Country</th>
+                            <th>Depart Date</th>
+                            <th>Return Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllObservations != null && Model.AllObservations.Any())
+                        {
+                            @foreach (var item in Model.AllObservations)
+                            {
+                                var personName = !string.IsNullOrEmpty(item.ControllerName) ? item.ControllerName : 
+                                               !string.IsNullOrEmpty(item.EmployeeName) ? item.EmployeeName : "Unknown";
+                                
+                                <tr>
+                                    <td>@personName</td>
+                                    <td>@(item.ObservationNo?.ToString() ?? "-")</td>
+                                    <td>@(item.FlightNo ?? "-")</td>
+                                    <td>@(item.TravelCountry ?? "-")</td>
+                                    <td>@(item.DepartDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.ReturnDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.Notes ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Projects Tab -->
+        <div class="tab-pane fade" id="projects" role="tabpanel">
+            <div class="export-controls">
+                <button class="export-btn excel" onclick="downloadExcel('projectsTable', 'Courses')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('projectsTable', 'Courses')">Export PDF</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table simple-table" id="projectsTable">
+                    <thead>
+                        <tr>
+                            <th>Course Name</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Location</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AllProjects != null && Model.AllProjects.Any())
+                        {
+                            @foreach (var item in Model.AllProjects)
+                            {
+                                <tr>
+                                    <td>@item.ProjectName</td>
+                                    <td>@(item.Status ?? "-")</td>
+                                    <td>@(item.StartDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.EndDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(item.Location ?? "-")</td>
+                                    <td>@(item.Description ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Download Excel function
+        function downloadExcel(tableId, filename) {
+            try {
+                const table = document.getElementById(tableId);
+                const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+                XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+                showNotification('Excel file downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+
+        // Download PDF function
+        function downloadPDF(tableId, filename) {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Get table data
+                const table = document.getElementById(tableId);
+                const headers = [];
+                const data = [];
+                
+                // Get headers
+                const headerRow = table.querySelector('thead tr');
+                headerRow.querySelectorAll('th').forEach(th => {
+                    headers.push(th.textContent.trim());
+                });
+                
+                // Get data rows
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    const rowData = [];
+                    row.querySelectorAll('td').forEach(td => {
+                        rowData.push(td.textContent.trim());
+                    });
+                    data.push(rowData);
+                });
+                
+                // Add title
+                doc.setFontSize(16);
+                doc.text(filename, 14, 20);
+                doc.setFontSize(10);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+                
+                // Add table
+                doc.autoTable({
+                    head: [headers],
+                    body: data,
+                    startY: 40,
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 2
+                    },
+                    headStyles: {
+                        fillColor: [0, 123, 255],
+                        textColor: 255
+                    }
+                });
+                
+                // Save PDF
+                doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+                showNotification('PDF file downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('PDF download error:', error);
+                showNotification('Error downloading PDF file: ' + error.message, 'error');
+            }
+        }
+
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+    </script>
+}
+
+

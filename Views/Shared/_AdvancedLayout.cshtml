@@ -1,0 +1,268 @@
+@using System.Security.Claims
+@using WebApplication1.Services
+@{
+    string photoUrl = ViewBag.PhotoPath as string;
+    var avatarChar = string.IsNullOrWhiteSpace(User.Identity?.Name)
+        ? "?"
+        : User.Identity.Name.Substring(0, 1).ToUpper();
+    string username = User.Identity?.Name ?? "";
+    
+    // Get current user ID
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    int currentUserId = userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid) ? uid : 0;
+    
+    // Get visible menu items
+    var visibleMenuItems = Html.GetVisibleMenuItems();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Air Navigation services Management system</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="~/css/mediaLayout.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+</head>
+
+<body class="atc-body">
+    <div class="atc-bg"></div>
+    <!-- Navbar/Header -->
+    <nav class="navbar navbar-expand-lg atc-navbar shadow-sm">
+        <div class="container-fluid">
+            <button class="btn btn-outline-success d-lg-none me-2" id="openSidebarBtn" type="button" aria-label="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <span class="navbar-brand fw-bold fs-3">
+                <div class="aviation-logo" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="aviation-logo-icon" style="width: 32px; height: 32px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 24px; height: 24px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); opacity: 0.9;">
+                    </div>
+                    <div class="aviation-logo-text">
+                        <div class="aviation-logo-main" style="font-size: 20px;">AVIATION HR PRO</div>
+                    </div>
+                </div>
+            </span>
+            <div class="d-flex align-items-center">
+                @if (!string.IsNullOrEmpty(photoUrl))
+                {
+                    <img src="@photoUrl" class="atc-avatar-img me-2" alt="User Avatar" />
+                }
+                else
+                {
+                    <span class="atc-avatar me-2">@avatarChar</span>
+                }
+                <span class="me-3">@username</span>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger btn-sm ms-2">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay (mobile only) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- زر فتح القائمة الجانبية -->
+    <button class="sidebar-toggle" id="sidebarToggle" title="فتح القائمة الجانبية">
+        <i class="bi bi-list"></i>
+    </button>
+    
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="atc-sidebar p-3" id="sidebarMenu">
+            <div class="sidebar-logo mb-3 fs-5 fw-bold">
+                <div class="aviation-logo" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="aviation-logo-icon" style="width: 24px; height: 24px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 18px; height: 18px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); opacity: 0.9;">
+                    </div>
+                    <div class="aviation-logo-text">
+                        <div class="aviation-logo-main" style="font-size: 16px;">AVIATION HR PRO</div>
+                    </div>
+                </div>
+            </div>
+            <ul class="nav flex-column gap-1">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <!-- Dashboard -->
+                    @if (Html.IsMenuItemVisible("dashboard"))
+                    {
+                        <li>
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")"
+                               asp-controller="Dashboard" asp-action="Index">
+                                <i class="bi bi-bar-chart"></i> Dashboard
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Notifications -->
+                    @if (Html.HasAdvancedPermission("NOTIFICATIONS_VIEW"))
+                    {
+                        <li>
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
+                                <i class="bi bi-bell"></i>
+                                Notifications @await Component.InvokeAsync("NotificationCount")
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Profile -->
+                    <li>
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
+                            <i class="bi bi-person"></i> Profile
+                        </a>
+                    </li>
+                    
+                    <!-- Dynamic Menu Items based on Permissions -->
+                    @foreach (var menuItem in visibleMenuItems)
+                    {
+                        if (menuItem.IsVisible)
+                        {
+                            if (menuItem.SubItems.Any())
+                            {
+                                <!-- Section with Sub-items -->
+                                <li class="sidebar-section">
+                                    <div class="sidebar-section-header" onclick="toggleSection('@menuItem.Key')">
+                                        <span><i class="@menuItem.Icon"></i> @menuItem.Text</span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </div>
+                                    <div class="sidebar-section-content" id="@menuItem.Key">
+                                        @foreach (var subItem in menuItem.SubItems)
+                                        {
+                                            if (subItem.IsVisible)
+                                            {
+                                                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == subItem.Key || (ViewContext.RouteData.Values["controller"]?.ToString() == "Employees" && ViewContext.RouteData.Values["action"]?.ToString() == subItem.Key.ToUpper()) ? "active" : "")" 
+                                                   href="@subItem.Url">
+                                                    <i class="@subItem.Icon"></i> @subItem.Text
+                                                </a>
+                                            }
+                                        }
+                                    </div>
+                                </li>
+                            }
+                            else
+                            {
+                                <!-- Single Menu Item -->
+                                <li>
+                                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == menuItem.Key ? "active" : "")" 
+                                       href="@menuItem.Url">
+                                        <i class="@menuItem.Icon"></i> @menuItem.Text
+                                    </a>
+                                </li>
+                            }
+                        }
+                    }
+                }
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-grow-1 p-4 atc-main-content">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        // Sidebar toggle functionality
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const header = section.previousElementSibling;
+            const chevron = header.querySelector('.bi-chevron-down');
+            
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                section.style.display = 'none';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Main sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            var sidebarToggle = document.getElementById('sidebarToggle');
+            var sidebar = document.querySelector('.atc-sidebar');
+            var mainContent = document.querySelector('.atc-main-content');
+            var overlay = document.getElementById('sidebarOverlay');
+
+            // التأكد من أن القائمة الجانبية مغلقة افتراضياً
+            sidebar.classList.remove('open');
+            mainContent.classList.remove('sidebar-open');
+
+            // التحكم في فتح وإغلاق القائمة الجانبية
+            if (sidebarToggle) {
+                sidebarToggle.onclick = function () {
+                    if (sidebar.classList.contains('open')) {
+                        // إغلاق القائمة
+                        sidebar.classList.remove('open');
+                        mainContent.classList.remove('sidebar-open');
+                        sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                        sidebarToggle.title = 'فتح القائمة الجانبية';
+                    } else {
+                        // فتح القائمة
+                        sidebar.classList.add('open');
+                        mainContent.classList.add('sidebar-open');
+                        sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+                        sidebarToggle.title = 'إغلاق القائمة الجانبية';
+                    }
+                }
+            }
+
+            // إغلاق القائمة عند النقر على Overlay (للجوال)
+            if (overlay) {
+                overlay.onclick = function () {
+                    sidebar.classList.remove('open');
+                    mainContent.classList.remove('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                    sidebarToggle.title = 'فتح القائمة الجانبية';
+                }
+            }
+
+            // Mobile sidebar toggle
+            var openSidebarBtn = document.getElementById('openSidebarBtn');
+            if (openSidebarBtn) {
+                openSidebarBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('open');
+                    mainContent.classList.toggle('sidebar-open');
+                    overlay.classList.toggle('show');
+                });
+            }
+        });
+
+        // Auto-expand current section
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentController = '@ViewContext.RouteData.Values["controller"]';
+            const currentAction = '@ViewContext.RouteData.Values["action"]';
+            
+            // Find and expand the section containing the current page
+            const menuItems = document.querySelectorAll('.sidebar-section');
+            menuItems.forEach(function(section) {
+                const links = section.querySelectorAll('.nav-link');
+                let shouldExpand = false;
+                
+                links.forEach(function(link) {
+                    if (link.classList.contains('active')) {
+                        shouldExpand = true;
+                    }
+                });
+                
+                if (shouldExpand) {
+                    const content = section.querySelector('.sidebar-section-content');
+                    const chevron = section.querySelector('.bi-chevron-down');
+                    content.style.display = 'block';
+                    chevron.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html> 

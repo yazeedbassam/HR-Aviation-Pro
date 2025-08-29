@@ -1,0 +1,338 @@
+@model UserPermissionSummary
+@{
+    ViewData["Title"] = "User Permission Summary";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-person-badge"></i>
+                        User Permission Summary
+                    </h3>
+                    <div class="card-tools">
+                        <a href="/Permission" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Permissions
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- User Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="bi bi-person"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">User Information</span>
+                                    <span class="info-box-number">@Model.UserFullName</span>
+                                    <span class="info-box-text">@Model.UserName - @Model.UserRole</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="bi bi-shield-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Permission Summary</span>
+                                    <span class="info-box-number">@Model.TotalPermissions Total</span>
+                                    <span class="info-box-text">@Model.ActivePermissions Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>@Model.RolePermissions.Count</h3>
+                                    <p>Role Permissions</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="bi bi-shield"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>@Model.DepartmentPermissions.Count</h3>
+                                    <p>Department Permissions</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>@Model.AccessibleDepartments</h3>
+                                    <p>Accessible Departments</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="bi bi-diagram-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3>@Model.RecentActivity.Count</h3>
+                                    <p>Recent Activities</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="bi bi-activity"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Role Permissions -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="bi bi-shield"></i>
+                                        Role Permissions
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.RolePermissions.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Permission</th>
+                                                        <th>Category</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var permission in Model.RolePermissions)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <strong>@permission.PermissionName</strong><br>
+                                                                <small class="text-muted">@permission.PermissionKey</small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge badge-info">@permission.PermissionCategory</span>
+                                                            </td>
+                                                            <td>
+                                                                @if (permission.IsActive)
+                                                                {
+                                                                    <span class="badge badge-success">Active</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge badge-secondary">Inactive</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-shield-x" style="font-size: 3rem;"></i>
+                                            <p>No role permissions assigned</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Permissions -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="bi bi-building"></i>
+                                        Department Permissions
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.DepartmentPermissions.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Department</th>
+                                                        <th>Permission</th>
+                                                        <th>Access</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var permission in Model.DepartmentPermissions)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <strong>@permission.DepartmentName</strong>
+                                                            </td>
+                                                            <td>
+                                                                <strong>@permission.PermissionName</strong><br>
+                                                                <small class="text-muted">@permission.PermissionKey</small>
+                                                            </td>
+                                                            <td>
+                                                                @if (permission.CanView)
+                                                                {
+                                                                    <span class="badge badge-info">View</span>
+                                                                }
+                                                                @if (permission.CanEdit)
+                                                                {
+                                                                    <span class="badge badge-warning">Edit</span>
+                                                                }
+                                                                @if (permission.CanDelete)
+                                                                {
+                                                                    <span class="badge badge-danger">Delete</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-building-x" style="font-size: 3rem;"></i>
+                                            <p>No department permissions assigned</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accessible Departments -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="bi bi-diagram-3"></i>
+                                        Accessible Departments
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.AccessibleDepartmentsList.Any())
+                                    {
+                                        <div class="row">
+                                            @foreach (var department in Model.AccessibleDepartmentsList)
+                                            {
+                                                <div class="col-md-3 col-sm-6 mb-2">
+                                                    <div class="info-box bg-light">
+                                                        <span class="info-box-icon bg-primary">
+                                                            <i class="bi bi-building"></i>
+                                                        </span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">@department</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-diagram-3" style="font-size: 3rem;"></i>
+                                            <p>No departments accessible</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="bi bi-activity"></i>
+                                        Recent Activity
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.RecentActivity.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Time</th>
+                                                        <th>Action</th>
+                                                        <th>Permission</th>
+                                                        <th>Department</th>
+                                                        <th>Status</th>
+                                                        <th>IP Address</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var activity in Model.RecentActivity)
+                                                    {
+                                                        <tr>
+                                                            <td>@activity.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                                            <td>@activity.Details</td>
+                                                            <td>@(activity.PermissionName ?? "N/A")</td>
+                                                            <td>@(activity.DepartmentName ?? "N/A")</td>
+                                                            <td>
+                                                                @if (activity.Status == "ACCESS_GRANTED")
+                                                                {
+                                                                    <span class="badge badge-success">Granted</span>
+                                                                }
+                                                                else if (activity.Status == "ACCESS_DENIED")
+                                                                {
+                                                                    <span class="badge badge-danger">Denied</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge badge-info">@activity.Status</span>
+                                                                }
+                                                            </td>
+                                                            <td>@(activity.IpAddress ?? "N/A")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-activity" style="font-size: 3rem;"></i>
+                                            <p>No recent activity</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize any additional functionality here
+            console.log('User Permission Summary loaded');
+        });
+    </script>
+} 

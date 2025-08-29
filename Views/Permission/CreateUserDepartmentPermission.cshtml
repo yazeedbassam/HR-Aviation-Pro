@@ -1,0 +1,239 @@
+@model UserDepartmentPermissionViewModel
+@{
+    ViewData["Title"] = "Create User Department Permission";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Debug Information -->
+@if (ViewBag.Departments != null)
+{
+    <div class="alert alert-info">
+        <strong>Debug Info:</strong><br>
+        Users: @(ViewBag.Users?.Count ?? 0)<br>
+        Departments: @(ViewBag.Departments?.Count ?? 0)<br>
+        Permissions: @(ViewBag.Permissions?.Count ?? 0)<br>
+        @if (ViewBag.Departments != null)
+        {
+            <strong>Departments:</strong><br>
+            @foreach (var dept in ViewBag.Departments)
+            {
+                <span>@dept.Value: @dept.Text</span><br>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        <strong>Warning:</strong> ViewBag.Departments is null!
+    </div>
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-plus-circle"></i>
+                        Create User Department Permission
+                    </h3>
+                    <div class="card-tools">
+                        <a href="/Permission/UserDepartmentPermissions" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="CreateUserDepartmentPermission" method="post">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="UserId" class="form-label">User</label>
+                                    <select asp-for="UserId" class="form-select" required>
+                                        <option value="">Select User</option>
+                                        @if (ViewBag.Users != null)
+                                        {
+                                            foreach (var user in ViewBag.Users)
+                                            {
+                                                <option value="@user.Value">@user.Text</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="UserId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DepartmentId" class="form-label">Department</label>
+                                    <select asp-for="DepartmentId" class="form-select" required>
+                                        <option value="">Select Department</option>
+                                        @if (ViewBag.Departments != null)
+                                        {
+                                            foreach (var dept in ViewBag.Departments)
+                                            {
+                                                <option value="@dept.Value">@dept.Text</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="PermissionId" class="form-label">Permission</label>
+                                    <select asp-for="PermissionId" class="form-select" required>
+                                        <option value="">Select Permission</option>
+                                        @if (ViewBag.Permissions != null)
+                                        {
+                                            foreach (var permission in ViewBag.Permissions)
+                                            {
+                                                <option value="@permission.Value">@permission.Text</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="PermissionId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Access Rights</label>
+                                    <div class="form-check">
+                                        <input asp-for="CanView" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanView" class="form-check-label">Can View</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input asp-for="CanEdit" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanEdit" class="form-check-label">Can Edit</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input asp-for="CanDelete" class="form-check-input" type="checkbox">
+                                        <label asp-for="CanDelete" class="form-check-label">Can Delete</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <div class="form-check">
+                                        <input asp-for="IsActive" class="form-check-input" type="checkbox" checked>
+                                        <label asp-for="IsActive" class="form-check-label">Active</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Create Permission
+                                </button>
+                                <a href="/Permission/UserDepartmentPermissions" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('Page loaded, checking if data is already loaded from ViewBag...');
+            
+            // Check if data is already loaded from ViewBag
+            var userSelect = $('#UserId');
+            var deptSelect = $('#DepartmentId');
+            var permSelect = $('#PermissionId');
+            
+            // If ViewBag data is already loaded, don't make AJAX calls
+            if (userSelect.find('option').length > 1) {
+                console.log('Users already loaded from ViewBag');
+            } else {
+                console.log('Loading users via AJAX...');
+                // Load users
+                $.ajax({
+                    url: '/Permission/GetUsers',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log('Users loaded:', data);
+                        userSelect.empty();
+                        userSelect.append('<option value="">Select User</option>');
+                        data.forEach(function (user) {
+                            userSelect.append('<option value="' + user.value + '">' + user.text + '</option>');
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading users:', error);
+                        console.log('Response:', xhr.responseText);
+                        // Show error message to user
+                        userSelect.append('<option value="">Error loading users</option>');
+                    }
+                });
+            }
+            
+            if (deptSelect.find('option').length > 1) {
+                console.log('Departments already loaded from ViewBag');
+            } else {
+                console.log('Loading departments via AJAX...');
+                // Load departments
+                $.ajax({
+                    url: '/Permission/GetDepartments',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log('Departments loaded:', data);
+                        deptSelect.empty();
+                        deptSelect.append('<option value="">Select Department</option>');
+                        data.forEach(function (dept) {
+                            deptSelect.append('<option value="' + dept.value + '">' + dept.text + '</option>');
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading departments:', error);
+                        console.log('Response:', xhr.responseText);
+                        // Show error message to user
+                        deptSelect.append('<option value="">Error loading departments</option>');
+                    }
+                });
+            }
+            
+            if (permSelect.find('option').length > 1) {
+                console.log('Permissions already loaded from ViewBag');
+            } else {
+                console.log('Loading permissions via AJAX...');
+                // Load permissions
+                $.ajax({
+                    url: '/Permission/GetPermissions',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log('Permissions loaded:', data);
+                        permSelect.empty();
+                        permSelect.append('<option value="">Select Permission</option>');
+                        data.forEach(function (permission) {
+                            permSelect.append('<option value="' + permission.value + '">' + permission.text + '</option>');
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading permissions:', error);
+                        console.log('Response:', xhr.responseText);
+                        // Show error message to user
+                        permSelect.append('<option value="">Error loading permissions</option>');
+                    }
+                });
+            }
+        });
+    </script>
+} 

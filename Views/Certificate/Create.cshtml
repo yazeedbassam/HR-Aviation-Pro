@@ -1,0 +1,163 @@
+﻿@model WebApplication1.Models.CertificateViewModel
+
+@{
+    ViewData["Title"] = "Add New Document";
+}
+
+<style>
+    .custom-card {
+        margin: 28px auto;
+        border-radius: 13px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .custom-card-header {
+        font-size: 1.15rem;
+        font-weight: 600;
+        background-color: #198754;
+        color: white;
+        border-radius: 13px 13px 0 0;
+    }
+
+    .form-section-header {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    .btn-group-custom {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <div class="card custom-card">
+            <div class="card-header custom-card-header d-flex align-items-center">
+                <i class="fa-solid fa-file-circle-plus fa-lg me-2"></i>
+                <span>@ViewData["Title"]</span>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-6">
+                            <h5 class="form-section-header">Select Person</h5>
+                            <div class="mb-3">
+                                <label asp-for="ControllerId" class="form-label">Controller</label>
+                                <!-- CORRECTED: Using ViewBag.Controllers directly -->
+                                <select asp-for="ControllerId" asp-items="ViewBag.Controllers" class="form-select form-select-sm" id="controller-select">
+                                    <option value="">-- Select ATC --</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="EmployeeId" class="form-label">Employee</label>
+                                <!-- CORRECTED: Using ViewBag.Employees directly -->
+                                <select asp-for="EmployeeId" asp-items="ViewBag.Employees" class="form-select form-select-sm" id="employee-select">
+                                    <option value="">-- Select Employee --</option>
+                                </select>
+                            </div>
+
+                            <h5 class="form-section-header">Document Details</h5>
+                            <div class="mb-3">
+                                <label asp-for="TypeId" class="form-label">Type</label>
+                                <!-- CORRECTED: Using ViewBag.CertificateTypes directly -->
+                                <select asp-for="TypeId" asp-items="ViewBag.CertificateTypes" class="form-select form-select-sm">
+                                    <option value="">-- Select Type --</option>
+                                </select>
+                                <span asp-validation-for="TypeId" class="text-danger small"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Title" class="form-label"></label>
+                                <input asp-for="Title" class="form-control form-control-sm" />
+                                <span asp-validation-for="Title" class="text-danger small"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Status" class="form-label"></label>
+                                <select asp-for="Status" class="form-select form-select-sm">
+                                    <option value="">-- Select Status --</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-md-6">
+                            <h5 class="form-section-header">Dates & File</h5>
+                            <div class="mb-3">
+                                <label asp-for="IssueDate" class="form-label"></label>
+                                <input asp-for="IssueDate" type="date" class="form-control form-control-sm" />
+                                <span asp-validation-for="IssueDate" class="text-danger small"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ExpiryDate" class="form-label"></label>
+                                <input asp-for="ExpiryDate" type="date" class="form-control form-control-sm" />
+                                <span asp-validation-for="ExpiryDate" class="text-danger small"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="UploadFile" class="form-label">Upload File (Optional)</label>
+                                <input asp-for="UploadFile" type="file" class="form-control form-control-sm" />
+                                <span asp-validation-for="UploadFile" class="text-danger small"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Notes" class="form-label"></label>
+                                <textarea asp-for="Notes" class="form-control form-control-sm" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 border-top pt-3 btn-group-custom">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i>Add Document</button>
+                        <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const controllerSelect = document.getElementById('controller-select');
+            const employeeSelect = document.getElementById('employee-select');
+
+            controllerSelect.addEventListener('change', function() {
+                if (this.value) {
+                    employeeSelect.value = '';
+                    employeeSelect.disabled = true;
+                } else {
+                    employeeSelect.disabled = false;
+                }
+            });
+
+            employeeSelect.addEventListener('change', function() {
+                if (this.value) {
+                    controllerSelect.value = '';
+                    controllerSelect.disabled = true;
+                } else {
+                    controllerSelect.disabled = false;
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,152 @@
+﻿@model List<WebApplication1.Models.License>
+
+@{
+    var sortedLicenses = Model.OrderBy(l => l.ExpiryDate ?? DateTime.MaxValue).ToList();
+}
+
+<!-- Header with record count and export buttons -->
+<div class="d-flex flex-wrap justify-content-between align-items-center my-3">
+    <div class="d-flex align-items-center">
+        <h5 class="mb-0">Users Permissions</h5>
+        <span id="employee-record-counter" class="badge bg-primary ms-3">@Model.Count Records</span>
+    </div>
+    <div>
+        <button type="button" onclick="exportToFile('Employee', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </button>
+        <button type="button" onclick="exportToFile('Employee', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table id="employeeLicensesTable" class="table table-bordered table-striped table-hover align-middle table-compact">
+        <thead class="table-primary">
+            <tr>
+                <th>#</th>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Type</th>
+                <th>Issue Date</th>
+                <th style="min-width: 110px;">Expiry Date</th>
+                <th style="min-width: 230px;">Status</th>
+                <th>PDF</th>
+                <th class="action-btns" style="min-width:130px;">Actions</th>
+            </tr>
+            <tr class="filters">
+                <th></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="employeeName" data-column-index="1"></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="department" data-column-index="2"></th>
+                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="licenseType" data-column-index="3"></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th class="text-center"><button class="btn btn-sm btn-outline-secondary clear-filters-btn" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                var j = 1;
+            }
+            @foreach (var license in sortedLicenses)
+            {
+                <tr>
+                    <td>@(j++)</td>
+                    <td>@license.EmployeeName</td>
+                    <td>@license.EmployeeDepartment</td>
+                    <td>
+                        @license.LicenseType
+                        @if (license.LicenseType == "English Proficiency Test" && !string.IsNullOrEmpty(license.RANGE))
+                        {
+                            <span class="text-muted fw-bold"> - @license.RANGE</span>
+                        }
+                    </td>
+                    <td>@(license.IssueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                    <td>@(license.ExpiryDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(license.AlertMessage))
+                        {
+                            string statusClass = "", iconClass = "";
+                            if (license.AlertMessage.Contains("expired")) { statusClass = "status-expired"; iconClass = "fa-solid fa-times-circle"; }
+                            else if (license.AlertMessage.Contains("will expire")) { statusClass = "status-expiring-soon"; iconClass = "fa-solid fa-bell"; }
+                            else { statusClass = "status-active"; iconClass = "fa-solid fa-check-circle"; }
+                            <span class="status-alert @statusClass"><i class="@iconClass"></i> <span>@license.AlertMessage</span></span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        @if (!string.IsNullOrEmpty(license.PDFPath))
+                        {
+                            <a class="btn btn-outline-primary btn-sm" href="@Url.Content(license.PDFPath)" target="_blank" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></a>
+                        }
+                    </td>
+                    <td class="action-btns">
+                        <button type="button" class="btn btn-info btn-sm" title="View Details"
+                                data-bs-toggle="modal" data-bs-target="#licenseDetailsModal"
+                                data-licensetype="@(license.LicenseType + (license.LicenseType == "English Proficiency Test" && !string.IsNullOrEmpty(license.RANGE) ? " - Level " + license.RANGE : ""))"
+                                data-personname="@license.EmployeeName"
+                                data-personjob="@license.EmployeeDepartment"
+                                data-licensenumber="@license.licensenumber"
+                                data-issuedate="@(license.IssueDate?.ToString("yyyy-MM-dd"))"
+                                data-expirydate="@(license.ExpiryDate?.ToString("yyyy-MM-dd"))"
+                                data-statusmessage="@license.AlertMessage"
+                                data-note="@license.Note">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <a href="@Url.Action("Edit", "License", new { id = license.LicenseId })" class="btn btn-warning btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <form method="post" action="@Url.Action("DeleteConfirmed", "License", new { id = license.LicenseId })" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<script>
+    (function() {
+        const container = document.getElementById('employees-tab-pane');
+        if (!container) return;
+
+        const table = container.querySelector('#employeeLicensesTable');
+        const filterInputs = container.querySelectorAll('.filters .filter-input');
+        const tableRows = table.querySelectorAll('tbody tr');
+        const counter = container.querySelector('#employee-record-counter');
+        const clearBtn = container.querySelector('.clear-filters-btn');
+
+        function applyFilters() {
+            let visibleRowCount = 0;
+            const filters = Array.from(filterInputs).map(input => ({
+                value: input.value.toLowerCase(),
+                columnIndex: parseInt(input.getAttribute('data-column-index'))
+            }));
+
+            tableRows.forEach(row => {
+                let isVisible = true;
+                for (const filter of filters) {
+                    if (filter.value === '') continue;
+                    const cell = row.cells[filter.columnIndex];
+                    const cellText = cell ? cell.innerText.toLowerCase() : '';
+                    if (!cellText.includes(filter.value)) {
+                        isVisible = false;
+                        break;
+                    }
+                }
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleRowCount++;
+            });
+
+            if(counter) counter.innerText = `${visibleRowCount} Records`;
+        }
+
+        filterInputs.forEach(input => input.addEventListener('keyup', applyFilters));
+        if(clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                filterInputs.forEach(input => input.value = '');
+                applyFilters();
+            });
+        }
+    })();
+</script>

@@ -1,0 +1,164 @@
+@model WebApplication1.Models.ConfigurationStatisticsViewModel
+@{
+    ViewData["Title"] = "Configuration Statistics";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Configuration Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.TotalCategories</h3>
+                                    <p class="mb-0">Total Categories</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.TotalValues</h3>
+                                    <p class="mb-0">Total Values</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h3>@Model.ActiveCategories</h3>
+                                    <p class="mb-0">Active Categories</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.ActiveValues</h3>
+                                    <p class="mb-0">Active Values</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Categories by Status</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>@Model.ActiveCategories</td>
+                                            <td>@Model.ActiveCategoriesPercentage.ToString("F1")%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="badge bg-secondary">Inactive</span></td>
+                                            <td>@(Model.TotalCategories - Model.ActiveCategories)</td>
+                                            <td>@((100 - Model.ActiveCategoriesPercentage).ToString("F1"))%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Values by Status</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>@Model.ActiveValues</td>
+                                            <td>@Model.ActiveValuesPercentage.ToString("F1")%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="badge bg-secondary">Inactive</span></td>
+                                            <td>@(Model.TotalValues - Model.ActiveValues)</td>
+                                            <td>@((100 - Model.ActiveValuesPercentage).ToString("F1"))%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Recent Activity</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Action</th>
+                                            <th>Details</th>
+                                            <th>Changed By</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.RecentLogs != null && Model.RecentLogs.Any())
+                                        {
+                                            @foreach (var log in Model.RecentLogs.Take(10))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <span class="badge bg-@(log.Action == "Created" ? "success" : log.Action == "Updated" ? "warning" : "danger")">
+                                                            @log.Action
+                                                        </span>
+                                                    </td>
+                                                    <td>@log.NewValue</td>
+                                                    <td>@log.ChangedBy</td>
+                                                    <td>@log.ChangedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">No recent activity</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Configuration
+                        </a>
+                        <button onclick="location.reload()" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh Statistics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

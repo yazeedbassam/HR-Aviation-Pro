@@ -1,0 +1,564 @@
+@model WebApplication1.Models.LoginViewModel
+@{
+    Layout = "_LayoutLogin";
+    ViewData["Title"] = ""; /* "ANS Management System - (AMS)"; */
+}
+
+<link rel="stylesheet" href="~/css/atc_animations.css" />
+<link rel="stylesheet" href="~/css/enhanced_panels.css" />
+
+<div class="motivational-header">
+    <p id="motivational-text">Master the flow: Your gateway to advanced ATC management: Explore the future of ATC.</p>
+</div>
+
+<!-- Animated Project Title -->
+<div class="project-title-container">
+    <object data="/images/animated_title.svg" type="image/svg+xml" class="animated-title"></object>
+</div>
+
+<div class="login-body">
+    <div class="login-container">
+        <div class="logo-container">
+            <img src="/images/Logo.jpeg" alt="Logo AMS" style="width:200px; height:200px;" />
+            <h1>@ViewData["Title"]</h1>
+        </div>
+        <h2>Login</h2>
+        <form asp-action="Login" method="post">
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div class="input-group">
+                <label asp-for="Username">Username</label>
+                <input asp-for="Username" class="form-control" placeholder="Enter your username" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+            <div class="input-group">
+                <label asp-for="Password">Password</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            <button type="submit" class="login-button">Sign In</button>
+        </form>
+    </div>
+
+    <div class="interactive-buttons spiral">
+        <div class="info-circle" id="about-us-trigger" data-panel="about-us-panel">
+            <i class="fas fa-info fa-2x"></i>
+            <span>About Us</span>
+        </div>
+        <div class="info-circle" id="vision-mission-trigger" data-panel="vision-mission-panel">
+            <i class="fas fa-bullseye fa-2x"></i>
+            <span>Vision/Mission</span>
+        </div>
+        <div class="info-circle" id="contact-us-trigger" data-panel="contact-us-panel">
+            <i class="fas fa-envelope fa-2x"></i>
+            <span>Contact Us</span>
+        </div>
+    </div>
+
+    <div class="info-panels">
+        <div class="info-panel" id="about-us-panel">
+            <h3>About Us</h3>
+            <p>The ATC Management Portal offers a comprehensive digital platform specifically developed to facilitate the management of air traffic controller data, licenses, certifications, and notifications within civil aviation authorities and organizations.</p>
+            <h4>Our Features:</h4>
+            <ul>
+                <li>Complete management of all air traffic controller data with flexible updates</li>
+                <li>Accurate tracking and management of licenses and certifications with smart alerts before expiry</li>
+                <li>Advanced interface for uploading and saving files and documents electronically</li>
+                <li>Comprehensive statistics dashboard to monitor performance indicators and make quick decisions</li>
+                <li>Professional reports exportable to PDF/Excel</li>
+                <li>Advanced permissions system ensuring data confidentiality and security</li>
+                <li>Technical support and integration services with other governmental and institutional systems</li>
+            </ul>
+            <p>The system is designed to meet the highest international standards in the aviation sector and to be a turning point towards comprehensive digital transformation in the management of technical human resources, with ease and security.</p>
+        </div>
+        <div class="info-panel" id="vision-mission-panel">
+            <h3>Our Vision</h3>
+            <p>To be the leading and trusted platform in the management of air traffic controller resources at the national and regional levels, contributing to achieving the highest levels of safety and efficiency in the civil aviation sector.</p>
+            <h3>Our Mission</h3>
+            <p>To develop and provide innovative and comprehensive digital solutions for managing the data, training, and licensing of air traffic controllers, and to enable regulatory authorities to make informed decisions and enhance compliance with international standards.</p>
+        </div>
+        <div class="info-panel" id="contact-us-panel">
+            <h3>Contact Us</h3>
+            <div class="contact-info">
+                <p>Our technical support and customer service team for the Air Traffic Controller Management System is always ready to answer your inquiries, receive your suggestions, and support you in using the system optimally.</p>
+                <p><strong>Contact Methods:</strong></p>
+                <ul>
+                    <li><strong>Email:</strong> <a href="mailto:info@AMS.com">info@AMS.com</a></li>
+                    <li><strong>Phone:</strong> 00962 7 76619258</li>
+                    <li><strong>Address:</strong> Civil Aviation Regulatory Commission - </li>
+                </ul>
+                <p>You can also fill out the form below, and we will contact you as soon as possible.</p>
+            </div>
+            <form class="contact-form">
+                <div class="input-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your name">
+                </div>
+                <div class="input-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label for="message">Message:</label>
+                    <textarea id="message" name="message" placeholder="Enter your message"></textarea>
+                </div>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Panel overlay for closing panels when clicking outside -->
+    <div class="panel-overlay"></div>
+    
+    <!-- ATC Animation Scene -->
+    <div id="atc-scene" class="atc-scene">
+        <!-- Control Tower -->
+        <div id="control-tower" class="control-tower">
+            <object data="/images/realistic_tower.svg" type="image/svg+xml"></object>
+        </div>
+        
+        <!-- Runway at the bottom -->
+        <div class="runway-container">
+            <object data="/images/runway.svg" type="image/svg+xml" class="runway"></object>
+        </div>
+        
+        <!-- Multiple Airplanes -->
+        <div class="airplane-container">
+            <div id="airplane1" class="airplane airplane1">
+                <object data="/images/airplane1.svg" type="image/svg+xml"></object>
+            </div>
+            <div id="airplane2" class="airplane airplane2">
+                <object data="/images/airplane2.svg" type="image/svg+xml"></object>
+            </div>
+            <div id="airplane3" class="airplane airplane3">
+                <object data="/images/airplane3.svg" type="image/svg+xml"></object>
+            </div>
+        </div>
+        
+        <!-- Speech Bubble -->
+        <div id="speech-bubble" class="speech-bubble">
+            <object data="/images/speech_bubble.svg" type="image/svg+xml"></object>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow: hidden;
+    }
+
+    .motivational-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: rgba(0, 123, 255, 0.7); /* Semi-transparent blue */
+        color: white;
+        padding: 1rem 0;
+        text-align: center;
+        z-index: 15;
+        overflow: hidden;
+    }
+
+    #motivational-text {
+        white-space: nowrap;
+        position: relative; /* Needed for JavaScript animation */
+    }
+    
+    /* Project Title Container */
+    .project-title-container {
+        position: absolute;
+        top: 80px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        z-index: 25;
+    }
+    
+    .animated-title {
+        width: 80%;
+        height: 100px;
+        max-width: 800px;
+    }
+
+    .login-body {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4rem;
+        z-index: 10;
+        width: 5000px; /* عرض محدد */
+        height: 800px;
+        position: relative; /* Added for absolute positioning of ATC scene */
+    }
+
+    .login-container {
+        background-color: #fff;
+        padding: 3rem;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        text-align: center;
+        z-index: 30; /* Ensure login form is above other elements */
+    }
+
+    /* Login Card Styles */
+    .logo-container {
+        font-size: 2rem;
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+
+    .login-container h1 {
+        font-size: 1.5rem;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+
+    .login-container h2 {
+        color: #333;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-group {
+        margin-bottom: 1.5rem;
+        text-align: left;
+    }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .login-button {
+        background-color: #007bff;
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+    }
+
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+
+    .text-danger {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 0.9rem;
+    }
+
+    /* Interactive Buttons Spiral */
+    .interactive-buttons.spiral {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+    }
+    
+    /* ATC Scene Styles */
+    .atc-scene {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        pointer-events: none;
+    }
+
+    .control-tower {
+        position: absolute;
+        bottom: 150px;
+        right: 100px;
+        width: 300px;
+        height: 600px;
+        z-index: 10;
+        cursor: pointer;
+        pointer-events: all;
+        transition: transform 0.3s ease;
+    }
+
+    .control-tower:hover {
+        transform: scale(1.05);
+    }
+    
+    .runway-container {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1000px;
+        height: 200px;
+        z-index: 8;
+    }
+    
+    .runway {
+        width: 100%;
+        height: 100%;
+    }
+
+    .airplane-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 15;
+        pointer-events: none;
+    }
+
+    .airplane {
+        position: absolute;
+        width: 300px;
+        height: 100px;
+        filter: drop-shadow(3px 3px 5px rgba(0, 0, 0, 0.3));
+    }
+    
+    .airplane1 {
+        top: 150px;
+        left: 0;
+    }
+    
+    .airplane2 {
+        top: 250px;
+        left: 0;
+    }
+    
+    .airplane3 {
+        top: 350px;
+        left: 0;
+    }
+
+    .speech-bubble {
+        position: absolute;
+        top: 100px;
+        right: 150px;
+        width: 300px;
+        height: 100px;
+        z-index: 20;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .atc-scene {
+            transform: scale(0.8);
+        }
+        
+        .project-title-container {
+            top: 60px;
+        }
+        
+        .animated-title {
+            width: 90%;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .atc-scene {
+            transform: scale(0.6);
+        }
+        
+        .project-title-container {
+            top: 50px;
+        }
+        
+        .animated-title {
+            width: 95%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .runway-container {
+            display: none; /* Hide on very small screens */
+        }
+        
+        .control-tower {
+            right: 50px;
+            transform: scale(0.7);
+        }
+        
+        .project-title-container {
+            top: 40px;
+        }
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/panel_interactivity.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Motivational Text Animation
+            const motivationalText = $("#motivational-text");
+            let offset = 0;
+            const speed = 1; // Pixels per frame
+
+            function animateText() {
+                offset -= speed;
+                motivationalText.css('left', offset + 'px');
+                if (offset < -motivationalText.width()) {
+                    offset = motivationalText.parent().width();
+                }
+                requestAnimationFrame(animateText);
+            }
+
+            animateText();
+
+            // Spiral Icons Animation and Interaction
+            const circles = $(".interactive-buttons.spiral .info-circle");
+            const spiralContainer = $(".interactive-buttons.spiral");
+            const radius = Math.min(spiralContainer.width(), spiralContainer.height()) / 2 - circles.first().width();
+            const animationSpeed = 0.02;
+            let angle = 0;
+            let animationFrameId;
+            let isMouseOver = false;
+
+            function animateSpiral() {
+                if (!isMouseOver) {
+                    circles.each(function(i) {
+                        const theta = angle + i * (2 * Math.PI / circles.length);
+                        const x = radius * Math.cos(theta) + spiralContainer.width() / 2;
+                        const y = radius * Math.sin(theta) + spiralContainer.height() / 2;
+                        $(this).css({
+                            left: x - $(this).width() / 2 + 'px',
+                            top: y - $(this).height() / 2 + 'px'
+                        });
+                    });
+                    angle += animationSpeed;
+                }
+                animationFrameId = requestAnimationFrame(animateSpiral);
+            }
+
+            function stopAnimation() {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            animateSpiral();
+
+            $(".interactive-buttons.spiral").mouseenter(function() {
+                isMouseOver = true;
+                stopAnimation();
+            }).mouseleave(function() {
+                isMouseOver = false;
+                animateSpiral();
+            });
+
+            // Handle Contact Form Submission
+            $(".contact-form").submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                const name = $("#name").val();
+                const email = $("#email").val();
+                const message = $("#message").val();
+
+                $.ajax({
+                    url: '/Contact_US/SendEmail', // Updated URL to the new Controller and Action
+                    method: 'POST',
+                    data: { name: name, email: email, message: message },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            $(".contact-form")[0].reset(); // Clear the form on success
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function(error) {
+                        alert('An error occurred while sending your message.');
+                        console.error(error);
+                    }
+                });
+            });
+            
+            // ATC Animation Script
+            // Flight messages to display in the speech bubble
+            const flightMessages = [
+                "Flight ATC123, cleared for landing on runway 27!",
+                "Flight UAE456, maintain altitude 10,000 feet, expect approach clearance.",
+                "Flight RYR789, turn right heading 270, descend to 5,000 feet.",
+                "Flight BAW234, contact approach on 119.5, good day.",
+                "Flight QTR567, wind 270 degrees at 10 knots, cleared to land.",
+                "Flight ETD890, runway 27 cleared for takeoff, contact departure on 125.8."
+            ];
+            
+            // Initialize variables
+            let currentMessageIndex = 0;
+            let speechBubbleVisible = false;
+            
+            // Function to update the speech bubble text
+            function updateSpeechBubble() {
+                const speechBubbleObj = $("#speech-bubble object").contents();
+                const speechText = speechBubbleObj.find("#speech-text");
+                if (speechText.length) {
+                    speechText.text(flightMessages[currentMessageIndex]);
+                    currentMessageIndex = (currentMessageIndex + 1) % flightMessages.length;
+                }
+            }
+            
+            // Function to toggle speech bubble visibility
+            function toggleSpeechBubble() {
+                speechBubbleVisible = !speechBubbleVisible;
+                $("#speech-bubble").css('opacity', speechBubbleVisible ? '1' : '0');
+                
+                if (speechBubbleVisible) {
+                    updateSpeechBubble();
+                }
+            }
+            
+            // Initialize the tower click event
+            $("#control-tower").click(function() {
+                toggleSpeechBubble();
+            });
+            
+            // Change speech bubble text every 5 seconds when visible
+            setInterval(function() {
+                if (speechBubbleVisible) {
+                    updateSpeechBubble();
+                }
+            }, 5000);
+            
+            // Interactive hover effects
+            $("#atc-scene").mouseenter(function() {
+                // Speed up radar animation on hover
+                const towerObj = $("#control-tower object").contents();
+                const radar = towerObj.find("#radar-arm");
+                if (radar.length) {
+                    radar.css('animation-duration', '3s');
+                }
+            }).mouseleave(function() {
+                // Return to normal speed
+                const towerObj = $("#control-tower object").contents();
+                const radar = towerObj.find("#radar-arm");
+                if (radar.length) {
+                    radar.css('animation-duration', '10s');
+                }
+            });
+        });
+    </script>
+}

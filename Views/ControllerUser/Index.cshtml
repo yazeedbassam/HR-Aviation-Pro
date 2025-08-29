@@ -1,0 +1,1173 @@
+﻿@model List<WebApplication1.Models.ControllerUser>
+@{
+    ViewBag.Title = "Air Traffic Controllers List";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="~/css/mediacontroller.css" rel="stylesheet" />
+<style>
+    /* General styles for the page layout and components */
+    /* For styling the new files section */
+    .project-files-section {
+        margin-top: 20px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+    }
+
+        .project-files-section h6 {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+
+    .project-files-list {
+        list-style: none;
+        padding: 0;
+    }
+
+        .project-files-list li {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+            .project-files-list li:hover {
+                background-color: #f1f3f5;
+            }
+
+        .project-files-list .file-icon {
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-right: 15px;
+            width: 25px; /* Fixed width for alignment */
+            text-align: center;
+        }
+
+        /* Specific file type colors */
+        .project-files-list .fa-file-pdf {
+            color: #dc3545;
+        }
+
+        .project-files-list .fa-file-word {
+            color: #0d6efd;
+        }
+
+        .project-files-list .fa-file-excel {
+            color: #198754;
+        }
+
+        .project-files-list .fa-file-image {
+            color: #fd7e14;
+        }
+
+        .project-files-list .fa-file-archive {
+            color: #6f42c1;
+        }
+        /* For zip/rar */
+
+        .project-files-list .file-info {
+            flex-grow: 1;
+        }
+
+            .project-files-list .file-info .file-name {
+                font-weight: 500;
+                color: #212529;
+            }
+
+            .project-files-list .file-info .file-size {
+                font-size: 0.8rem;
+                color: #6c757d;
+            }
+
+        .project-files-list .download-btn {
+            margin-left: 15px;
+        }
+
+    /* Improved Participants list styling */
+    .participants-list {
+        list-style: none;
+        padding-left: 0;
+        max-height: 150px; /* Limit height and make it scrollable */
+        overflow-y: auto;
+    }
+
+        .participants-list li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .participants-list .role-tag {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            color: #495057;
+            margin-left: 8px;
+        }
+
+    .project-accordion .accordion-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+
+    .project-accordion .accordion-header .accordion-button {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #212529;
+        border-radius: 0;
+    }
+
+        .project-accordion .accordion-header .accordion-button:not(.collapsed) {
+            background-color: #e9ecef;
+            box-shadow: none;
+        }
+
+    .project-accordion .accordion-body {
+        font-size: 0.9rem;
+        padding: 20px;
+    }
+
+    .project-accordion .project-description {
+        color: #dc3545; /* Red color as in the example */
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .project-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .project-info-section h6 {
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+        color: #0d6efd; /* Blue color for titles */
+    }
+
+    .project-info-section .info-item {
+        margin-bottom: 8px;
+    }
+
+        .project-info-section .info-item strong {
+            display: inline-block;
+            min-width: 80px;
+            color: #495057;
+        }
+
+    .project-divisions .badge {
+        margin-right: 5px;
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+
+    .badge-status {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-status-inprogress {
+        background-color: #0d6efd;
+    }
+
+    .badge-status-planning {
+        background-color: #ffc107;
+        color: #000 !important;
+    }
+
+    .badge-status-completed {
+        background-color: #198754;
+    }
+
+    .badge-status-onhold {
+        background-color: #6c757d;
+    }
+
+    .custom-card {
+        max-width: 99vw;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06 );
+        font-size: 0.90rem;
+    }
+
+    .custom-header {
+        font-size: 1.04rem;
+        font-weight: 600;
+        letter-spacing: .4px;
+        color: #146c43;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    /* Table styling */
+    .table-responsive {
+        border-radius: 9px;
+    }
+
+    .table th, .table td {
+        vertical-align: middle !important;
+        font-size: 0.78rem; /* Adjusted for better readability */
+        padding: 6px 8px; /* Adjusted padding */
+        line-height: 1.3;
+        white-space: nowrap;
+    }
+
+    .table thead th {
+        font-size: 0.85rem;
+        font-weight: 600; /* Bolder headers */
+    }
+
+    .table-Controller img {
+        box-shadow: 0 0 2px #2222;
+    }
+
+    .action-btns {
+        min-width: 95px; /* Increased width for new button */
+        text-align: center; /* Center action buttons */
+    }
+
+    /* Sticky column for better horizontal scrolling experience */
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: #fff;
+        z-index: 1;
+    }
+
+    /* Ensure sticky column header also has a background */
+    thead .sticky-col {
+        background: #d1e7dd; /* Matching the success-subtle color */
+    }
+
+    .btn, .form-control, .form-select {
+        font-size: 0.78rem;
+    }
+
+    .btn-sm {
+        padding: 2px 8px; /* Slightly more padding */
+        font-size: 0.80rem;
+    }
+
+    .custom-card .card-header {
+        font-size: 1.01rem;
+    }
+
+    .icon-xs {
+        font-size: 1em !important;
+    }
+
+    .photo-thumb {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Styling for filter inputs in the table header */
+    .filter-input {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 0.75rem;
+    }
+
+    /* Style for the record counter */
+    #recordCounter {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* Styles for the enhanced controller details modal */
+    .modal-xl {
+        max-width: 95%;
+    }
+
+    .profile-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .profile-pic-large {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid rgba(255,255,255,0.3);
+        margin-bottom: 15px;
+    }
+
+    .nav-pills .nav-link {
+        border-radius: 25px;
+        margin: 0 5px;
+        font-weight: 500;
+    }
+
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+    .info-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #212529;
+        font-size: 0.95rem;
+    }
+
+    .data-table {
+        font-size: 0.85rem;
+    }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+    .badge-status {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+
+</style>
+
+<div class="container-fluid">
+    <div class="custom-card bg-white px-3 py-4">
+        <!-- MODIFIED: Combined header and buttons into a single flex container -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div class="custom-header">
+                <i class="fa-solid fa-tower-broadcast"></i>
+                Air Traffic Controllers List
+                <span id="recordCounter" class="badge bg-primary ms-3"></span>
+            </div>
+
+            <!-- Button Group on the right -->
+            <div>
+                <div class="text-end mb-2">
+                    @if (Html.HasAdvancedPermission("CONTROLLERS_ADD") || Html.IsAdvancedAdmin())
+                    {
+                        <a class="btn btn-success btn-sm me-2" href="/ControllerUser/Create">
+                            <i class="fa-solid fa-user-plus"></i> Add New
+                        </a>
+                    }
+                    <a class="btn btn-secondary btn-sm" href="/">
+                        <i class="fa-solid fa-house"></i> Home
+                    </a>
+                </div>
+                <div class="text-end">
+                    <button type="button" onclick="exportControllersPDF()" class="btn btn-danger btn-sm me-2">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </button>
+                    <button type="button" onclick="exportControllersExcel()" class="btn btn-success btn-sm">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="controllersTable" class="table table-bordered table-striped table-hover table-Controller align-middle">
+                <thead class="table-success">
+                    <tr>
+                        <th class="sticky-col">#</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Division</th>
+                        <th>Organizational Structure</th>
+                        <th>ICAO</th>
+                        <th>Photo</th>
+                        <th>PDF</th>
+                        <th>Job Title</th>
+                        <th>Status</th>
+                        <th>Department</th>
+                        <th class="action-btns">Actions</th>
+                    </tr>
+                    <tr class="filters">
+                        <th class="sticky-col"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="1"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="2"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="3"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="4"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="5"></th>
+                        <th></th> <!-- Photo -->
+                        <th></th> <!-- PDF -->
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="8"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="9"></th>
+                        <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-column-index="10"></th>
+                        <th class="text-center"><button id="clearFiltersBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Count; i++)
+                    {
+                        var controller = Model[i];
+                        <tr>
+                            <td class="sticky-col bg-light">@(i + 1)</td>
+                            <td>@controller.FullName</td>
+                            <td>@controller.Username</td>
+                            <td>@controller.AirportName</td>
+                            <td>@controller.CountryName</td>
+                            <td>@controller.icao_code</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(controller.PhotoPath))
+                                {
+                                    <img src="@Url.Content(controller.PhotoPath)" class="rounded-circle border photo-thumb" alt="Profile" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted small"><i class="fa-regular fa-user icon-xs"></i></span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(controller.LicensePath))
+                                {
+                                    <a class="btn btn-outline-primary btn-sm" href="@Url.Content(controller.LicensePath)" target="_blank" title="Download PDF">
+                                        <i class="fa-solid fa-file-pdf icon-xs"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>@controller.JobTitle</td>
+                            <td>@controller.EmploymentStatus</td>
+                            <td>@controller.CurrentDepartment</td>
+                            <td class="action-btns">
+                                <button type="button" class="btn btn-sm btn-info me-1 mb-1 view-details-btn" title="View Full Details"
+                                        data-controller-id="@controller.ControllerId">
+                                    <i class="fa-solid fa-eye icon-xs"></i>
+                                </button>
+                                <a asp-action="Edit" asp-route-id="@controller.ControllerId" class="btn btn-sm btn-warning me-1 mb-1" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square icon-xs"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@controller.ControllerId" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                    <button type="submit" class="btn btn-sm btn-danger mb-1" title="Delete">
+                                        <i class="fa-solid fa-trash icon-xs"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Controller Details Modal -->
+<div class="modal fade" id="controllerDetailsModal" tabindex="-1" aria-labelledby="controllerDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="controllerDetailsModalLabel">
+                    <i class="fa-solid fa-user-tie me-2"></i>Controller Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading controller details...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="modalContent" style="display: none;">
+                    <!-- Profile Header Section -->
+                    <div class="profile-section">
+                        <img id="modalProfilePic" src="" class="profile-pic-large" alt="Profile Photo" />
+                        <h3 id="modalFullName" class="mb-1"></h3>
+                        <p id="modalUsername" class="mb-2 opacity-75"></p>
+                        <span id="modalJobTitle" class="badge bg-light text-dark px-3 py-2"></span>
+                    </div>
+
+                    <div class="container-fluid px-4 pb-4">
+                        <!-- Navigation Tabs -->
+                        <ul class="nav nav-pills justify-content-center mb-4" id="profileTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="personal-tab" data-bs-toggle="pill" data-bs-target="#personal" type="button" role="tab">
+                                    <i class="fa-solid fa-user me-2"></i>Personal Info
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="financial-tab" data-bs-toggle="pill" data-bs-target="#financial" type="button" role="tab">
+                                    <i class="fa-solid fa-money-bill-wave me-2"></i>Financial Info
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="licenses-tab" data-bs-toggle="pill" data-bs-target="#licenses" type="button" role="tab">
+                                    <i class="fa-solid fa-id-card me-2"></i>Licenses <span id="licensesCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="certificates-tab" data-bs-toggle="pill" data-bs-target="#certificates" type="button" role="tab">
+                                    <i class="fa-solid fa-certificate me-2"></i>Certificates <span id="certificatesCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="observations-tab" data-bs-toggle="pill" data-bs-target="#observations" type="button" role="tab">
+                                    <i class="fa-solid fa-plane me-2"></i>Observations <span id="observationsCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab">
+                                    <i class="fa-solid fa-project-diagram me-2"></i>Courses<span id="projectsCount" class="badge bg-secondary ms-1">0</span>
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="profileTabsContent">
+                            <!-- Personal Information Tab -->
+                            <div class="tab-pane fade show active" id="personal" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Email Address</div>
+                                            <div class="info-value" id="modalEmail">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Phone Number</div>
+                                            <div class="info-value" id="modalPhone">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Date of Birth</div>
+                                            <div class="info-value" id="modalDob">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Marital Status</div>
+                                            <div class="info-value" id="modalMarital">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">License Number</div>
+                                            <div class="info-value" id="modalLicenseNumber">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Department</div>
+                                            <div class="info-value" id="modalDepartment">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Employment Status</div>
+                                            <div class="info-value" id="modalStatus">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Hire Date</div>
+                                            <div class="info-value" id="modalHireDate">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Education Level</div>
+                                            <div class="info-value" id="modalEducation">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Job Title</div>
+                                            <div class="info-value" id="modalJobTitleDetail">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Need License</div>
+                                            <div class="info-value" id="modalNeedLicense">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Active Status</div>
+                                            <div class="info-value" id="modalIsActive">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Address</div>
+                                    <div class="info-value" id="modalAddress">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Emergency Contact</div>
+                                    <div class="info-value" id="modalEmergencyContact">-</div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Information Tab -->
+                            <div class="tab-pane fade" id="financial" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Current Salary</div>
+                                            <div class="info-value" id="modalCurrentSalary">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Annual Increase %</div>
+                                            <div class="info-value" id="modalAnnualIncrease">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Salary After Increase</div>
+                                            <div class="info-value" id="modalSalaryAfterIncrease">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-card">
+                                            <div class="info-label">Bank Account Number</div>
+                                            <div class="info-value" id="modalBankAccount">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Bank Name</div>
+                                            <div class="info-value" id="modalBankName">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Tax ID</div>
+                                            <div class="info-value" id="modalTaxId">-</div>
+                                        </div>
+                                        <div class="info-card">
+                                            <div class="info-label">Insurance Number</div>
+                                            <div class="info-value" id="modalInsuranceNumber">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Licenses Tab -->
+                            <div class="tab-pane fade" id="licenses" role="tabpanel">
+                                <div id="licensesContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-id-card"></i>
+                                        <h5>No licenses found</h5>
+                                        <p>This controller has no licenses on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Certificates Tab -->
+                            <div class="tab-pane fade" id="certificates" role="tabpanel">
+                                <div id="certificatesContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-certificate"></i>
+                                        <h5>No certificates found</h5>
+                                        <p>This controller has no certificates on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Observations Tab -->
+                            <div class="tab-pane fade" id="observations" role="tabpanel">
+                                <div id="observationsContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-plane"></i>
+                                        <h5>No observations found</h5>
+                                        <p>This controller has no observations on record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Projects Tab -->
+                            <div class="tab-pane fade" id="projects" role="tabpanel">
+                                <div id="projectsContent">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-project-diagram"></i>
+                                        <h5>No Courses found</h5>
+                                        <p>This controller is not assigned to any Courses.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // === TABLE FILTERING LOGIC ===
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const tableRows = document.querySelectorAll('#controllersTable tbody tr');
+            const recordCounter = document.getElementById('recordCounter');
+            const totalRows = tableRows.length;
+
+            function applyFilters() {
+                const filters = {};
+                let visibleRowCount = 0;
+                filterInputs.forEach(input => {
+                    const columnIndex = input.getAttribute('data-column-index');
+                    if (input.value.trim() !== '') {
+                        filters[columnIndex] = input.value.toLowerCase();
+                    }
+                });
+
+                tableRows.forEach(row => {
+                    let isVisible = true;
+                    for (const colIndex in filters) {
+                        if (row.cells[colIndex]) {
+                            const cellText = row.cells[colIndex].innerText.toLowerCase();
+                            if (!cellText.includes(filters[colIndex])) {
+                                isVisible = false;
+                                break;
+                            }
+                        }
+                    }
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) {
+                        visibleRowCount++;
+                    }
+                });
+                recordCounter.innerText = `Showing ${visibleRowCount} of ${totalRows} Records`;
+            }
+
+            filterInputs.forEach(input => {
+                input.addEventListener('keyup', applyFilters);
+            });
+            applyFilters(); // Apply on initial load
+
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function () {
+                    filterInputs.forEach(input => { input.value = ''; });
+                    applyFilters();
+                });
+            }
+
+            // === MODAL DETAILS LOGIC ===
+            // Select all buttons with class 'view-details-btn'
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    // Get the controller ID from the data-controller-id attribute
+                    const controllerId = this.getAttribute('data-controller-id');
+                    loadControllerDetails(controllerId);
+                });
+            });
+
+            // === EXPORT LOGIC ===
+            // متغير لتتبع حالة التصدير لمنع الطلبات المتعددة
+            let isExporting = false;
+
+            // Object to map column index to parameter name for ControllerUser
+            const columnIndexToParamName = {
+                '1': 'fullName',
+                '2': 'username',
+                '3': 'airportName',
+                '4': 'countryName',
+                '5': 'icao_code',
+                '8': 'jobTitle',
+                '9': 'employmentStatus',
+                '10': 'currentDepartment'
+            };
+
+            // دالة لإظهار/إخفاء مؤشر التحميل على أزرار التصدير
+            function showExportLoading(show = true) {
+                const exportButtons = document.querySelectorAll('[onclick*="export"]');
+                exportButtons.forEach(btn => {
+                    if (show) {
+                        btn.disabled = true;
+                        const originalText = btn.innerHTML;
+                        btn.setAttribute('data-original-text', originalText);
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+                    } else {
+                        btn.disabled = false;
+                        const originalText = btn.getAttribute('data-original-text');
+                        if (originalText) {
+                            btn.innerHTML = originalText;
+                        }
+                    }
+                });
+            }
+
+            // دالة لإظهار رسائل للمستخدم
+            function showExportMessage(message, type = 'info') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+                alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+
+                setTimeout(() => {
+                    if (document.body.contains(alertDiv)) {
+                        alertDiv.remove();
+                    }
+                }, 3000);
+            }
+
+            function getExportUrl(action) {
+                const filterInputs = document.querySelectorAll('.filter-input');
+                const params = new URLSearchParams();
+                filterInputs.forEach(input => {
+                    const value = input.value.trim();
+                    if (value !== '') {
+                        const columnIndex = input.getAttribute('data-column-index');
+                        const paramName = columnIndexToParamName[columnIndex];
+                        if (paramName) {
+                            params.append(paramName, value);
+                        }
+                    }
+                });
+                return `/ControllerUser/${action}?${params.toString()}`;
+            }
+
+            // دالة محسنة للتصدير مع حماية من الطلبات المتعددة
+            function exportToFile(action, fileExtension) {
+                // منع التصدير إذا كان هناك عملية تصدير جارية
+                if (isExporting) {
+                    showExportMessage('Export already in progress, please wait...', 'warning');
+                    return;
+                }
+
+                isExporting = true;
+                showExportLoading(true);
+
+                try {
+                    const url = getExportUrl(action);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+
+                    // تحديد اسم الملف بناءً على التاريخ والوقت الحالي
+                    const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+                    a.setAttribute('download', `Controllers_Report_${timestamp}.${fileExtension}`);
+
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // إزالة العنصر بعد فترة قصيرة للتأكد من بدء التنزيل
+                    setTimeout(() => {
+                        if (document.body.contains(a)) {
+                            document.body.removeChild(a);
+                        }
+                    }, 100);
+
+                    showExportMessage(`${fileExtension.toUpperCase()} export started successfully!`, 'success');
+
+                } catch (error) {
+                    console.error('Export error:', error);
+                    showExportMessage(`Failed to export ${fileExtension.toUpperCase()}. Please try again.`, 'danger');
+                } finally {
+                    // إعادة تعيين حالة التصدير وإخفاء مؤشر التحميل بعد ثانية واحدة
+                    setTimeout(() => {
+                        isExporting = false;
+                        showExportLoading(false);
+                    }, 1000);
+                }
+            }
+
+            // دوال التصدير العامة
+            window.exportControllersPDF = function() {
+                exportToFile('ExportToPDF', 'pdf');
+            };
+
+            window.exportControllersExcel = function() {
+                exportToFile('ExportToExcel', 'xlsx');
+            };
+        });
+
+        // === MODAL FUNCTIONS (Outside DOMContentLoaded) ===
+        // Function to load controller details via AJAX
+        function loadControllerDetails(controllerId) {
+            // Get the modal elements
+            const modal = new bootstrap.Modal(document.getElementById('controllerDetailsModal'));
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const modalContent = document.getElementById('modalContent');
+
+            // Show the modal and loading spinner, hide content
+            modal.show();
+            loadingSpinner.style.display = 'block';
+            modalContent.style.display = 'none';
+
+            // Fetch data from the ControllerUser controller
+            fetch(`/ControllerUser/ViewControllerDetails/${controllerId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        populateModalWithData(data); // Populate modal with fetched data
+                        loadingSpinner.style.display = 'none';
+                        modalContent.style.display = 'block';
+                    } else {
+                        showError('Failed to load controller details: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('An error occurred while loading controller details.');
+                });
+        }
+
+        // Function to populate the modal with data
+        function populateModalWithData(data) {
+            const controller = data.controller; // The controller object from the JSON response
+
+            // Populate basic info in the header section
+            document.getElementById('modalProfilePic').src = controller.photoPath || '/images/default-avatar.png';
+            document.getElementById('modalFullName').textContent = controller.fullName || 'N/A';
+            document.getElementById('modalUsername').textContent = (controller.username ?  controller.username : 'N/A');
+            document.getElementById('modalJobTitle').textContent = controller.jobTitle || 'N/A';
+
+            // Populate personal info tab
+            document.getElementById('modalEmail').textContent = controller.email || '-';
+            document.getElementById('modalPhone').textContent = controller.phoneNumber || '-';
+            document.getElementById('modalDob').textContent = controller.dateOfBirth || '-';
+            document.getElementById('modalMarital').textContent = controller.maritalStatus || '-';
+            document.getElementById('modalDepartment').textContent = controller.currentDepartment || '-';
+            document.getElementById('modalStatus').textContent = controller.employmentStatus || '-';
+            document.getElementById('modalHireDate').textContent = controller.hireDate || '-';
+            document.getElementById('modalEducation').textContent = controller.educationLevel || '-';
+            document.getElementById('modalAddress').textContent = controller.address || '-';
+            document.getElementById('modalEmergencyContact').textContent = controller.emergencyContact || '-';
+            document.getElementById('modalLicenseNumber').textContent = controller.licenseNumber || '-';
+            document.getElementById('modalJobTitleDetail').textContent = controller.jobTitle || '-';
+            
+            // Populate new fields
+            document.getElementById('modalNeedLicense').textContent = controller.needLicense ? 'Yes' : 'No';
+            document.getElementById('modalIsActive').textContent = controller.isActive ? 'Active' : 'Inactive';
+            
+            // Populate financial info tab
+            document.getElementById('modalCurrentSalary').textContent = controller.currentSalary ? `$${controller.currentSalary.toLocaleString()}` : '-';
+            document.getElementById('modalAnnualIncrease').textContent = controller.annualIncreasePercentage ? `${controller.annualIncreasePercentage}%` : '-';
+            document.getElementById('modalSalaryAfterIncrease').textContent = controller.salaryAfterAnnualIncrease ? `$${controller.salaryAfterAnnualIncrease.toLocaleString()}` : '-';
+            document.getElementById('modalBankAccount').textContent = controller.bankAccountNumber || '-';
+            document.getElementById('modalBankName').textContent = controller.bankName || '-';
+            document.getElementById('modalTaxId').textContent = controller.taxId || '-';
+            document.getElementById('modalInsuranceNumber').textContent = controller.insuranceNumber || '-';
+
+            // Populate tab contents and update counts
+            populateLicenses(data.licenses);
+            document.getElementById('licensesCount').textContent = data.licenses.length;
+
+            populateCertificates(data.certificates);
+            document.getElementById('certificatesCount').textContent = data.certificates.length;
+            
+            populateObservations(data.observations);
+            document.getElementById('observationsCount').textContent = data.observations.length;
+            
+            populateProjects(data.projects);
+            document.getElementById('projectsCount').textContent = data.projects.length;
+        }
+
+        // Function to populate Licenses tab content
+        function populateLicenses(licenses) {
+            const container = document.getElementById('licensesContent');
+            if (!licenses || licenses.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-id-card"></i><h5>No licenses found</h5><p>This controller has no licenses on record.</p></div>`;
+                return;
+            }
+            let html = `<table class="table data-table"><thead><tr><th>Type</th><th>Issue Date</th><th>Expiry Date</th><th>File</th></tr></thead><tbody>`;
+            licenses.forEach(license => {
+                const statusClass = new Date(license.expiryDate) < new Date() ? 'bg-danger' : new Date(license.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'bg-warning' : 'bg-success';
+                html += `<tr>
+                            <td>${license.typeName || '-'}</td>
+                            <td>${license.issueDate || '-'}</td>
+                            <td><span class="badge ${statusClass}">${license.expiryDate || '-'}</span></td>
+                            <td>${license.filePath !== '#' ? `<a href="${license.filePath}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-download"></i></a>` : '-'}</td>
+                         </tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // Function to populate Certificates tab content
+        function populateCertificates(certificates) {
+            const container = document.getElementById('certificatesContent');
+            if (!certificates || certificates.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-certificate"></i><h5>No certificates found</h5><p>This controller has no certificates on record.</p></div>`;
+                return;
+            }
+            let html = `<table class="table data-table"><thead><tr><th>Type</th><th>Title</th><th>Issue Date</th><th>Expiry Date</th><th>Status</th><th>File</th></tr></thead><tbody>`;
+            certificates.forEach(cert => {
+                const statusClass = cert.status === 'Active' ? 'bg-success' : cert.status === 'Expired' ? 'bg-danger' : 'bg-warning';
+                html += `<tr>
+                            <td>${cert.typeName || '-'}</td>
+                            <td>${cert.title || '-'}</td>
+                            <td>${cert.issueDate || '-'}</td>
+                            <td>${cert.expiryDate || '-'}</td>
+                            <td><span class="badge ${statusClass}">${cert.status || '-'}</span></td>
+                            <td>${cert.filePath !== '#' ? `<a href="${cert.filePath}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-download"></i></a>` : '-'}</td>
+                         </tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+        
+        // Function to populate Observations tab content
+        function populateObservations(observations) {
+            const container = document.getElementById('observationsContent');
+            if (!observations || observations.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-plane"></i><h5>No observations found</h5><p>This controller has no observations on record.</p></div>`;
+                return;
+            }
+            let html = `<table class="table data-table"><thead><tr><th>Country</th><th>Duration (Days)</th><th>Depart Date</th><th>Return Date</th><th>License Number</th><th>Notes</th></tr></thead><tbody>`;
+            observations.forEach(obs => {
+                html += `<tr>
+                            <td>${obs.travelCountry || '-'}</td>
+                            <td>${obs.durationDays || '-'}</td>
+                            <td>${obs.departDate || '-'}</td>
+                            <td>${obs.returnDate || '-'}</td>
+                            <td>${obs.licenseNumber || '-'}</td>
+                            <td>${obs.notes || '-'}</td>
+                         </tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+        
+        // Function to populate Projects tab content
+        function populateProjects(projects) {
+            const container = document.getElementById('projectsContent');
+            if (!projects || projects.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-project-diagram"></i><h5>No courses found</h5><p>This controller is not assigned to any courses.</p></div>`;
+                return;
+            }
+
+            function getStatusBadge(status) {
+                const lowerCaseStatus = (status || '').toLowerCase();
+                let statusClass = 'bg-secondary';
+                if (lowerCaseStatus.includes('in progress')) statusClass = 'badge-status-inprogress';
+                else if (lowerCaseStatus.includes('planning')) statusClass = 'badge-status-planning';
+                else if (lowerCaseStatus.includes('completed')) statusClass = 'badge-status-completed';
+                else if (lowerCaseStatus.includes('on hold')) statusClass = 'badge-status-onhold';
+                return `<span class="badge ${statusClass}">${status || 'N/A'}</span>`;
+            }
+
+            function getFileIcon(fileName) {
+                const extension = (fileName || '').split('.').pop().toLowerCase();
+                if (['pdf'].includes(extension)) return '<i class="fa-solid fa-file-pdf file-icon"></i>';
+                if (['doc', 'docx'].includes(extension)) return '<i class="fa-solid fa-file-word file-icon"></i>';
+                if (['xls', 'xlsx'].includes(extension)) return '<i class="fa-solid fa-file-excel file-icon"></i>';
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) return '<i class="fa-solid fa-file-image file-icon"></i>';
+                if (['zip', 'rar', '7z'].includes(extension)) return '<i class="fa-solid fa-file-archive file-icon"></i>';
+                return '<i class="fa-solid fa-file file-icon"></i>';
+            }
+
+            let accordionId = 'projectsAccordion';
+            let html = `<div class="accordion project-accordion" id="${accordionId}">`;
+
+            projects.forEach((project, index) => {
+                const collapseId = `collapse-project-${index}`;
+                const headerId = `header-project-${index}`;
+                let participantsHtml = '<div class="empty-state small p-2"><p>No participants listed.</p></div>';
+                if (project.participants && project.participants.length > 0) {
+                    participantsHtml = `<ul class="participants-list">`;
+                    project.participants.forEach(p => {
+                        participantsHtml += `<li><i class="fa-regular fa-user text-muted"></i>&nbsp; ${p.name || 'Unknown'} <span class="role-tag">${p.role || 'Member'}</span></li>`;
+                    });
+                    participantsHtml += `</ul>`;
+                }
+                let filesHtml = '<div class="empty-state small p-2"><p>No files attached.</p></div>';
+                if (project.files && project.files.length > 0) {
+                    filesHtml = `<ul class="project-files-list">`;
+                    project.files.forEach(file => {
+                        filesHtml += `<li>
+                                        ${getFileIcon(file.name)}
+                                        <div class="file-info">
+                                            <div class="file-name">${file.name || 'Unnamed file'}</div>
+                                            ${file.size ? `<div class="file-size">${file.size}</div>` : ''}
+                                        </div>
+                                        <a href="${file.url || '#'}" target="_blank" class="btn btn-sm btn-outline-primary download-btn" title="Download ${file.name}">
+                                            <i class="fa-solid fa-download"></i>
+                                        </a>
+                                     </li>`;
+                    });
+                    filesHtml += `</ul>`;
+                }
+
+                html += `<div class="accordion-item">
+                            <h2 class="accordion-header" id="${headerId}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                                    <span class="me-auto"><strong>#${project.id || (index + 1)} - ${project.projectName || 'N/A'}</strong></span>
+                                    ${getStatusBadge(project.status)}
+                                </button>
+                            </h2>
+                            <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#${accordionId}">
+                                <div class="accordion-body">
+                                    ${project.description ? `<p class="project-description">${project.description}</p>` : ''}
+                                    <div class="project-info-grid">
+                                        <div class="project-info-section">
+                                            <h6><i class="fa-solid fa-info-circle me-2"></i>Main Info</h6>
+                                            <div class="info-item"><strong>Start:</strong> <span>${project.startDate || '-'}</span></div>
+                                            <div class="info-item"><strong>End:</strong> <span>${project.endDate || '-'}</span></div>
+                                            <div class="info-item"><strong>Location:</strong> <span>${project.location || '-'}</span></div>
+                                            ${project.divisions && project.divisions.length > 0 ? `
+                                            <div class="info-item">
+                                                <strong>Divisions:</strong>
+                                                <div class="mt-2 project-divisions">${project.divisions.map(d => `<span class="badge bg-dark">${d}</span>`).join(' ')}</div>
+                                            </div>` : ''}
+                                        </div>
+                                        <div class="project-info-section">
+                                            <h6><i class="fa-solid fa-users me-2"></i>Participants (${(project.participants || []).length})</h6>
+                                            ${participantsHtml}
+                                        </div>
+                                    </div>
+                                    <div class="project-files-section">
+                                        <h6><i class="fa-solid fa-folder-open me-2"></i>Project Files</h6>
+                                        ${filesHtml}
+                                    </div>
+                                </div>
+                            </div>
+                         </div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        // Function to display error messages in the loading spinner area
+        function showError(message) {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.innerHTML = `<div class="text-danger"><i class="fa-solid fa-exclamation-triangle fa-3x mb-3"></i><h5>Error</h5><p>${message}</p></div>`;
+        }
+    </script>
+}
+

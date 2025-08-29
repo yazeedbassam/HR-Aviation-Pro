@@ -1,0 +1,178 @@
+@model List<RolePermissionViewModel>
+@{
+    ViewData["Title"] = "Role Permissions Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-shield-check"></i>
+                        Role Permissions Management
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRolePermissionModal">
+                            <i class="bi bi-plus-circle"></i> Add Role Permission
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="rolePermissionsTable" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Role</th>
+                                    <th>Permission</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">@item.RoleName</span>
+                                        </td>
+                                        <td>
+                                            <strong>@item.PermissionName</strong>
+                                            <br>
+                                            <small class="text-muted">@item.PermissionKey</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@item.PermissionCategory</span>
+                                        </td>
+                                        <td>@item.PermissionDescription</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="removeRolePermission(@item.RoleId, @item.PermissionId)">
+                                                <i class="bi bi-trash"></i> Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Role Permission Modal -->
+<div class="modal fade" id="addRolePermissionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Role Permission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRolePermissionForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="roleSelect" class="form-label">Role</label>
+                                <select class="form-select" id="roleSelect" name="roleId" required>
+                                    <option value="">Select Role</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="permissionSelect" class="form-label">Permission</label>
+                                <select class="form-select" id="permissionSelect" name="permissionId" required>
+                                    <option value="">Select Permission</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addRolePermission()">Add Permission</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#rolePermissionsTable').DataTable({
+                "responsive": true,
+                "lengthChange": false,
+                "autoWidth": false,
+                "buttons": ["copy", "csv", "excel", "pdf", "print"]
+            }).buttons().container().appendTo('#rolePermissionsTable_wrapper .col-md-6:eq(0)');
+
+            // Load roles and permissions for modal
+            loadRoles();
+            loadPermissions();
+        });
+
+        function loadRoles() {
+            $.get('/Permission/GetRoles', function (data) {
+                var select = $('#roleSelect');
+                select.empty();
+                select.append('<option value="">Select Role</option>');
+                data.forEach(function (role) {
+                    select.append('<option value="' + role.value + '">' + role.text + '</option>');
+                });
+            });
+        }
+
+        function loadPermissions() {
+            $.get('/Permission/GetPermissions', function (data) {
+                var select = $('#permissionSelect');
+                select.empty();
+                select.append('<option value="">Select Permission</option>');
+                data.forEach(function (permission) {
+                    select.append('<option value="' + permission.value + '">' + permission.text + '</option>');
+                });
+            });
+        }
+
+        function addRolePermission() {
+            var formData = {
+                roleId: $('#roleSelect').val(),
+                permissionId: $('#permissionSelect').val()
+            };
+
+            if (!formData.roleId || !formData.permissionId) {
+                alert('Please select both role and permission');
+                return;
+            }
+
+            $.post('/Permission/AddRolePermission', formData, function (result) {
+                if (result.success) {
+                    $('#addRolePermissionModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            });
+        }
+
+        function removeRolePermission(roleId, permissionId) {
+            if (confirm('Are you sure you want to remove this permission from the role?')) {
+                $.post('/Permission/RemoveRolePermission', {
+                    roleId: roleId,
+                    permissionId: permissionId
+                }, function (result) {
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                });
+            }
+        }
+    </script>
+} 

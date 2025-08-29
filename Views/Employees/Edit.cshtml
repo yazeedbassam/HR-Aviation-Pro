@@ -1,0 +1,437 @@
+﻿@model WebApplication1.Models.Employee
+
+@{
+    ViewData["Title"] = "Edit Employee";
+}
+
+<style>
+    .custom-card {
+        max-width: 950px;
+        margin: 18px auto 5px auto;
+        border-radius: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        font-size: 0.90rem;
+    }
+
+    .custom-header {
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: .5px;
+        color: #0d6efd; /* Blue color for edit header */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: #f8f9fa;
+    }
+
+    .form-section-header {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #146c43;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-divider {
+        height: 2px;
+        background: linear-gradient(90deg, #146c43, #198754);
+        margin-bottom: 1.5rem;
+        border-radius: 1px;
+    }
+
+    .col-md-6, .col-lg-4 {
+        margin-bottom: 0;
+    }
+
+    textarea.form-control {
+        min-height: 35px;
+        max-height: 60px;
+    }
+
+    .form-control-sm, .form-select-sm {
+        font-size: 0.85rem;
+    }
+
+    .col-form-label-sm {
+        font-weight: 500;
+    }
+
+    .btn-group-custom {
+        display: flex;
+        gap: 10px;
+    }
+
+    .photo-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #dee2e6;
+        margin-bottom: 10px;
+    }
+
+    .photo-upload-container {
+        text-align: center;
+        padding: 20px;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <div class="card custom-card">
+            <div class="card-header custom-header">
+                <i class="fas fa-user-edit"></i>
+                Edit Employee: @Model.FullName
+            </div>
+            <div class="card-body p-4">
+                <form id="editEmployeeForm" asp-action="Edit" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="EmployeeID" />
+                    <input type="hidden" asp-for="PhotoPath" id="currentPhotoPath" />
+
+                    <!-- Photo Upload Section -->
+                    <div class="section-title">
+                        <i class="fa-solid fa-camera"></i>
+                        Employee Photo
+                    </div>
+                    <div class="section-divider"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="photo-upload-container">
+                                <img id="photoPreview" src="@(string.IsNullOrEmpty(Model.PhotoPath) ? "/images/default-avatar.png" : Model.PhotoPath)" 
+                                     alt="Employee Photo" class="photo-preview" />
+                                <div class="mt-2">
+                                    <input type="file" id="photoFile" name="photoFile" accept="image/*" class="form-control form-control-sm" />
+                                    <small class="text-muted">Upload a new photo (JPG, PNG, GIF)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Information Section -->
+                    <div class="section-title">
+                        <i class="fa-solid fa-user-tie"></i>
+                        Employee Information
+                    </div>
+                    <div class="section-divider"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="FullName" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="FullName" class="form-control form-control-sm" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="EmployeeOfficialID" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="EmployeeOfficialID" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="JobTitle" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="JobTitle" asp-items="ViewBag.JobTitles" class="form-select form-select-sm">
+                                        <option value="">-- Select Job Title --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Department" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="Department" asp-items="ViewBag.Departments" class="form-select form-select-sm">
+                                        <option value="">-- Select Department --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="OrganizationalStructure" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="OrganizationalStructure" class="form-select form-select-sm">
+                                        <option value="">-- Select Organizational Structure --</option>
+                                        <option value="Air Traffic Services">Air Traffic Services</option>
+                                        <option value="Air Navigation Services">Air Navigation Services</option>
+                                        <option value="Technical Services">Technical Services</option>
+                                        <option value="Administrative Services">Administrative Services</option>
+                                        <option value="Safety & Quality">Safety & Quality</option>
+                                        <option value="Training & Development">Training & Development</option>
+                                        <option value="Finance & HR">Finance & HR</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                        <option value="Legal & Compliance">Legal & Compliance</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Division" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="Division" class="form-select form-select-sm">
+                                        <option value="">-- Select Division --</option>
+                                        <option value="Area Control Center">Area Control Center</option>
+                                        <option value="Approach Control">Approach Control</option>
+                                        <option value="Tower Control">Tower Control</option>
+                                        <option value="Flight Information">Flight Information</option>
+                                        <option value="Communications">Communications</option>
+                                        <option value="Navigation">Navigation</option>
+                                        <option value="Surveillance">Surveillance</option>
+                                        <option value="Meteorology">Meteorology</option>
+                                        <option value="Aeronautical Information">Aeronautical Information</option>
+                                        <option value="Safety Management">Safety Management</option>
+                                        <option value="Quality Assurance">Quality Assurance</option>
+                                        <option value="Training Center">Training Center</option>
+                                        <option value="Human Resources">Human Resources</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="IT Support">IT Support</option>
+                                        <option value="Legal Affairs">Legal Affairs</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="HireDate" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="HireDate" type="date" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Gender" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="Gender" asp-items="ViewBag.Gender" class="form-select form-select-sm">
+                                        <option value="">-- Select Gender --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="DateOfBirth" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="DateOfBirth" type="date" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="MaritalStatus" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="MaritalStatus" class="form-select form-select-sm">
+                                        <option value="">-- Select Marital Status --</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="EducationLevel" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <select asp-for="EducationLevel" class="form-select form-select-sm">
+                                        <option value="">-- Select Education Level --</option>
+                                        <option value="High School">High School</option>
+                                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                                        <option value="Master's Degree">Master's Degree</option>
+                                        <option value="PhD">PhD</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- General Information Section -->
+                    <div class="section-title">
+                        <i class="fa-solid fa-info-circle"></i>
+                        General Information
+                    </div>
+                    <div class="section-divider"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Email" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="Email" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="PhoneNumber" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="PhoneNumber" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="EmergencyContactPhone" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="EmergencyContactPhone" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Location" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="Location" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="Address" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <textarea asp-for="Address" class="form-control form-control-sm" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-8 offset-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" asp-for="IsActive" />
+                                        <label class="form-check-label" asp-for="IsActive"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-8 offset-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" asp-for="NeedLicense" />
+                                        <label class="form-check-label" asp-for="NeedLicense">Need License</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information Section -->
+                    <div class="section-title">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        Finance Info
+                    </div>
+                    <div class="section-divider"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="CurrentSalary" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="CurrentSalary" type="number" step="0.01" class="form-control form-control-sm" id="currentSalary" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="AnnualIncreasePercentage" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="AnnualIncreasePercentage" type="number" step="0.01" class="form-control form-control-sm" id="annualIncrease" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="SalaryAfterAnnualIncrease" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="SalaryAfterAnnualIncrease" type="number" step="0.01" class="form-control form-control-sm" id="salaryAfterIncrease" readonly />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="BankAccountNumber" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="BankAccountNumber" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="BankName" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="BankName" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="TaxId" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="TaxId" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <div class="row mb-3 align-items-center">
+                                <label asp-for="InsuranceNumber" class="col-md-4 col-form-label col-form-label-sm"></label>
+                                <div class="col-md-8">
+                                    <input asp-for="InsuranceNumber" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 border-top pt-3 btn-group-custom">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Changes</button>
+                        <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Photo preview functionality
+            const photoFile = document.getElementById('photoFile');
+            const photoPreview = document.getElementById('photoPreview');
+
+            if (photoFile) {
+                photoFile.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            photoPreview.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Salary calculation functionality
+            const currentSalaryInput = document.getElementById('currentSalary');
+            const annualIncreaseInput = document.getElementById('annualIncrease');
+            const salaryAfterIncreaseInput = document.getElementById('salaryAfterIncrease');
+
+            function calculateSalaryAfterIncrease() {
+                const currentSalary = parseFloat(currentSalaryInput.value) || 0;
+                const annualIncrease = parseFloat(annualIncreaseInput.value) || 0;
+                
+                if (currentSalary > 0 && annualIncrease >= 0) {
+                    const increaseAmount = currentSalary * (annualIncrease / 100);
+                    const newSalary = currentSalary + increaseAmount;
+                    salaryAfterIncreaseInput.value = newSalary.toFixed(2);
+                } else {
+                    salaryAfterIncreaseInput.value = '';
+                }
+            }
+
+            if (currentSalaryInput) {
+                currentSalaryInput.addEventListener('input', calculateSalaryAfterIncrease);
+            }
+            if (annualIncreaseInput) {
+                annualIncreaseInput.addEventListener('input', calculateSalaryAfterIncrease);
+            }
+
+            // Calculate initial salary on page load
+            calculateSalaryAfterIncrease();
+        });
+    </script>
+}
