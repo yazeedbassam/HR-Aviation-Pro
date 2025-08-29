@@ -60,23 +60,26 @@ app.Lifetime.ApplicationStarted.Register(() => {
     Console.WriteLine("Available endpoints: /, /health, /ping, /ready");
 });
 
-// Test database connection on startup
-app.Lifetime.ApplicationStarted.Register(async () => {
-    try
-    {
-        using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
-        var connection = db.GetConnection();
-        await connection.OpenAsync();
-        Console.WriteLine("Database connection successful!");
-        await connection.CloseAsync();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Warning: Database connection failed: {ex.Message}");
-        Console.WriteLine("Application will continue without database functionality");
-    }
-});
+// Test database connection on startup (only in development)
+if (app.Environment.IsDevelopment())
+{
+    app.Lifetime.ApplicationStarted.Register(async () => {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+            var connection = db.GetConnection();
+            await connection.OpenAsync();
+            Console.WriteLine("Database connection successful!");
+            await connection.CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Database connection failed: {ex.Message}");
+            Console.WriteLine("Application will continue without database functionality");
+        }
+    });
+}
 
 // Seed Admin user (only in development)
 if (app.Environment.IsDevelopment())
@@ -102,6 +105,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    
+    // Disable detailed error pages in production
+    app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 }
 
 // Only use HTTPS redirection in development
