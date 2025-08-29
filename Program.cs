@@ -52,6 +52,11 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+// Configure application to handle startup gracefully
+app.Lifetime.ApplicationStarted.Register(() => {
+    Console.WriteLine("Application has started successfully!");
+});
+
 // 2) Seed Admin user (only in development)
 if (app.Environment.IsDevelopment())
 {
@@ -89,14 +94,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add health check endpoint with delay
-app.MapGet("/health", async () => {
-    await Task.Delay(2000); // Wait 2 seconds to ensure app is ready
-    return "OK";
-});
+// Add health check endpoint
+app.MapGet("/health", () => "OK");
 
-// Add root endpoint for health check
-app.MapGet("/", () => "AVIATION HR PRO - System is running!");
+// Add root endpoint for health check with simple delay
+app.MapGet("/", async () => {
+    await Task.Delay(1000); // Wait 1 second to ensure app is ready
+    return "AVIATION HR PRO - System is running!";
+});
 
 app.MapControllerRoute(
     name: "default",
