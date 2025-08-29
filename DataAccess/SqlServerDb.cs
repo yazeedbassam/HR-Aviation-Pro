@@ -69,14 +69,22 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         {
             try
             {
+                Console.WriteLine("🔍 Testing database connection...");
+                Console.WriteLine($"🔍 Connection string: {_connectionString}");
+                
                 using var connection = GetConnection();
+                Console.WriteLine("🔍 Connection created, attempting to open...");
                 connection.Open();
+                Console.WriteLine("✅ Database connection opened successfully");
                 connection.Close();
+                Console.WriteLine("✅ Database connection closed successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Database availability check failed: {ex.Message}");
+                Console.WriteLine($"❌ Database availability check failed: {ex.Message}");
+                Console.WriteLine($"❌ Exception type: {ex.GetType().Name}");
+                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 return false;
             }
         }

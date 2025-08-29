@@ -201,16 +201,23 @@ public class AccountController : Controller
     {
         try
         {
+            Console.WriteLine($"🚀 Login attempt started for user: {model.Username}");
+            
             if (!ModelState.IsValid)
+            {
+                Console.WriteLine("❌ Model validation failed");
                 return View(model);
+            }
 
             // Check if database is available
+            Console.WriteLine("🔍 Checking database availability...");
             if (!_db.IsDatabaseAvailable())
             {
                 Console.WriteLine("❌ Database is not available during login attempt");
                 ModelState.AddModelError("", "Database connection is not available. Please check your database configuration.");
                 return View(model);
             }
+            Console.WriteLine("✅ Database is available");
 
             Console.WriteLine($"🔍 Attempting login for user: {model.Username}");
             
@@ -221,7 +228,7 @@ public class AccountController : Controller
                 return View(model);
             }
 
-            Console.WriteLine($"✅ Login successful for user: {model.Username}, Role: {role}");
+            Console.WriteLine($"✅ Login successful for user: {model.Username}, Role: {role}, UserId: {userId}");
 
             var claims = new List<Claim>
             {
@@ -232,6 +239,8 @@ public class AccountController : Controller
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
                                           new ClaimsPrincipal(identity));
+
+            Console.WriteLine("✅ User signed in successfully");
 
             // بعد النجاح:
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
@@ -247,6 +256,7 @@ public class AccountController : Controller
             // Log the error
             Console.WriteLine($"❌ Login error: {ex.Message}");
             Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"❌ Exception type: {ex.GetType().Name}");
             
             ModelState.AddModelError("", $"An error occurred during login: {ex.Message}");
             return View(model);
