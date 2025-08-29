@@ -66,6 +66,15 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
                 {
                     _logger.LogInformation("Performing daily tasks at: {time}", DateTimeOffset.Now);
 
+                    // Skip license expiry check in production if database is not configured
+                    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production" && 
+                        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DB_SERVER")))
+                    {
+                        _logger.LogInformation("Skipping license expiry check in production - database not configured.");
+                        await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                        continue;
+                    }
+
                     // لا حاجة لإنشاء نطاق هنا، لأن PerformLicenseExpiryCheck ستنشئ نطاقها الخاص الآن
                     await PerformLicenseExpiryCheck(); // <== تم تحديث الاستدعاء، لا تمرير db هنا
                                                        //عند بداية التشغيل
@@ -132,6 +141,14 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
         // تم تعديلها لجلب مثيل SqlServerDb داخليًا
         public async Task PerformLicenseExpiryCheck()
         {
+            // Skip license expiry check in production if database is not configured
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production" && 
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DB_SERVER")))
+            {
+                _logger.LogInformation("Skipping license expiry check in production - database not configured.");
+                return;
+            }
+
             try
             {
                 using (var scope = _serviceProvider.CreateScope())
