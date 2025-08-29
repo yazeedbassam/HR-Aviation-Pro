@@ -90,6 +90,23 @@ app.Lifetime.ApplicationStarted.Register(() => {
     var passwordStatus = Environment.GetEnvironmentVariable("DB_PASSWORD") != null ? "SET" : "NOT SET";
     Console.WriteLine($"DB_PASSWORD: {passwordStatus}");
     Console.WriteLine($"DB_PORT: {Environment.GetEnvironmentVariable("DB_PORT") ?? "NOT SET"}");
+    
+    // Check if we're in production and database is not configured
+    if (app.Environment.IsProduction())
+    {
+        var dbServer = Environment.GetEnvironmentVariable("DB_SERVER");
+        if (string.IsNullOrEmpty(dbServer))
+        {
+            Console.WriteLine("⚠️ WARNING: Database environment variables are not set in production!");
+            Console.WriteLine("⚠️ The application will not be able to connect to the database.");
+            Console.WriteLine("⚠️ Please configure the following environment variables in Railway:");
+            Console.WriteLine("   - DB_SERVER");
+            Console.WriteLine("   - DB_NAME");
+            Console.WriteLine("   - DB_USER");
+            Console.WriteLine("   - DB_PASSWORD");
+            Console.WriteLine("   - DB_PORT");
+        }
+    }
 });
 
 // Seed Admin user (only in development)

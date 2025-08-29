@@ -207,15 +207,21 @@ public class AccountController : Controller
             // Check if database is available
             if (!_db.IsDatabaseAvailable())
             {
-                ModelState.AddModelError("", "Database connection is not available. Please try again later.");
+                Console.WriteLine("❌ Database is not available during login attempt");
+                ModelState.AddModelError("", "Database connection is not available. Please check your database configuration.");
                 return View(model);
             }
 
+            Console.WriteLine($"🔍 Attempting login for user: {model.Username}");
+            
             if (!_db.ValidateCredentials(model.Username, model.Password, out var userId, out var role))
             {
+                Console.WriteLine($"❌ Invalid credentials for user: {model.Username}");
                 ModelState.AddModelError("", "Invalid username or password.");
                 return View(model);
             }
+
+            Console.WriteLine($"✅ Login successful for user: {model.Username}, Role: {role}");
 
             var claims = new List<Claim>
             {
@@ -239,10 +245,10 @@ public class AccountController : Controller
         catch (Exception ex)
         {
             // Log the error
-            Console.WriteLine($"Login error: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"❌ Login error: {ex.Message}");
+            Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
             
-            ModelState.AddModelError("", "An error occurred during login. Please try again.");
+            ModelState.AddModelError("", $"An error occurred during login: {ex.Message}");
             return View(model);
         }
     }
