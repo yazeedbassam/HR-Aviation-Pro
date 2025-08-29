@@ -25,9 +25,12 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         // Renamed constructor from OracleDb to SqlServerDb
         public SqlServerDb(IConfiguration configuration)
         {
-            // Use a new connection string name for SQL Server
-            _connectionString = configuration.GetConnectionString("SqlServerDbConnection") 
+            // Get connection string and replace environment variables
+            var connectionString = configuration.GetConnectionString("SqlServerDbConnection") 
                                 ?? throw new ArgumentNullException("Connection string 'SqlServerDbConnection' not found.");
+            
+            // Replace environment variables in connection string
+            _connectionString = ReplaceEnvironmentVariables(connectionString);
             
             // Log connection string (without sensitive data)
             var connectionStringForLogging = _connectionString;
@@ -39,11 +42,23 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
                 Console.WriteLine($"Database connection configured: {safeConnectionString}");
             }
         }
-        // Constructor ?? SqlServerDb
+
+        private string ReplaceEnvironmentVariables(string connectionString)
+        {
+            return connectionString
+                .Replace("${DB_SERVER}", Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost\\SQLEXPRESS")
+                .Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME") ?? "HR-Aviation")
+                .Replace("${DB_USER}", Environment.GetEnvironmentVariable("DB_USER") ?? "")
+                .Replace("${DB_PASSWORD}", Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "")
+                .Replace("${DB_PORT}", Environment.GetEnvironmentVariable("DB_PORT") ?? "1433");
+        }
+
+        // Constructor with dependencies
         public SqlServerDb(IConfiguration configuration, IPasswordHasher<ControllerUser> passwordHasher, ILogger<SqlServerDb> logger)
         {
-            _connectionString = configuration.GetConnectionString("SqlServerDbConnection")
-                                ?? throw new ArgumentNullException("Connection string 'SqlDbConnection' not found.");
+            var connectionString = configuration.GetConnectionString("SqlServerDbConnection")
+                                ?? throw new ArgumentNullException("Connection string 'SqlServerDbConnection' not found.");
+            _connectionString = ReplaceEnvironmentVariables(connectionString);
             _passwordHasher = passwordHasher;
             _logger = logger;
         }
