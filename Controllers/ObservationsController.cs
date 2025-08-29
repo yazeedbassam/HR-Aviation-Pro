@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -133,17 +133,17 @@ namespace WebApplication1.Controllers
 
                     var parameters = new[]
                     {
-                        new SqlParameter("@ControllerId", (object)observation.ControllerId ?? DBNull.Value),
-                        new SqlParameter("@EmployeeId", (object)observation.EmployeeId ?? DBNull.Value),
-                        new SqlParameter("@ObservationNo", (object)observation.ObservationNo ?? DBNull.Value),
-                        new SqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
-                        new SqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
-                        new SqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
-                        new SqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
-                        new SqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
-                        new SqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
-                        new SqlParameter("@FilePath", (object)observation.FilePath ?? DBNull.Value),
-                        new SqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value)
+                        new MySqlParameter("@ControllerId", (object)observation.ControllerId ?? DBNull.Value),
+                        new MySqlParameter("@EmployeeId", (object)observation.EmployeeId ?? DBNull.Value),
+                        new MySqlParameter("@ObservationNo", (object)observation.ObservationNo ?? DBNull.Value),
+                        new MySqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
+                        new MySqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
+                        new MySqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
+                        new MySqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
+                        new MySqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
+                        new MySqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
+                        new MySqlParameter("@FilePath", (object)observation.FilePath ?? DBNull.Value),
+                        new MySqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value)
                     };
 
                     try
@@ -184,8 +184,8 @@ namespace WebApplication1.Controllers
                 return BadRequest();
             }
 
-            // --- هذا هو الحل لمشكلة الملف الإجباري ---
-            // هنا، نقوم بإزالة أي خطأ تحقق مرتبط بحقل رفع الملف، لأنه اختياري
+            // --- ??? ?? ???? ?????? ????? ???????? ---
+            // ???? ???? ?????? ?? ??? ???? ????? ???? ??? ?????? ???? ???????
             ModelState.Remove(nameof(observation.UploadFile));
             ModelState.Remove("UploadFile"); // As a safeguard
 
@@ -270,15 +270,15 @@ namespace WebApplication1.Controllers
 
                 var parameters = new[]
                 {
-            new SqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
-            new SqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
-            new SqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
-            new SqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
-            new SqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
-            new SqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
-            new SqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
-            new SqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value),
-            new SqlParameter("@ObservationId", id)
+            new MySqlParameter("@FlightNo", (object)observation.FlightNo ?? DBNull.Value),
+            new MySqlParameter("@DurationDays", (object)observation.DurationDays ?? DBNull.Value),
+            new MySqlParameter("@TravelCountry", (object)observation.TravelCountry ?? string.Empty),
+            new MySqlParameter("@DepartDate", (object)observation.DepartDate ?? DBNull.Value),
+            new MySqlParameter("@ReturnDate", (object)observation.ReturnDate ?? DBNull.Value),
+            new MySqlParameter("@LicenseNumber", (object)observation.LicenseNumber ?? string.Empty),
+            new MySqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
+            new MySqlParameter("@Notes", (object)observation.Notes ?? DBNull.Value),
+            new MySqlParameter("@ObservationId", id)
         };
 
                 try
@@ -418,7 +418,7 @@ namespace WebApplication1.Controllers
 
                             row.RelativeColumn().Column(col =>
                             {
-                                col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(12);
+                                col.Item().AlignCenter().Text("???? ????? ??????? ?????? ???????").Bold().FontSize(12);
                                 col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(9).FontColor(Colors.Grey.Darken1);
                                 col.Item().PaddingTop(5).AlignCenter().Text($"{reportTitle} - {DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(8).FontColor(Colors.Grey.Darken2);
                             });
@@ -572,13 +572,13 @@ namespace WebApplication1.Controllers
                 return BadRequest($"Error processing export: {ex.Message}");
             }
 
-            // 2. إنشاء ملف الإكسل وتعبئته
+            // 2. ????? ??? ?????? ???????
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("Observations");
                 worksheet.Cells.Style.Font.Name = "Arial";
 
-                // --- إضافة الشعار والعناوين ---
+                // --- ????? ?????? ????????? ---
                 var logoPath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "carc.png");
                 if (System.IO.File.Exists(logoPath))
                 {
@@ -587,7 +587,7 @@ namespace WebApplication1.Controllers
                     excelImage.SetSize(120, 65);
                 }
 
-                worksheet.Cells["C1"].Value = "هيئة تنظيم الطيران المدني الأردني";
+                worksheet.Cells["C1"].Value = "???? ????? ??????? ?????? ???????";
                 worksheet.Cells["C1"].Style.Font.Bold = true;
                 worksheet.Cells["C1"].Style.Font.Size = 14;
                 worksheet.Cells[1, 3, 1, headers.Length].Merge = true;
@@ -598,7 +598,7 @@ namespace WebApplication1.Controllers
                 worksheet.Cells[2, 3, 2, headers.Length].Merge = true;
                 worksheet.Cells[2, 3, 2, headers.Length].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
-                // --- كتابة رأس الجدول ---
+                // --- ????? ??? ?????? ---
                 for (int i = 0; i < headers.Length; i++)
                 {
                     worksheet.Cells[5, i + 1].Value = headers[i];
@@ -612,7 +612,7 @@ namespace WebApplication1.Controllers
                     range.Style.Font.Color.SetColor(Color.White);
                 }
 
-                // --- تعبئة البيانات ---
+                // --- ????? ???????? ---
                 int row = 6;
                 int index = 1;
                 foreach (var item in observations)
@@ -628,12 +628,12 @@ namespace WebApplication1.Controllers
                     worksheet.Cells[row, 9].Value = item.LicenseNumber;
                     worksheet.Cells[row, 10].Value = item.Notes;
 
-                    // تنسيق التاريخ
+                    // ????? ???????
                     worksheet.Cells[row, 7, row, 8].Style.Numberformat.Format = "yyyy-mm-dd";
                     row++;
                 }
 
-                // ضبط عرض الأعمدة تلقائيًا
+                // ??? ??? ??????? ????????
                 worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                 var excelBytes = package.GetAsByteArray();
@@ -650,22 +650,22 @@ namespace WebApplication1.Controllers
             {
                 return controller.Rows[0]["licensenumber"].ToString();
             }
-            return ""; // أو يمكنك إرجاع null
+            return ""; // ?? ????? ????? null
         }
         private string GetLatestLicenseNumberForController(int controllerId)
         {
-            // تم تعديل الاستعلام ليتوافق مع صياغة SQL Server:
-            // - :ctrlId أصبحت @ctrlId
-            // - LENGTH(LicenseNumber) أصبحت LEN(LicenseNumber)
-            // - FETCH FIRST 1 ROW ONLY أصبحت TOP 1
+            // ?? ????? ????????? ??????? ?? ????? SQL Server:
+            // - :ctrlId ????? @ctrlId
+            // - LENGTH(LicenseNumber) ????? LEN(LicenseNumber)
+            // - FETCH FIRST 1 ROW ONLY ????? TOP 1
             const string sql = @"
         SELECT TOP 1 LicenseNumber
         FROM Observations
         WHERE ControllerId = @ctrlId AND LicenseNumber IS NOT NULL AND LEN(LicenseNumber) > 0
         ORDER BY ObservationId DESC";
 
-            // استخدام Microsoft.Data.SqlClient.SqlParameter بدلاً من OracleParameter
-            DataTable dt = _db.ExecuteQuery(sql, new Microsoft.Data.SqlClient.SqlParameter("@ctrlId", controllerId)); // <== تم التعديل
+            // ??????? Microsoft.Data.SqlClient.SqlParameter ????? ?? OracleParameter
+            DataTable dt = _db.ExecuteQuery(sql, new Microsoft.Data.SqlClient.SqlParameter("@ctrlId", controllerId)); // <== ?? ???????
 
             if (dt.Rows.Count > 0 && dt.Rows[0]["LicenseNumber"] != DBNull.Value)
             {
@@ -685,8 +685,8 @@ namespace WebApplication1.Controllers
         //    {
         //        container.Page(page =>
         //        {
-        //            page.Size(PageSizes.A4.Landscape()); // <<== أهم خطوة، يعرض التقرير بشكل أفقي
-        //            page.Margin(20); // هوامش أقل ليكون أوضح
+        //            page.Size(PageSizes.A4.Landscape()); // <<== ??? ????? ???? ??????? ???? ????
+        //            page.Margin(20); // ????? ??? ????? ????
 
         //            page.Header()
         //                .AlignCenter()
@@ -696,7 +696,7 @@ namespace WebApplication1.Controllers
         //                        col.Item().AlignCenter().Height(70).Image(logoPath, QuestPDF.Infrastructure.ImageScaling.FitHeight);
 
         //                    col.Item().PaddingTop(8);
-        //                    col.Item().AlignCenter().Text("تقرير الملاحظات والسفرات")
+        //                    col.Item().AlignCenter().Text("????? ????????? ????????")
         //                        .Bold().FontSize(24).FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
         //                    col.Item().AlignCenter().Text(DateTime.Now.ToString("yyyy/MM/dd HH:mm")).FontSize(12).FontColor(QuestPDF.Helpers.Colors.Grey.Medium);
         //                });
@@ -750,7 +750,7 @@ namespace WebApplication1.Controllers
         //            page.Footer()
         //                .AlignCenter()
         //                .PaddingTop(8)
-        //                .Text("تقرير رسمي - نظام إدارة المراقبة الجوية - " + DateTime.Now.ToString("yyyy/MM/dd"))
+        //                .Text("????? ???? - ???? ????? ???????? ?????? - " + DateTime.Now.ToString("yyyy/MM/dd"))
         //                .FontSize(10)
         //                .FontColor(QuestPDF.Helpers.Colors.Grey.Darken1);
         //        });
@@ -759,7 +759,7 @@ namespace WebApplication1.Controllers
         //    var pdfBytes = document.GeneratePdf();
         //    return File(pdfBytes, "application/pdf", "observations.pdf");
 
-        //    // تنسيقات الجدول
+        //    // ??????? ??????
         //    IContainer CellStyleHeader(IContainer container) =>
         //        container
         //            .Background(QuestPDF.Helpers.Colors.Blue.Medium)
@@ -790,7 +790,7 @@ namespace WebApplication1.Controllers
         //        }
 
         //        worksheet.Cells[2, 2, 2, 9].Merge = true;
-        //        worksheet.Cells[2, 2].Value = "تقرير الملاحظات والسفرات";
+        //        worksheet.Cells[2, 2].Value = "????? ????????? ????????";
         //        worksheet.Cells[2, 2].Style.Font.Size = 18;
         //        worksheet.Cells[2, 2].Style.Font.Bold = true;
         //        worksheet.Cells[2, 2].Style.Font.Color.SetColor(System.Drawing.Color.FromArgb(33, 150, 243));
@@ -851,6 +851,8 @@ namespace WebApplication1.Controllers
 
     }
 }
+
+
 
 
 

@@ -1,9 +1,9 @@
-﻿using Microsoft.Data.SqlClient; // For SqlConnection, SqlCommand, SqlParameter, SqlDbType
+using MySql.Data.MySqlClient; // For SqlConnection, SqlCommand, SqlParameter, SqlDbType
 using Microsoft.Extensions.Configuration; // For IConfiguration
 using Microsoft.Extensions.DependencyInjection; // For IServiceProvider.CreateScope
 using Microsoft.Extensions.Hosting; // For BackgroundService
 using Microsoft.Extensions.Logging;
-// مكتبات QuestPDF لإنشاء PDF - تأكد من تثبيتها عبر NuGet
+// ?????? QuestPDF ?????? PDF - ???? ?? ??????? ??? NuGet
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -17,25 +17,25 @@ using System.Threading.Tasks;
 using WebApplication1.DataAccess;
 using System.Net.Mail;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging; // بما أنك تستخدم _logger
+using Microsoft.Extensions.Logging; // ??? ??? ?????? _logger
 
-namespace WebApplication1.Services // <== تم إضافة namespace هنا لتغليف الكلاس بالكامل
+namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ???????
 {
-    // تغيير من IHostedService إلى BackgroundService (كما كان في الكود الذي قدمته)
+    // ????? ?? IHostedService ??? BackgroundService (??? ??? ?? ????? ???? ?????)
     public class LicenseExpiryNotificationService : BackgroundService
     {
         private readonly ILogger<LicenseExpiryNotificationService> _logger;
-        private readonly IServiceProvider _serviceProvider; // لإنشاء نطاق (scope) لكل تشغيل
-        private DateTime _lastWeeklyReportSent = DateTime.MinValue; // لتتبع آخر مرة تم فيها إرسال التقرير الأسبوعي
+        private readonly IServiceProvider _serviceProvider; // ?????? ???? (scope) ??? ?????
+        private DateTime _lastWeeklyReportSent = DateTime.MinValue; // ????? ??? ??? ?? ???? ????? ??????? ????????
 
-        // إعدادات SMTP من appsettings.json - يجب أن تُقرأ من IConfiguration
+        // ??????? SMTP ?? appsettings.json - ??? ?? ????? ?? IConfiguration
         private readonly string _smtpServer;
         private readonly int _smtpPort;
         private readonly string _smtpUsername;
         private readonly string _smtpPassword;
-        private readonly string _fromEmail; // البريد الإلكتروني للمرسل
+        private readonly string _fromEmail; // ?????? ?????????? ??????
 
-        // Constructor: لحقن الخدمات المطلوبة (ILogger, IServiceProvider, IConfiguration)
+        // Constructor: ???? ??????? ???????? (ILogger, IServiceProvider, IConfiguration)
         public LicenseExpiryNotificationService(
             ILogger<LicenseExpiryNotificationService> logger,
             IServiceProvider serviceProvider,
@@ -44,8 +44,8 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
             _logger = logger;
             _serviceProvider = serviceProvider;
 
-            // قراءة إعدادات SMTP من التكوين (appsettings.json)
-            // استخدام ?? throw new ArgumentNullException لضمان وجود القيم
+            // ????? ??????? SMTP ?? ??????? (appsettings.json)
+            // ??????? ?? throw new ArgumentNullException ????? ???? ?????
             _smtpServer = configuration["SmtpSettings:Server"] ?? throw new ArgumentNullException("SMTP Server not found in appsettings.json");
             _smtpPort = int.Parse(configuration["SmtpSettings:Port"] ?? throw new ArgumentNullException("SMTP Port not found in appsettings.json"));
             _smtpUsername = configuration["SmtpSettings:Username"] ?? throw new ArgumentNullException("SMTP Username not found in appsettings.json");
@@ -53,13 +53,13 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
             _fromEmail = configuration["SmtpSettings:ReceiverEmail"] ?? throw new ArgumentNullException("SMTP ReceiverEmail (From Email) not found in appsettings.json");
         }
 
-        // هذه هي الدالة الأساسية التي يتم تشغيلها بشكل متكرر كخدمة خلفية
+        // ??? ?? ?????? ???????? ???? ??? ??????? ???? ????? ????? ?????
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("License Expiry Notification Service starting background execution.");
 
-            // ابدأ فورًا ثم كرر كل 24 ساعة (أو حسب _checkInterval)
-            // استخدم Task.Delay بدلاً من Timer لتجنب مشاكل Threading مع Scoped services
+            // ???? ????? ?? ??? ?? 24 ???? (?? ??? _checkInterval)
+            // ?????? Task.Delay ????? ?? Timer ????? ????? Threading ?? Scoped services
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -75,37 +75,37 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
                         continue;
                     }
 
-                    // لا حاجة لإنشاء نطاق هنا، لأن PerformLicenseExpiryCheck ستنشئ نطاقها الخاص الآن
-                    await PerformLicenseExpiryCheck(); // <== تم تحديث الاستدعاء، لا تمرير db هنا
-                                                       //عند بداية التشغيل
-                                                       // إرسال التقرير الأسبوعي كل أحد فقط إذا لم يُرسل هذا الأسبوع
-                                                       // تأكد أن `GenerateWeeklyReportPDF` و `SendWeeklyReportEmailWithPdfAndTable` موجودين في هذه الفئة
+                    // ?? ???? ?????? ???? ???? ??? PerformLicenseExpiryCheck ????? ?????? ????? ????
+                    await PerformLicenseExpiryCheck(); // <== ?? ????? ?????????? ?? ????? db ???
+                                                       //??? ????? ???????
+                                                       // ????? ??????? ???????? ?? ??? ??? ??? ?? ????? ??? ???????
+                                                       // ???? ?? `GenerateWeeklyReportPDF` ? `SendWeeklyReportEmailWithPdfAndTable` ??????? ?? ??? ?????
                     if (DateTime.Now.DayOfWeek == DayOfWeek.Sunday &&
-                        (DateTime.Now.Date > _lastWeeklyReportSent.Date)) // مقارنة بالتاريخ فقط
+                        (DateTime.Now.Date > _lastWeeklyReportSent.Date)) // ?????? ???????? ???
                     {
                         try
                         {
                             _logger.LogInformation("Attempting to send weekly report...");
 
-                            // جلب البيانات اللازمة للتقرير من الداتا بيز
-                            // يجب جلب DB هنا لأن GetSoonExpiringLicensesTable() ليست جزءًا من PerformLicenseExpiryCheck
+                            // ??? ???????? ??????? ??????? ?? ?????? ???
+                            // ??? ??? DB ??? ??? GetSoonExpiringLicensesTable() ???? ????? ?? PerformLicenseExpiryCheck
                             using (var scope = _serviceProvider.CreateScope())
                             {
                                 var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
 
-                                // نفترض وجود هذه الدوال في SqlServerDb
+                                // ????? ???? ??? ?????? ?? SqlServerDb
                                 DataTable soonExpiringTable = db.GetSoonExpiringLicensesTable();
                                 int expiredCount = db.GetExpiredLicensesCount();
                                 int soonExpiringCount = db.GetSoonExpiringLicensesCount();
 
-                                // توليد ملف PDF للتقرير
+                                // ????? ??? PDF ???????
                                 byte[] pdfBytes = GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
 
-                                // إرسال البريد الإلكتروني مع ملف PDF وجدول HTML (الآن تم دمجها)
-                                // يمكنك تغيير "yazeedbassam@hotmail.com" ليكون بريد إلكتروني محدد للمسؤول الذي سيتلقى التقرير.
-                                //   التشغيل لاحقا   //  await SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
+                                // ????? ?????? ?????????? ?? ??? PDF ????? HTML (???? ?? ?????)
+                                // ????? ????? "yazeedbassam@hotmail.com" ????? ???? ???????? ???? ??????? ???? ?????? ???????.
+                                //   ??????? ?????   //  await SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
 
-                                _lastWeeklyReportSent = DateTime.Now.Date; // تحديث تاريخ آخر إرسال
+                                _lastWeeklyReportSent = DateTime.Now.Date; // ????? ????? ??? ?????
                                 _logger.LogInformation("Weekly report sent successfully at: {time}", DateTimeOffset.Now);
                             }
                         }
@@ -120,25 +120,25 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
                     _logger.LogError(ex, "An unhandled error occurred during license expiry check.");
                 }
 
-                // انتظار 24 ساعة قبل التشغيل التالي
+                // ?????? 24 ???? ??? ??????? ??????
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
 
             _logger.LogInformation("License Expiry Notification Service background execution stopped.");
         }
 
-        // دالة يتم استدعاؤها لـ "تفعيل" فحص انتهاء صلاحية الرخص يدويًا
-        // يمكن أن تكون خاصة (private) إذا تم استدعاؤها داخليًا فقط
-        // أو عامة (public) إذا كانت ستُستدعى من Controller أو خدمة أخرى
-        private async Task TriggerLicenseExpiryCheck() // <== تم إضافة هذه الدالة
+        // ???? ??? ????????? ?? "?????" ??? ?????? ?????? ????? ??????
+        // ???? ?? ???? ???? (private) ??? ?? ????????? ??????? ???
+        // ?? ???? (public) ??? ???? ???????? ?? Controller ?? ???? ????
+        private async Task TriggerLicenseExpiryCheck() // <== ?? ????? ??? ??????
         {
             _logger.LogInformation("PerformLicenseExpiryCheck triggered manually.");
-            await PerformLicenseExpiryCheck(); // <== تم استدعاء الدالة بدون معامل
+            await PerformLicenseExpiryCheck(); // <== ?? ??????? ?????? ???? ?????
             _logger.LogInformation("PerformLicenseExpiryCheck completed from manual trigger.");
         }
 
-        // دالة فحص الرخص المنتهية وإرسال الإشعارات الفردية
-        // تم تعديلها لجلب مثيل SqlServerDb داخليًا
+        // ???? ??? ????? ???????? ?????? ????????? ???????
+        // ?? ??????? ???? ???? SqlServerDb ???????
         public async Task PerformLicenseExpiryCheck()
         {
             // Skip license expiry check in production if database is not configured
@@ -157,7 +157,7 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
 
                     try
                     {
-                        // تفريغ جدول notifications قبل إضافة التنبيهات الجديدة
+                        // ????? ???? notifications ??? ????? ????????? ???????
                         try
                         {
                             db.ExecuteNonQuery("DELETE FROM notifications");
@@ -173,7 +173,7 @@ namespace WebApplication1.Services // <== تم إضافة namespace هنا لت�
                         {
                             connection.Open();
                             using (var cmd = new SqlCommand(@"
-                   -- القسم الأول: جلب الرخص التي ستنتهي للمراقبين
+                   -- ????? ?????: ??? ????? ???? ?????? ?????????
                  SELECT
     l.licenseid,
     l.licensetype,
@@ -230,7 +230,7 @@ UNION ALL
 
                             foreach (DataRow row in dt.Rows)
                             {
-                                // التعامل الآمن مع القيم التي قد تكون NULL
+                                // ??????? ????? ?? ????? ???? ?? ???? NULL
                                 int? userId = row.Field<int?>("userid");
                                 int? controllerId = row.Field<int?>("controllerid");
                                 DateTime expiryDate = row.Field<DateTime>("expirydate");
@@ -238,20 +238,20 @@ UNION ALL
                                 string fullname = row.Field<string>("fullname") ?? string.Empty;
                                 string toEmail = row.Field<string>("email") ?? string.Empty;
 
-                                string msg = $"Dear {fullname}, Your {licenseType} will expire : \n\n At {expiryDate:yyyy-MM-dd} :(.\n\n So, Please Update :). \n\nيرجى اتخاذ الإجراءات اللازمة لتجديدها.";
+                                string msg = $"Dear {fullname}, Your {licenseType} will expire : \n\n At {expiryDate:yyyy-MM-dd} :(.\n\n So, Please Update :). \n\n???? ????? ????????? ??????? ????????.";
 
-                                // إدراج التنبيه الجديد
+                                // ????? ??????? ??????
                                 db.ExecuteNonQuery(
                                     "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
-                                    new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // التعامل مع NULL
-                                    new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // التعامل مع NULL
+                                    new Microsoft.Data.SqlClient.SqlParameter("@userid", SqlDbType.Int) { Value = userId ?? (object)DBNull.Value }, // ??????? ?? NULL
+                                    new Microsoft.Data.SqlClient.SqlParameter("@controllerid", SqlDbType.Int) { Value = controllerId ?? (object)DBNull.Value }, // ??????? ?? NULL
                                     new Microsoft.Data.SqlClient.SqlParameter("@message", SqlDbType.NVarChar, -1) { Value = msg },
                                     new Microsoft.Data.SqlClient.SqlParameter("@licensetype", SqlDbType.NVarChar, 255) { Value = licenseType },
                                     new Microsoft.Data.SqlClient.SqlParameter("@expirydate", SqlDbType.DateTime2) { Value = expiryDate }
                                 );
                                 _logger.LogInformation("Inserted new notification for user {userId}, controller {controllerId}.", userId, controllerId);
 
-                                // إرسال البريد الإلكتروني
+                                // ????? ?????? ??????????
                                 if (!string.IsNullOrWhiteSpace(toEmail))
                                 {
                                     try
@@ -297,8 +297,8 @@ UNION ALL
             }
         }
 
-        // دالة إنشاء تقرير PDF (تحتاج لمكتبة QuestPDF)
-        public byte[] GenerateWeeklyReportPDF(DataTable soonExpiringTable, int expiredCount, int soonExpiringCount) // <== تم تغيير الوصول إلى public
+        // ???? ????? ????? PDF (????? ?????? QuestPDF)
+        public byte[] GenerateWeeklyReportPDF(DataTable soonExpiringTable, int expiredCount, int soonExpiringCount) // <== ?? ????? ?????? ??? public
         {
             _logger.LogInformation("Generating weekly report PDF...");
             QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -310,24 +310,24 @@ UNION ALL
                     page.Margin(30);
                     page.Header()
                         .AlignCenter()
-                        .Text("التقرير الأسبوعي للرخص").Bold().FontSize(22).FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
+                        .Text("??????? ???????? ?????").Bold().FontSize(22).FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
 
                     page.Content().PaddingTop(15).Column(mainCol =>
                     {
-                        mainCol.Item().Text($"عدد الرخص المنتهية: {expiredCount}").FontSize(15).Bold().FontColor(QuestPDF.Helpers.Colors.Red.Medium);
-                        mainCol.Item().Text($"عدد الرخص التي ستنتهي خلال 30 يوم: {soonExpiringCount}").FontSize(15).Bold().FontColor(QuestPDF.Helpers.Colors.Orange.Medium);
+                        mainCol.Item().Text($"??? ????? ????????: {expiredCount}").FontSize(15).Bold().FontColor(QuestPDF.Helpers.Colors.Red.Medium);
+                        mainCol.Item().Text($"??? ????? ???? ?????? ???? 30 ???: {soonExpiringCount}").FontSize(15).Bold().FontColor(QuestPDF.Helpers.Colors.Orange.Medium);
 
                         mainCol.Item().PaddingTop(8);
 
-                        // جدول مختصر
+                        // ???? ?????
                         mainCol.Item().Table(table =>
                         {
                             table.ColumnsDefinition(columns =>
                             {
                                 columns.ConstantColumn(40);
-                                columns.RelativeColumn(2); // الاسم
-                                columns.RelativeColumn(2); // نوع الرخصة
-                                columns.RelativeColumn(2); // تاريخ الانتهاء
+                                columns.RelativeColumn(2); // ?????
+                                columns.RelativeColumn(2); // ??? ??????
+                                columns.RelativeColumn(2); // ????? ????????
                                 columns.RelativeColumn(2); // Mobile
                                 columns.RelativeColumn(2); // Email
                             });
@@ -335,9 +335,9 @@ UNION ALL
                             table.Header(header =>
                             {
                                 header.Cell().Text("#").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
-                                header.Cell().Text("الاسم").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
-                                header.Cell().Text("نوع الرخصة").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
-                                header.Cell().Text("تاريخ الانتهاء").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
+                                header.Cell().Text("?????").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
+                                header.Cell().Text("??? ??????").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
+                                header.Cell().Text("????? ????????").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
                                 header.Cell().Text("Mobile").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
                                 header.Cell().Text("Email").Bold().BackgroundColor(QuestPDF.Helpers.Colors.Blue.Medium).FontColor(QuestPDF.Helpers.Colors.White);
                             });
@@ -357,7 +357,7 @@ UNION ALL
 
                     page.Footer()
                         .AlignCenter()
-                        .Text("تقرير أسبوعي - نظام إدارة المراقبة الجوية - " + DateTime.Now.ToString("yyyy/MM/dd"))
+                        .Text("????? ?????? - ???? ????? ???????? ?????? - " + DateTime.Now.ToString("yyyy/MM/dd"))
                         .FontSize(10)
                         .FontColor(QuestPDF.Helpers.Colors.Grey.Darken1);
                 });
@@ -366,8 +366,8 @@ UNION ALL
             return document.GeneratePdf();
         }
 
-        // دالة إرسال البريد الإلكتروني مع ملف PDF وجدول HTML في جسم الرسالة
-        public async Task SendWeeklyReportEmailWithPdfAndTable(byte[] pdfBytes, string recipientEmail, DataTable soonExpiringTable) // <== تم تغيير الوصول إلى public وتغيير الاسم
+        // ???? ????? ?????? ?????????? ?? ??? PDF ????? HTML ?? ??? ???????
+        public async Task SendWeeklyReportEmailWithPdfAndTable(byte[] pdfBytes, string recipientEmail, DataTable soonExpiringTable) // <== ?? ????? ?????? ??? public ?????? ?????
         {
             _logger.LogInformation("Sending weekly report email to {recipientEmail}...", recipientEmail);
             try
@@ -376,7 +376,7 @@ UNION ALL
                 var toAddress = new MailAddress(recipientEmail);
                 const string subject = "Weekly License Expiry Report";
 
-                // بناء جدول HTML من soonExpiringTable
+                // ???? ???? HTML ?? soonExpiringTable
                 StringBuilder tableHtmlBuilder = new StringBuilder();
                 tableHtmlBuilder.Append("<table border='1' cellpadding='6' style='border-collapse:collapse; font-family:Tahoma; font-size:14px; width:100%;'>");
                 tableHtmlBuilder.Append("<thead><tr style='background-color:#f2f2f2;'><th>#</th><th>Full Name</th><th>License Type</th><th>Expiry Date</th><th>Phone</th><th>Email</th></tr></thead>");
@@ -409,12 +409,12 @@ UNION ALL
                     {
                         Subject = subject,
                         Body = body,
-                        IsBodyHtml = true // مهم لعرض الجدول في نص الرسالة بشكل صحيح
+                        IsBodyHtml = true // ??? ???? ?????? ?? ?? ??????? ???? ????
                     })
                     {
-                        using (var ms = new System.IO.MemoryStream(pdfBytes)) // استخدام System.IO.MemoryStream
+                        using (var ms = new System.IO.MemoryStream(pdfBytes)) // ??????? System.IO.MemoryStream
                         {
-                            // استخدام System.Net.Mail.Attachment لحل التعارض
+                            // ??????? System.Net.Mail.Attachment ??? ???????
                             var attachment = new System.Net.Mail.Attachment(ms, "Weekly_Report.pdf", "application/pdf");
                             message.Attachments.Add(attachment);
                             await smtp.SendMailAsync(message);
@@ -430,3 +430,4 @@ UNION ALL
         }
     }
 }
+

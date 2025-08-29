@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using System.Data;
 using WebApplication1.DataAccess;
@@ -115,11 +115,11 @@ namespace WebApplication1.Services
 
                 var parameters = new[]
                 {
-                    new SqlParameter("@CategoryName", category.CategoryName),
-                    new SqlParameter("@DisplayName", category.DisplayName),
-                    new SqlParameter("@Description", category.Description ?? (object)DBNull.Value),
-                    new SqlParameter("@IsActive", category.IsActive),
-                    new SqlParameter("@DisplayOrder", category.DisplayOrder)
+                    new MySqlParameter("@CategoryName", category.CategoryName),
+                    new MySqlParameter("@DisplayName", category.DisplayName),
+                    new MySqlParameter("@Description", category.Description ?? (object)DBNull.Value),
+                    new MySqlParameter("@IsActive", category.IsActive),
+                    new MySqlParameter("@DisplayOrder", category.DisplayOrder)
                 };
 
                 _db.ExecuteNonQuery(sql, parameters);
@@ -145,11 +145,11 @@ namespace WebApplication1.Services
 
                 var parameters = new[]
                 {
-                    new SqlParameter("@CategoryId", category.CategoryId),
-                    new SqlParameter("@DisplayName", category.DisplayName),
-                    new SqlParameter("@Description", category.Description ?? (object)DBNull.Value),
-                    new SqlParameter("@IsActive", category.IsActive),
-                    new SqlParameter("@DisplayOrder", category.DisplayOrder)
+                    new MySqlParameter("@CategoryId", category.CategoryId),
+                    new MySqlParameter("@DisplayName", category.DisplayName),
+                    new MySqlParameter("@Description", category.Description ?? (object)DBNull.Value),
+                    new MySqlParameter("@IsActive", category.IsActive),
+                    new MySqlParameter("@DisplayOrder", category.DisplayOrder)
                 };
 
                 _db.ExecuteNonQuery(sql, parameters);
@@ -168,7 +168,7 @@ namespace WebApplication1.Services
             try
             {
                 const string sql = "UPDATE ConfigurationCategories SET IsActive = 0, ModifiedDate = GETDATE() WHERE CategoryId = @CategoryId";
-                _db.ExecuteNonQuery(sql, new SqlParameter("@CategoryId", categoryId));
+                _db.ExecuteNonQuery(sql, new MySqlParameter("@CategoryId", categoryId));
                 ClearCache();
                 return true;
             }
@@ -202,7 +202,7 @@ namespace WebApplication1.Services
                 AND c.IsActive = 1
                 ORDER BY v.DisplayOrder, v.ValueText";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@CategoryName", categoryName));
+            var dt = _db.ExecuteQuery(sql, new MySqlParameter("@CategoryName", categoryName));
             var values = new List<ConfigurationValue>();
 
             foreach (DataRow row in dt.Rows)
@@ -235,7 +235,7 @@ namespace WebApplication1.Services
                 WHERE CategoryId = @CategoryId AND IsActive = 1
                 ORDER BY DisplayOrder, ValueText";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@CategoryId", categoryId));
+            var dt = _db.ExecuteQuery(sql, new MySqlParameter("@CategoryId", categoryId));
             var values = new List<ConfigurationValue>();
 
             foreach (DataRow row in dt.Rows)
@@ -266,7 +266,7 @@ namespace WebApplication1.Services
                 FROM ConfigurationValues 
                 WHERE ValueId = @ValueId";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@ValueId", valueId));
+            var dt = _db.ExecuteQuery(sql, new MySqlParameter("@ValueId", valueId));
             
             if (dt.Rows.Count == 0) return null;
 
@@ -299,12 +299,12 @@ namespace WebApplication1.Services
 
                 var parameters = new[]
                 {
-                    new SqlParameter("@CategoryId", value.CategoryId),
-                    new SqlParameter("@ValueKey", value.ValueKey),
-                    new SqlParameter("@ValueText", value.ValueText),
-                    new SqlParameter("@DisplayOrder", value.DisplayOrder),
-                    new SqlParameter("@IsActive", value.IsActive),
-                    new SqlParameter("@CreatedBy", value.CreatedBy ?? (object)DBNull.Value)
+                    new MySqlParameter("@CategoryId", value.CategoryId),
+                    new MySqlParameter("@ValueKey", value.ValueKey),
+                    new MySqlParameter("@ValueText", value.ValueText),
+                    new MySqlParameter("@DisplayOrder", value.DisplayOrder),
+                    new MySqlParameter("@IsActive", value.IsActive),
+                    new MySqlParameter("@CreatedBy", value.CreatedBy ?? (object)DBNull.Value)
                 };
 
                 _logger.LogInformation("Executing SQL with parameters: CategoryId={CategoryId}, ValueKey={ValueKey}, IsActive={IsActive}", 
@@ -335,11 +335,11 @@ namespace WebApplication1.Services
 
                 var parameters = new[]
                 {
-                    new SqlParameter("@ValueId", value.ValueId),
-                    new SqlParameter("@ValueText", value.ValueText),
-                    new SqlParameter("@DisplayOrder", value.DisplayOrder),
-                    new SqlParameter("@IsActive", value.IsActive),
-                    new SqlParameter("@ModifiedBy", value.ModifiedBy ?? (object)DBNull.Value)
+                    new MySqlParameter("@ValueId", value.ValueId),
+                    new MySqlParameter("@ValueText", value.ValueText),
+                    new MySqlParameter("@DisplayOrder", value.DisplayOrder),
+                    new MySqlParameter("@IsActive", value.IsActive),
+                    new MySqlParameter("@ModifiedBy", value.ModifiedBy ?? (object)DBNull.Value)
                 };
 
                 _db.ExecuteNonQuery(sql, parameters);
@@ -358,7 +358,7 @@ namespace WebApplication1.Services
             try
             {
                 const string sql = "UPDATE ConfigurationValues SET IsActive = 0, ModifiedDate = GETDATE() WHERE ValueId = @ValueId";
-                _db.ExecuteNonQuery(sql, new SqlParameter("@ValueId", valueId));
+                _db.ExecuteNonQuery(sql, new MySqlParameter("@ValueId", valueId));
                 ClearCache();
                 return true;
             }
@@ -411,19 +411,19 @@ namespace WebApplication1.Services
             if (valueId.HasValue)
             {
                 sql += " AND ValueId = @ValueId";
-                parameters.Add(new SqlParameter("@ValueId", valueId.Value));
+                parameters.Add(new MySqlParameter("@ValueId", valueId.Value));
             }
 
             if (fromDate.HasValue)
             {
                 sql += " AND ChangedDate >= @FromDate";
-                parameters.Add(new SqlParameter("@FromDate", fromDate.Value));
+                parameters.Add(new MySqlParameter("@FromDate", fromDate.Value));
             }
 
             if (toDate.HasValue)
             {
                 sql += " AND ChangedDate <= @ToDate";
-                parameters.Add(new SqlParameter("@ToDate", toDate.Value));
+                parameters.Add(new MySqlParameter("@ToDate", toDate.Value));
             }
 
             sql += " ORDER BY ChangedDate DESC";
@@ -458,11 +458,11 @@ namespace WebApplication1.Services
 
                 var parameters = new[]
                 {
-                    new SqlParameter("@ValueId", log.ValueId ?? (object)DBNull.Value),
-                    new SqlParameter("@Action", log.Action),
-                    new SqlParameter("@OldValue", log.OldValue ?? (object)DBNull.Value),
-                    new SqlParameter("@NewValue", log.NewValue ?? (object)DBNull.Value),
-                    new SqlParameter("@ChangedBy", log.ChangedBy ?? (object)DBNull.Value)
+                    new MySqlParameter("@ValueId", log.ValueId ?? (object)DBNull.Value),
+                    new MySqlParameter("@Action", log.Action),
+                    new MySqlParameter("@OldValue", log.OldValue ?? (object)DBNull.Value),
+                    new MySqlParameter("@NewValue", log.NewValue ?? (object)DBNull.Value),
+                    new MySqlParameter("@ChangedBy", log.ChangedBy ?? (object)DBNull.Value)
                 };
 
                 _db.ExecuteNonQuery(sql, parameters);
@@ -555,3 +555,4 @@ namespace WebApplication1.Services
         #endregion
     }
 } 
+

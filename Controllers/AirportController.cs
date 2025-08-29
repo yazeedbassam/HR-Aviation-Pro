@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -7,7 +7,7 @@ using System.Data;
 using System.Linq;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
-using Microsoft.Data.SqlClient; // تأكد من استخدام هذا الـ namespace
+using MySql.Data.MySqlClient; // ???? ?? ??????? ??? ??? namespace
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -28,19 +28,19 @@ namespace WebApplication1.Controllers
             _db = new SqlServerDb(configuration);
         }
 
-        // ملاحظة: يفترض أن لديك ميثود مشابهة في SqlServerDb.cs لجلب المطارات مع الفلاتر
+        // ??????: ????? ?? ???? ????? ?????? ?? SqlServerDb.cs ???? ???????? ?? ???????
         private List<Airport> GetAirports(string airportId, string airportName, string countryName, string icaoCode)
         {
-            // هذا مجرد مثال، يجب عليك بناء هذه الميثود في SqlServerDb.cs
-            // لتستخدم الفلاتر بشكل صحيح في جملة الـ SQL
+            // ??? ???? ????? ??? ???? ???? ??? ??????? ?? SqlServerDb.cs
+            // ??????? ??????? ???? ???? ?? ???? ??? SQL
             var airports = new List<Airport>();
             const string baseSql = @"
                 SELECT a.airportid, a.airportname, a.countryid, c.countryname, a.icao_code
                 FROM airports a
                 JOIN countries c ON a.countryid = c.countryid";
 
-            // هنا يمكنك بناء جملة WHERE ديناميكياً بناءً على الفلاتر
-            // لكن للتبسيط، سنقوم بجلب الكل ثم الفلترة في الكود، وهذا غير مثالي للأداء العالي
+            // ??? ????? ???? ???? WHERE ?????????? ????? ??? ???????
+            // ??? ???????? ????? ???? ???? ?? ??????? ?? ?????? ???? ??? ????? ?????? ??????
 
             DataTable dt = _db.ExecuteQuery(baseSql);
 
@@ -56,7 +56,7 @@ namespace WebApplication1.Controllers
                 });
             }
 
-            // تطبيق الفلترة هنا
+            // ????? ??????? ???
             if (!string.IsNullOrEmpty(airportId))
                 airports = airports.Where(a => a.AirportId.ToString().Contains(airportId)).ToList();
             if (!string.IsNullOrEmpty(airportName))
@@ -74,7 +74,7 @@ namespace WebApplication1.Controllers
         {
             var dtAirports = _db.ExecuteQuery(
                 "SELECT airportid, airportname, icao_code FROM airports WHERE countryid = @countryId ORDER BY airportname",
-                new SqlParameter("@countryId", countryId));
+                new MySqlParameter("@countryId", countryId));
 
             var airports = dtAirports.Rows.Cast<DataRow>()
                 .Select(r => new Dictionary<string, string>
@@ -131,9 +131,9 @@ namespace WebApplication1.Controllers
             VALUES(@name, @countryId, @IcaoCode)";
 
             _db.ExecuteNonQuery(sql,
-                new SqlParameter("@name", model.AirportName),
-                new SqlParameter("@countryId", model.CountryId),
-                new SqlParameter("@IcaoCode", model.IcaoCode));
+                new MySqlParameter("@name", model.AirportName),
+                new MySqlParameter("@countryId", model.CountryId),
+                new MySqlParameter("@IcaoCode", model.IcaoCode));
 
             TempData["SuccessMessage"] = "Division has been added successfully.";
             return RedirectToAction(nameof(Index));
@@ -144,7 +144,7 @@ namespace WebApplication1.Controllers
         {
             DataTable dt = _db.ExecuteQuery(
                 "SELECT airportid, airportname, countryid, icao_code FROM airports WHERE airportid = @id",
-                new SqlParameter("@id", id));
+                new MySqlParameter("@id", id));
 
             if (dt.Rows.Count == 0) return NotFound();
 
@@ -180,10 +180,10 @@ namespace WebApplication1.Controllers
             WHERE airportid = @id";
 
             _db.ExecuteNonQuery(sql,
-                new SqlParameter("@name", model.AirportName),
-                new SqlParameter("@countryId", model.CountryId),
-                new SqlParameter("@IcaoCode", model.IcaoCode),
-                new SqlParameter("@id", model.AirportId));
+                new MySqlParameter("@name", model.AirportName),
+                new MySqlParameter("@countryId", model.CountryId),
+                new MySqlParameter("@IcaoCode", model.IcaoCode),
+                new MySqlParameter("@id", model.AirportId));
 
             TempData["SuccessMessage"] = "Division details have been updated successfully.";
             return RedirectToAction(nameof(Index));
@@ -196,7 +196,7 @@ namespace WebApplication1.Controllers
         {
             _db.ExecuteNonQuery(
                 "DELETE FROM airports WHERE airportid = @id",
-                new SqlParameter("@id", id));
+                new MySqlParameter("@id", id));
 
             TempData["SuccessMessage"] = "Division has been deleted successfully.";
             return RedirectToAction(nameof(Index));
@@ -230,7 +230,7 @@ namespace WebApplication1.Controllers
 
                             row.RelativeColumn().Column(col =>
                             {
-                                col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(12);
+                                col.Item().AlignCenter().Text("???? ????? ??????? ?????? ???????").Bold().FontSize(12);
                                 col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(9).FontColor(Colors.Grey.Darken1);
                                 col.Item().PaddingTop(5).AlignCenter().Text($"Divisions Report - {DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(8).FontColor(Colors.Grey.Darken2);
                             });
@@ -311,7 +311,7 @@ namespace WebApplication1.Controllers
                     excelImage.SetSize(120, 65);
                 }
 
-                worksheet.Cells["C1"].Value = "هيئة تنظيم الطيران المدني الأردني";
+                worksheet.Cells["C1"].Value = "???? ????? ??????? ?????? ???????";
                 worksheet.Cells["C1"].Style.Font.Bold = true;
                 worksheet.Cells["C1"].Style.Font.Size = 14;
                 worksheet.Cells["C1:F1"].Merge = true;
@@ -359,3 +359,4 @@ namespace WebApplication1.Controllers
         }
     }
 }
+

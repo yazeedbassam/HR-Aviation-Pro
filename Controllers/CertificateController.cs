@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http; // For IFormFile
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient; // Required for SqlParameter
+using MySql.Data.MySqlClient; // Required for SqlParameter
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using QuestPDF.Drawing;
@@ -62,7 +62,7 @@ namespace WebApplication1.Controllers
                 return View(new CertificateIndexViewModel());
             }
         }
-        // --- استبدل هذا الأكشن في CertificateController.cs ---
+        // --- ?????? ??? ?????? ?? CertificateController.cs ---
 
         // GET: Certificate/Create
         public IActionResult Create()
@@ -78,31 +78,31 @@ namespace WebApplication1.Controllers
         }
 
         // POST: Certificate/Create
-        // --- استبدل هذا الأكشن في CertificateController.cs ---
+        // --- ?????? ??? ?????? ?? CertificateController.cs ---
 
-        // --- استبدل هذا الأكشن في CertificateController.cs ---
+        // --- ?????? ??? ?????? ?? CertificateController.cs ---
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] CertificateViewModel certificate)
         {
-            // --- هذا هو الحل الأساسي للمشكلة ---
-            // هنا، نقوم بإزالة أي خطأ تحقق مرتبط بحقل رفع الملف، لأنه اختياري
+            // --- ??? ?? ???? ??????? ??????? ---
+            // ???? ???? ?????? ?? ??? ???? ????? ???? ??? ?????? ???? ???????
             ModelState.Remove(nameof(certificate.UploadFile));
 
-            // التحقق من اختيار مراقب أو موظف
+            // ?????? ?? ?????? ????? ?? ????
             if (!certificate.ControllerId.HasValue && !certificate.EmployeeId.HasValue)
             {
                 ModelState.AddModelError("", "You must select either a Controller or an Employee.");
             }
 
-            // إذا كان النموذج صالحًا بعد تجاهل خطأ الملف
+            // ??? ??? ??????? ?????? ??? ????? ??? ?????
             if (ModelState.IsValid)
             {
                 string personIdentifier = null;
                 string personTypeFolder = "";
 
-                // تحديد اسم المستخدم والمجلد بناءً على الاختيار
+                // ????? ??? ???????? ??????? ????? ??? ????????
                 if (certificate.ControllerId.HasValue)
                 {
                     var controllerTable = _db.GetControllerById(certificate.ControllerId.Value);
@@ -122,7 +122,7 @@ namespace WebApplication1.Controllers
                     }
                 }
 
-                // منطق رفع الملف (يعمل فقط إذا تم اختيار ملف)
+                // ???? ??? ????? (???? ??? ??? ?? ?????? ???)
                 if (certificate.UploadFile != null && certificate.UploadFile.Length > 0)
                 {
                     if (string.IsNullOrEmpty(personIdentifier))
@@ -144,25 +144,25 @@ namespace WebApplication1.Controllers
                     }
                 }
 
-                // المتابعة فقط إذا لم تكن هناك أخطاء
+                // ???????? ??? ??? ?? ??? ???? ?????
                 if (ModelState.ErrorCount == 0)
                 {
                     string insertQuery = @"
                 INSERT INTO Certificates (ControllerId, EmployeeId, TypeId, CertificateTitle, IssueDate, ExpiryDate, Status, FilePath, Notes)
                 VALUES (@ControllerId, @EmployeeId, @TypeId, @Title, @IssueDate, @ExpiryDate, @Status, @FilePath, @Notes)";
 
-                    // --- تم تعديل الباراميترات هنا لحل المشكلة ---
+                    // --- ?? ????? ???????????? ??? ??? ??????? ---
                     var parameters = new[]
                     {
-                new SqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)certificate.ControllerId ?? DBNull.Value },
-                new SqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)certificate.EmployeeId ?? DBNull.Value },
-                new SqlParameter("@TypeId", SqlDbType.Int) { Value = certificate.TypeId },
-                new SqlParameter("@Title", SqlDbType.NVarChar, 255) { Value = (object)certificate.Title ?? string.Empty }, // <-- The Fix
-                new SqlParameter("@IssueDate", SqlDbType.Date) { Value = certificate.IssueDate },
-                new SqlParameter("@ExpiryDate", SqlDbType.Date) { Value = (object)certificate.ExpiryDate ?? DBNull.Value },
-                new SqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = (object)certificate.Status ?? DBNull.Value },
-                new SqlParameter("@FilePath", SqlDbType.NVarChar, 500) { Value = (object)certificate.FilePath ?? DBNull.Value },
-                new SqlParameter("@Notes", SqlDbType.NVarChar, 1000) { Value = (object)certificate.Notes ?? DBNull.Value }
+                new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)certificate.ControllerId ?? DBNull.Value },
+                new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)certificate.EmployeeId ?? DBNull.Value },
+                new MySqlParameter("@TypeId", SqlDbType.Int) { Value = certificate.TypeId },
+                new MySqlParameter("@Title", SqlDbType.NVarChar, 255) { Value = (object)certificate.Title ?? string.Empty }, // <-- The Fix
+                new MySqlParameter("@IssueDate", SqlDbType.Date) { Value = certificate.IssueDate },
+                new MySqlParameter("@ExpiryDate", SqlDbType.Date) { Value = (object)certificate.ExpiryDate ?? DBNull.Value },
+                new MySqlParameter("@Status", SqlDbType.NVarChar, 50) { Value = (object)certificate.Status ?? DBNull.Value },
+                new MySqlParameter("@FilePath", SqlDbType.NVarChar, 500) { Value = (object)certificate.FilePath ?? DBNull.Value },
+                new MySqlParameter("@Notes", SqlDbType.NVarChar, 1000) { Value = (object)certificate.Notes ?? DBNull.Value }
             };
 
                     try
@@ -178,16 +178,16 @@ namespace WebApplication1.Controllers
                 }
             }
 
-            // في حال وجود أي خطأ، يتم إعادة تحميل القوائم وإرجاع نفس الصفحة
+            // ?? ??? ???? ?? ???? ??? ????? ????? ??????? ?????? ??? ??????
             LoadDropdowns();
             return View(certificate);
         }
 
         // GET: Certificate/Edit/5
-        // --- استبدل أكواد التعديل القديمة في CertificateController.cs بهذه النسخة المصححة ---
+        // --- ?????? ????? ??????? ??????? ?? CertificateController.cs ???? ?????? ??????? ---
 
         // GET: Certificate/Edit/5
-        // --- استبدل أكواد التعديل القديمة في CertificateController.cs بهذه النسخة المصححة ---
+        // --- ?????? ????? ??????? ??????? ?? CertificateController.cs ???? ?????? ??????? ---
 
         // GET: Certificate/Edit/5
         public IActionResult Edit(int id)
@@ -206,8 +206,8 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] CertificateViewModel certificate)
         {
-            // --- هذا هو الحل الأساسي للمشكلة ---
-            // هنا، لا نمرر الملف كباراميتر، بل نقرأه مباشرة من الطلب لنتجنب التحقق الإجباري
+            // --- ??? ?? ???? ??????? ??????? ---
+            // ???? ?? ???? ????? ?????????? ?? ????? ?????? ?? ????? ?????? ?????? ????????
             var NewFile = Request.Form.Files.FirstOrDefault();
 
             if (id != certificate.CertificateId)
@@ -286,14 +286,14 @@ namespace WebApplication1.Controllers
 
                 var parameters = new[]
                 {
-            new SqlParameter("@TypeId", certificate.TypeId),
-            new SqlParameter("@Title", (object)certificate.Title ?? string.Empty),
-            new SqlParameter("@IssueDate", certificate.IssueDate),
-            new SqlParameter("@ExpiryDate", certificate.ExpiryDate),
-            new SqlParameter("@Status", (object)certificate.Status ?? DBNull.Value),
-            new SqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
-            new SqlParameter("@Notes", (object)certificate.Notes ?? DBNull.Value),
-            new SqlParameter("@CertificateId", id)
+            new MySqlParameter("@TypeId", certificate.TypeId),
+            new MySqlParameter("@Title", (object)certificate.Title ?? string.Empty),
+            new MySqlParameter("@IssueDate", certificate.IssueDate),
+            new MySqlParameter("@ExpiryDate", certificate.ExpiryDate),
+            new MySqlParameter("@Status", (object)certificate.Status ?? DBNull.Value),
+            new MySqlParameter("@FilePath", (object)currentFilePath ?? DBNull.Value),
+            new MySqlParameter("@Notes", (object)certificate.Notes ?? DBNull.Value),
+            new MySqlParameter("@CertificateId", id)
         };
 
                 try
@@ -358,7 +358,7 @@ namespace WebApplication1.Controllers
             ViewBag.CertificateTypes = _db.GetCertificateTypes();
         }
       
-        // تأكد من أن هذه الدوال تقوم بتحميل البيانات اللازمة للواجهة
+        // ???? ?? ?? ??? ?????? ???? ?????? ???????? ??????? ???????
         private void LoadTypesAndControllers()
         {
             ViewBag.Types = _db.ExecuteQuery("SELECT TypeId, TypeName FROM DocumentTypes")
@@ -390,7 +390,7 @@ namespace WebApplication1.Controllers
                      };
         }
 
-        // داخل CertificateController.cs
+        // ???? CertificateController.cs
         public IActionResult ExportToPDF(string personType, string personName, string typeName, string title, string status)
         {
             QuestPDF.Settings.License = LicenseType.Community;
@@ -447,7 +447,7 @@ namespace WebApplication1.Controllers
                             if (System.IO.File.Exists(logoPath)) row.ConstantColumn(70).Image(logoPath);
 
                             row.RelativeColumn().Column(col => {
-                                col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(12);
+                                col.Item().AlignCenter().Text("???? ????? ??????? ?????? ???????").Bold().FontSize(12);
                                 col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(9).FontColor(Colors.Grey.Darken1);
                                 col.Item().PaddingTop(5).AlignCenter().Text($"{reportTitle} - {DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(8).FontColor(Colors.Grey.Darken2);
                             });

@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -173,15 +173,15 @@ namespace WebApplication1.Controllers
 
             var parameters = new[]
             {
-                new SqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
-                new SqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
-                new SqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
-                new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
-                new SqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)license.PDFPath ?? DBNull.Value },
-                new SqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
-                new SqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
-                new SqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
-                new SqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value }
+                new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
+                new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
+                new MySqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
+                new MySqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
+                new MySqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)license.PDFPath ?? DBNull.Value },
+                new MySqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
+                new MySqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
+                new MySqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
+                new MySqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value }
             };
 
             try
@@ -223,16 +223,16 @@ namespace WebApplication1.Controllers
                 return BadRequest();
             }
 
-            // استرجع الترخيص الأصلي من قاعدة البيانات لمقارنة ملف PDF الحالي
+            // ?????? ??????? ?????? ?? ????? ???????? ??????? ??? PDF ??????
             var originalLicense = _db.GetLicenseById(id);
             if (originalLicense == null)
             {
-                return NotFound(); // الترخيص غير موجود
+                return NotFound(); // ??????? ??? ?????
             }
 
-            // لا نحتاج لـ ControllerName, AirportName, EmployeeName, EmployeeDepartment
-            // في ModelState.IsValid لأنها حقول للقراءة فقط في الـ View
-            // ولكن يجب أن نتأكد من أن ControllerId أو EmployeeId موجودين
+            // ?? ????? ?? ControllerName, AirportName, EmployeeName, EmployeeDepartment
+            // ?? ModelState.IsValid ????? ???? ??????? ??? ?? ??? View
+            // ???? ??? ?? ????? ?? ?? ControllerId ?? EmployeeId ???????
             if (!license.ControllerId.HasValue && !license.EmployeeId.HasValue)
             {
                 ModelState.AddModelError("", "You must select either a Controller or an Employee for the license.");
@@ -241,8 +241,8 @@ namespace WebApplication1.Controllers
             if (!ModelState.IsValid)
             {
                 LoadControllersAndEmployeesForDropdown();
-                // إعادة تعيين ControllerName, AirportName, EmployeeName, EmployeeDepartment
-                // لضمان عرضها مرة أخرى في الـ View إذا فشل التحقق
+                // ????? ????? ControllerName, AirportName, EmployeeName, EmployeeDepartment
+                // ????? ????? ??? ???? ?? ??? View ??? ??? ??????
                 license.ControllerName = originalLicense.ControllerName;
                 license.AirportName = originalLicense.AirportName;
                 license.EmployeeName = originalLicense.EmployeeName;
@@ -250,8 +250,8 @@ namespace WebApplication1.Controllers
                 return View(license);
             }
 
-            // 1. التعامل مع ملف PDF الجديد (إذا تم تحميله)
-            string newPdfPath = originalLicense.PDFPath; // احتفظ بالمسار الحالي افتراضياً
+            // 1. ??????? ?? ??? PDF ?????? (??? ?? ??????)
+            string newPdfPath = originalLicense.PDFPath; // ????? ??????? ?????? ?????????
 
             if (license.LicenseFile != null && license.LicenseFile.Length > 0)
             {
@@ -281,7 +281,7 @@ namespace WebApplication1.Controllers
                 {
                     ModelState.AddModelError("", "Could not find the selected person to create the directory for the new PDF.");
                     LoadControllersAndEmployeesForDropdown();
-                    // إعادة تعيين بيانات العرض إذا فشل التحقق
+                    // ????? ????? ?????? ????? ??? ??? ??????
                     license.ControllerName = originalLicense.ControllerName;
                     license.AirportName = originalLicense.AirportName;
                     license.EmployeeName = originalLicense.EmployeeName;
@@ -289,7 +289,7 @@ namespace WebApplication1.Controllers
                     return View(license);
                 }
 
-                // حذف الملف القديم إذا كان موجودًا
+                // ??? ????? ?????? ??? ??? ???????
                 if (!string.IsNullOrEmpty(originalLicense.PDFPath))
                 {
                     string oldFilePath = Path.Combine(_webHostEnvironment.WebRootPath, originalLicense.PDFPath.TrimStart('/'));
@@ -299,7 +299,7 @@ namespace WebApplication1.Controllers
                     }
                 }
 
-                // حفظ الملف الجديد
+                // ??? ????? ??????
                 string uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(license.LicenseFile.FileName);
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "licenses", personTypeFolder, username);
                 if (!Directory.Exists(uploadsFolder))
@@ -314,13 +314,13 @@ namespace WebApplication1.Controllers
                 newPdfPath = $"/licenses/{personTypeFolder}/{username}/{uniqueFileName}";
             }
 
-            // 2. تحديث تاريخ انتهاء الصلاحية لـ "English Proficiency Test"
+            // 2. ????? ????? ?????? ???????? ?? "English Proficiency Test"
             if (license.LicenseType == "English Proficiency Test" && license.RANGE == "6")
             {
                 license.ExpiryDate = new DateTime(2100, 1, 1);
             }
 
-            // 3. بناء استعلام التحديث
+            // 3. ???? ??????? ???????
             string updateQuery = @"
         UPDATE Licenses
         SET
@@ -337,16 +337,16 @@ namespace WebApplication1.Controllers
 
             var parameters = new[]
             {
-        new SqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
-        new SqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
-        new SqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
-        new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
-        new SqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)newPdfPath ?? DBNull.Value }, // استخدم newPdfPath هنا
-        new SqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
-        new SqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
-        new SqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
-        new SqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value },
-        new SqlParameter("@LicenseId", SqlDbType.Int) { Value = license.LicenseId } // شرط التحديث
+        new MySqlParameter("@ControllerId", SqlDbType.Int) { Value = (object)license.ControllerId ?? DBNull.Value },
+        new MySqlParameter("@EmployeeId", SqlDbType.Int) { Value = (object)license.EmployeeId ?? DBNull.Value },
+        new MySqlParameter("@LicenseType", SqlDbType.NVarChar, 50) { Value = (object)license.LicenseType ?? DBNull.Value },
+        new MySqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = (object)license.ExpiryDate ?? DBNull.Value },
+        new MySqlParameter("@PDFPath", SqlDbType.NVarChar, 255) { Value = (object)newPdfPath ?? DBNull.Value }, // ?????? newPdfPath ???
+        new MySqlParameter("@IssueDate", SqlDbType.DateTime) { Value = (object)license.IssueDate ?? DBNull.Value },
+        new MySqlParameter("@licensenumber", SqlDbType.NVarChar, 200) { Value = (object)license.licensenumber ?? DBNull.Value },
+        new MySqlParameter("@Note", SqlDbType.NVarChar, 200) { Value = (object)license.Note ?? DBNull.Value },
+        new MySqlParameter("@Range", SqlDbType.NVarChar, 50) { Value = (object)license.RANGE ?? DBNull.Value },
+        new MySqlParameter("@LicenseId", SqlDbType.Int) { Value = license.LicenseId } // ??? ???????
     };
 
             try
@@ -361,7 +361,7 @@ namespace WebApplication1.Controllers
             }
 
             LoadControllersAndEmployeesForDropdown();
-            // إعادة تعيين بيانات العرض إذا فشل التحديث
+            // ????? ????? ?????? ????? ??? ??? ???????
             license.ControllerName = originalLicense.ControllerName;
             license.AirportName = originalLicense.AirportName;
             license.EmployeeName = originalLicense.EmployeeName;
@@ -399,7 +399,7 @@ namespace WebApplication1.Controllers
 
 
         // --- EXPORT ACTIONS ---
-        // استبدل أكواد التصدير القديمة بهذه الأكواد الكاملة والصحيحة
+        // ?????? ????? ??????? ??????? ???? ??????? ??????? ????????
 
         // --- EXPORT ACTIONS ---
 
@@ -472,7 +472,7 @@ namespace WebApplication1.Controllers
 
                             row.RelativeColumn().Column(col =>
                             {
-                                col.Item().AlignCenter().Text("هيئة تنظيم الطيران المدني الأردني").Bold().FontSize(12);
+                                col.Item().AlignCenter().Text("???? ????? ??????? ?????? ???????").Bold().FontSize(12);
                                 col.Item().AlignCenter().Text("JORDAN CIVIL AVIATION REGULATORY COMMISSION").FontSize(9).FontColor(Colors.Grey.Darken1);
                                 col.Item().PaddingTop(5).AlignCenter().Text($"{reportTitle} - {DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(8).FontColor(Colors.Grey.Darken2);
                             });
@@ -723,3 +723,5 @@ namespace WebApplication1.Controllers
 
     }
 }
+
+
