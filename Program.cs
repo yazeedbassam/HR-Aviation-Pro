@@ -55,6 +55,8 @@ var app = builder.Build();
 // Configure application to handle startup gracefully
 app.Lifetime.ApplicationStarted.Register(() => {
     Console.WriteLine("Application has started successfully!");
+    Console.WriteLine("Health check endpoints are ready!");
+    Console.WriteLine("Available endpoints: /, /health, /ping, /ready");
 });
 
 // 2) Seed Admin user (only in development)
@@ -94,14 +96,13 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add health check endpoint
+// Add health check endpoints - place them before routing
 app.MapGet("/health", () => "OK");
+app.MapGet("/ping", () => "pong");
+app.MapGet("/ready", () => "ready");
 
-// Add root endpoint for health check with simple delay
-app.MapGet("/", async () => {
-    await Task.Delay(1000); // Wait 1 second to ensure app is ready
-    return "AVIATION HR PRO - System is running!";
-});
+// Add root endpoint for health check - immediate response
+app.MapGet("/", () => "AVIATION HR PRO - System is running!");
 
 app.MapControllerRoute(
     name: "default",
