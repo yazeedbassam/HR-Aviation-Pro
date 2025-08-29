@@ -199,33 +199,52 @@ public class AccountController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
-        if (!ModelState.IsValid)
-            return View(model);
-
-        if (!_db.ValidateCredentials(model.Username, model.Password, out var userId, out var role))
+        try
         {
-            ModelState.AddModelError("", "Invalid username or password.");
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Check if database is available
+            if (!_db.IsDatabaseAvailable())
+            {
+                ModelState.AddModelError("", "Database connection is not available. Please try again later.");
+                return View(model);
+            }
+
+            if (!_db.ValidateCredentials(model.Username, model.Password, out var userId, out var role))
+            {
+                ModelState.AddModelError("", "Invalid username or password.");
+                return View(model);
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, model.Username),
+                new Claim(ClaimTypes.Role, role)
+            };
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+                                          new ClaimsPrincipal(identity));
+
+            // بعد النجاح:
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                return Redirect(model.ReturnUrl);
+
+            // بناءً على الرول:
+            if (role == "Admin")
+                return RedirectToAction("Index", "Home");
+            return RedirectToAction("Profile", "Account");
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            Console.WriteLine($"Login error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            
+            ModelState.AddModelError("", "An error occurred during login. Please try again.");
             return View(model);
         }
-
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Name, model.Username),
-            new Claim(ClaimTypes.Role, role)
-        };
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                                      new ClaimsPrincipal(identity));
-
-        // بعد النجاح:
-        if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-            return Redirect(model.ReturnUrl);
-
-        // بناءً على الرول:
-        if (role == "Admin")
-            return RedirectToAction("Index", "Home");
-        return RedirectToAction("Profile", "Account");
     }
 
     [Authorize]

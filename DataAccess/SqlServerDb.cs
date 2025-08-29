@@ -65,6 +65,22 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             }
         }
 
+        public bool IsDatabaseAvailable()
+        {
+            try
+            {
+                using var connection = GetConnection();
+                connection.Open();
+                connection.Close();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database availability check failed: {ex.Message}");
+                return false;
+            }
+        }
+
         // Use SqlParameter instead of OracleParameter
         public DataTable ExecuteQuery(string sql, params SqlParameter[] parameters)
         {

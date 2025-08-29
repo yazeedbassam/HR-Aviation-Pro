@@ -81,6 +81,17 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Log environment variables for debugging
+app.Lifetime.ApplicationStarted.Register(() => {
+    Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
+    Console.WriteLine($"DB_SERVER: {Environment.GetEnvironmentVariable("DB_SERVER") ?? "NOT SET"}");
+    Console.WriteLine($"DB_NAME: {Environment.GetEnvironmentVariable("DB_NAME") ?? "NOT SET"}");
+    Console.WriteLine($"DB_USER: {Environment.GetEnvironmentVariable("DB_USER") ?? "NOT SET"}");
+    var passwordStatus = Environment.GetEnvironmentVariable("DB_PASSWORD") != null ? "SET" : "NOT SET";
+    Console.WriteLine($"DB_PASSWORD: {passwordStatus}");
+    Console.WriteLine($"DB_PORT: {Environment.GetEnvironmentVariable("DB_PORT") ?? "NOT SET"}");
+});
+
 // Seed Admin user (only in development)
 if (app.Environment.IsDevelopment())
 {
