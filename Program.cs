@@ -89,8 +89,11 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add health check endpoint
-app.MapGet("/health", () => "OK");
+// Add health check endpoint with delay
+app.MapGet("/health", async () => {
+    await Task.Delay(2000); // Wait 2 seconds to ensure app is ready
+    return "OK";
+});
 
 // Add root endpoint for health check
 app.MapGet("/", () => "AVIATION HR PRO - System is running!");
