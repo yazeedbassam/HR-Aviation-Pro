@@ -1,89 +1,238 @@
 ﻿@model List<WebApplication1.Models.Observation>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center my-3">
-    <div class="d-flex align-items-center">
-        <h5 class="mb-0">Users Observations</h5>
-        <span id="employee-obs-counter" class="badge bg-primary ms-3">@Model.Count() Records</span>
+@* Check if user has permission to view Employee Observations *@
+@if (Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_VIEW") || Html.IsAdvancedAdmin())
+{
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fa-solid fa-users"></i>
+            Employees & Operation Staff Observations
+        </h5>
+        <span class="badge bg-primary" id="employees-obs-counter">@(Model?.Count ?? 0) Records</span>
     </div>
-    <div>
-        <button type="button" onclick="exportToFile('Employee', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
-        <button type="button" onclick="exportToFile('Employee', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
-    </div>
-</div>
-
-<div class="table-responsive">
-    <table id="employeeObsTable" class="table table-bordered table-striped table-hover align-middle table-compact">
-        <thead class="table-primary">
-            <tr>
-                <th>Obs#</th>
-                <th>User</th>
-                <th>Flight No.</th>
-                <th>Country</th>
-                <th>Days</th>
-                <th>Depart Date</th>
-                <th>Return Date</th>
-                <th>File</th>
-                <th class="action-btns">Actions</th>
-            </tr>
-            <tr class="filters">
-                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="observationNo"></th>
-                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="personName"></th>
-                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="flightNo"></th>
-                <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="travelCountry"></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th class="text-center"><button class="btn btn-sm btn-outline-secondary clear-filters-btn" title="Clear Filters"><i class="fa-solid fa-eraser"></i></button></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.ObservationNo</td>
-                    <td>@item.EmployeeName</td>
-                    <td>@item.FlightNo</td>
-                    <td>@item.TravelCountry</td>
-                    <td>@item.DurationDays</td>
-                    <td>@item.DepartDate?.ToString("yyyy-MM-dd")</td>
-                    <td>@item.ReturnDate?.ToString("yyyy-MM-dd")</td>
-                    <td class="text-center">
-                        @if (!string.IsNullOrEmpty(item.FilePath))
+    <div class="card-body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="employeesObsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Obs#</th>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Flight No.</th>
+                            <th>Country</th>
+                            <th>Days</th>
+                            <th>Depart Date</th>
+                            <th>Return Date</th>
+                            <th>File</th>
+                            <th>Actions</th>
+                        </tr>
+                        <tr class="filters">
+                            <th></th>
+                            <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="personName" data-column-index="1"></th>
+                            <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="department" data-column-index="2"></th>
+                            <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="flightNo" data-column-index="3"></th>
+                            <th><input type="text" class="form-control form-control-sm filter-input" placeholder="Filter..." data-param-name="country" data-column-index="4"></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th class="text-center">
+                                <button class="btn btn-sm btn-outline-secondary clear-filters-btn" title="Clear Filters">
+                                    <i class="fa-solid fa-eraser"></i>
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Count; i++)
                         {
-                            <a class="btn btn-outline-primary btn-sm" href="@Url.Content(item.FilePath)" target="_blank" title="View File"><i class="fa-solid fa-file-pdf"></i></a>
+                            var observation = Model[i];
+                            <tr>
+                                <td>
+                                    @if (observation.TotalPreviousTrips == 0)
+                                    {
+                                        <span class="badge bg-success fw-medium" title="First Trip">
+                                            <i class="fa-solid fa-star me-1"></i>1st
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info fw-medium" title="Previous Trips: @observation.TotalPreviousTrips">
+                                            <i class="fa-solid fa-plane me-1"></i>@(observation.TotalPreviousTrips + 1)
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(observation.EmployeeName))
+                                    {
+                                        <span class="fw-medium">@observation.EmployeeName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(observation.EmployeeDepartment))
+                                    {
+                                        <span class="badge bg-primary">@observation.EmployeeDepartment</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(observation.FlightNo))
+                                    {
+                                        <span class="fw-medium">@observation.FlightNo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(observation.TravelCountry))
+                                    {
+                                        <span class="badge bg-secondary">@observation.TravelCountry</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (observation.DurationDays.HasValue)
+                                    {
+                                        <span class="text-success fw-bold">@observation.DurationDays</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (observation.DepartDate.HasValue)
+                                    {
+                                        <span class="text-primary">@observation.DepartDate.Value.ToString("dd/MM/yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (observation.ReturnDate.HasValue)
+                                    {
+                                        <span class="text-primary">@observation.ReturnDate.Value.ToString("dd/MM/yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(observation.FilePath))
+                                    {
+                                        <a href="@observation.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fa-solid fa-file-pdf"></i> View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No File</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        @{
+                                            // Dynamic permission checking for Employee Observation operations
+                                            var canView = Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_VIEW");
+                                            var canAdd = Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_ADD");
+                                            var canEdit = Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_EDIT");
+                                            var canDelete = Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_DELETE");
+                                            
+                                            // Log permissions for debugging
+                                            System.Diagnostics.Debug.WriteLine($"🔍 Employee Observation Permissions - View:{canView}, Add:{canAdd}, Edit:{canEdit}, Delete:{canDelete}");
+                                        }
+                                        
+                                        @* View Button - Only visible if user has view permission *@
+                                        @if (canView || Html.IsAdvancedAdmin())
+                                        {
+                                            <button type="button" class="btn btn-info btn-sm" title="View Details"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#observationDetailsModal"
+                                                    data-person-name="@observation.EmployeeName"
+                                                    data-person-type="Employee"
+                                                    data-obs-no="@observation.ObservationNo"
+                                                    data-license-no="@observation.LicenseNumber"
+                                                    data-flight-no="@observation.FlightNo"
+                                                    data-country="@observation.TravelCountry"
+                                                    data-duration="@observation.DurationDays"
+                                                    data-depart-date="@observation.DepartDate?.ToString("yyyy-MM-dd")"
+                                                    data-return-date="@observation.ReturnDate?.ToString("yyyy-MM-dd")"
+                                                    data-notes="@observation.Notes">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                        }
+                                        
+                                        @* Edit Button - Only visible if user has edit permission *@
+                                        @if (canEdit || Html.IsAdvancedAdmin())
+                                        {
+                                            <a href="@Url.Action("Edit", "Observations", new { id = observation.ObservationId })" 
+                                               class="btn btn-sm btn-outline-warning">
+                                                <i class="fa-solid fa-edit"></i>
+                                            </a>
+                                        }
+                                        
+                                        @* Delete Button - Only visible if user has delete permission *@
+                                        @if (canDelete || Html.IsAdvancedAdmin())
+                                        {
+                                            <a href="@Url.Action("Delete", "Observations", new { id = observation.ObservationId })" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               onclick="return confirm('Are you sure you want to delete this observation?')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
                         }
-                    </td>
-                    <td class="action-btns">
-                        <button type="button" class="btn btn-info btn-sm" title="View Details"
-                                data-bs-toggle="modal" data-bs-target="#observationDetailsModal"
-                                data-person-name="@item.EmployeeName"
-                                data-obs-no="@item.ObservationNo"
-                                data-license-no="@item.LicenseNumber"
-                                data-flight-no="@item.FlightNo"
-                                data-country="@item.TravelCountry"
-                                data-duration="@item.DurationDays"
-                                data-depart-date="@item.DepartDate?.ToString("yyyy-MM-dd")"
-                                data-return-date="@item.ReturnDate?.ToString("yyyy-MM-dd")"
-                                data-notes="@item.Notes">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-                        <a asp-action="Edit" asp-route-id="@item.ObservationId" class="btn btn-sm btn-warning">Edit</a>
-                        <form method="post" asp-action="Delete" asp-route-id="@item.ObservationId" style="display:inline;" onsubmit="return confirm('Are you sure?');">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+                    </tbody>
+                </table>
+            </div>
 
-<script>
-    (function() {
-        const container = document.getElementById('employees-obs-pane');
-        if (!container) return;
-        // ... (Filtering logic script similar to other partials) ...
-    })();
-</script>
+            <!-- Export Buttons -->
+            @if (Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_EXPORT") || Html.IsAdvancedAdmin())
+            {
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-danger btn-sm" onclick="exportToFile('Employees', 'ExportToPdf', 'pdf')">
+                        <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="exportToFile('Employees', 'ExportToExcel', 'xlsx')">
+                        <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+                    </button>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <i class="fa-solid fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No observations found for Employees & Operation Staff</p>
+            </div>
+        }
+    </div>
+</div>
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+        You don't have permission to view Employee Observations.
+    </div>
+}

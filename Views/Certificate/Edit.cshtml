@@ -51,7 +51,7 @@
         <div class="card custom-card">
             <div class="card-header custom-card-header d-flex align-items-center">
                 <i class="fas fa-edit me-2"></i>
-                <span>Edit Document: @Model.Title</span>
+                <span>Edit Document: @(Model.Title ?? "Untitled")</span>
             </div>
             <div class="card-body p-4">
                 <form asp-action="Edit" method="post" enctype="multipart/form-data">

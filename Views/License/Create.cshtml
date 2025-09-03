@@ -1,7 +1,8 @@
 ﻿@model WebApplication1.Models.License
 
 @{
-    ViewData["Title"] = "Add New License";
+    var pageTitle = ViewBag.ActiveTab == "controllers" ? "Add New Controller License" : "Add New Employee License";
+    ViewData["Title"] = pageTitle;
 }
 
 <style>
@@ -61,25 +62,40 @@
         <div class="card custom-card">
             <div class="card-header custom-header">
                 <i class="fa-solid fa-plus-circle"></i>
-                Add New License / Permission
+                @pageTitle
             </div>
             <div class="card-body p-4">
                 <form id="createLicenseForm" asp-action="Create" method="post" enctype="multipart/form-data">
                     <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
+                    @if (ViewBag.ActiveTab == "controllers")
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Controller License:</strong> You are adding a license for an Air Traffic Controller. The Employee selection has been hidden for clarity.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Employee License:</strong> You are adding a license for an Employee or Operation Staff member. The Controller selection has been hidden for clarity.
+                        </div>
+                    }
+
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-6">
                             <h5 class="form-section-header">Select Person</h5>
-                            <div class="row mb-3 align-items-center">
-                                <label asp-for="ControllerId" class="col-md-4 col-form-label col-form-label-sm">Controller</label>
-                                <div class="col-md-8">
-                                    <select asp-for="ControllerId" asp-items="@(new SelectList(ViewBag.Controllers, "Value", "Text"))" class="form-select form-select-sm" id="controller-select">
-                                        <option value="">-- Select ATC --</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mb-3 align-items-center">
+                                                         <div class="row mb-3 align-items-center" id="controller-section" style="display: @(ViewBag.ActiveTab == "employees" ? "none" : "flex");">
+                                 <label asp-for="ControllerId" class="col-md-4 col-form-label col-form-label-sm">Controller</label>
+                                 <div class="col-md-8">
+                                     <select asp-for="ControllerId" asp-items="@(new SelectList(ViewBag.Controllers, "Value", "Text"))" class="form-select form-select-sm" id="controller-select">
+                                         <option value="">-- Select ATC --</option>
+                                     </select>
+                                 </div>
+                             </div>
+                            <div class="row mb-3 align-items-center" id="employee-section" style="display: @(ViewBag.ActiveTab == "controllers" ? "none" : "flex");">
                                 <label asp-for="EmployeeId" class="col-md-4 col-form-label col-form-label-sm">Employee</label>
                                 <div class="col-md-8">
                                     <select asp-for="EmployeeId" asp-items="@(new SelectList(ViewBag.Employees, "Value", "Text"))" class="form-select form-select-sm" id="employee-select">
@@ -220,14 +236,34 @@
 
             // Logic for disabling controller/employee dropdowns
             controllerSelect.addEventListener('change', function() {
-                employeeSelect.disabled = !!this.value;
-                if(this.value) employeeSelect.value = '';
+                if (this.value) {
+                    employeeSelect.value = '';
+                    employeeSelect.disabled = true;
+                } else {
+                    employeeSelect.disabled = false;
+                }
             });
 
             employeeSelect.addEventListener('change', function() {
-                controllerSelect.disabled = !!this.value;
-                 if(this.value) controllerSelect.value = '';
+                if (this.value) {
+                    controllerSelect.value = '';
+                    controllerSelect.disabled = true;
+                } else {
+                    controllerSelect.disabled = false;
+                }
             });
+
+                         // Auto-select based on active tab
+             const activeTab = '@ViewBag.ActiveTab';
+             if (activeTab === 'controllers') {
+                 employeeSelect.disabled = true;
+                 employeeSelect.value = '';
+                 controllerSelect.disabled = false;
+             } else if (activeTab === 'employees') {
+                 controllerSelect.disabled = true;
+                 controllerSelect.value = '';
+                 employeeSelect.disabled = false;
+             }
 
             // Initial call to set the state on page load
             handleLicenseLogic();

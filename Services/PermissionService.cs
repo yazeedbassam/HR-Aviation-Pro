@@ -40,6 +40,18 @@ namespace WebApplication1.Services
                 await connection.OpenAsync();
                 _logger.LogInformation("HasPermissionAsync: Database connection opened");
                 
+                // CRITICAL FIX: Check if user is Admin first - Admin has ALL permissions
+                var isAdmin = await connection.QueryFirstOrDefaultAsync<bool>(
+                    "SELECT CASE WHEN RoleName = 'Admin' THEN 1 ELSE 0 END FROM users WHERE UserId = @UserId",
+                    new { UserId = userId });
+                
+                if (isAdmin)
+                {
+                    _logger.LogInformation("HasPermissionAsync: User {UserId} is Admin - granting permission '{PermissionKey}'", userId, permissionKey);
+                    _cache.Set(cacheKey, true, TimeSpan.FromMinutes(5));
+                    return true;
+                }
+                
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", userId);
                 parameters.Add("@PermissionKey", permissionKey);

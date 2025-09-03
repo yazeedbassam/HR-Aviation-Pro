@@ -117,7 +117,10 @@
                 <i class="fa-solid fa-circle-info me-2"></i>@Model.Project.Status
             </span>
             <a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-arrow-left me-1"></i> Back to List</a>
-            <a asp-action="Edit" asp-route-id="@Model.Project.ProjectId" class="btn btn-primary"><i class="fa-solid fa-pencil me-1"></i> Edit Course</a>
+            @if (Html.HasAdvancedPermission("PROJECT_EDIT") || Html.IsAdvancedAdmin())
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Project.ProjectId" class="btn btn-primary"><i class="fa-solid fa-pencil me-1"></i> Edit Course</a>
+            }
         </div>
     </div>
 

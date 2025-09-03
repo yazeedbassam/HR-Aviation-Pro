@@ -25,11 +25,15 @@ namespace WebApplication1.Models
 
         public int? EmployeeId { get; set; }
         public string? EmployeeName { get; set; }
+        public string? EmployeeDepartment { get; set; }
 
         [NotMapped]
         public string? PersonName => ControllerName ?? EmployeeName;
 
         [NotMapped]
         public IFormFile? UploadFile { get; set; }
+
+        [NotMapped]
+        public int TotalPreviousTrips { get; set; }
     }
 }

@@ -1,50 +1,58 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
+using WebApplication1.Services;
 using Color = System.Drawing.Color;
 
 namespace WebApplication1.Controllers
 {
-    public class ObservationsController : Controller // Make sure the name ends with 's'
+    [Authorize]
+public class ObservationsController : Controller // Make sure the name ends with 's'
     {
         private readonly SqlServerDb _db;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IAdvancedPermissionManagerService _permissionService;
 
-        public ObservationsController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+        public ObservationsController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IAdvancedPermissionManagerService permissionService)
         {
             _db = new SqlServerDb(configuration);
             _webHostEnvironment = webHostEnvironment;
+            _permissionService = permissionService;
         }
 
         // GET: /Observations/
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized();
+
+                if (!await _permissionService.CanPerformOperationAsync(userId, "Observation", "View"))
+                {
+                    return Forbid();
+                }
                 var viewModel = new ObservationIndexViewModel
                 {
                     ControllerObservations = _db.GetControllerObservations(),
-                    AISObservations = _db.GetAISObservations(),
-                    CNSObservations = _db.GetCNSObservations(),
-                    AFTNObservations = _db.GetAFTNObservations(),
-                    ATFMObservations = _db.GetATFMObservations(),
-                    OpsStaffObservations = _db.GetOpsStaffObservations()
+                    EmployeesAndOpsStaffObservations = _db.GetAllEmployeeObservations()
                 };
                 ViewBag.SuccessMessage = TempData["SuccessMessage"];
                 ViewBag.ErrorMessage = TempData["ErrorMessage"];
@@ -58,9 +66,10 @@ namespace WebApplication1.Controllers
         }
 
         // GET: /Observations/Create
-        public IActionResult Create()
+        public IActionResult Create(string tab = "controllers")
         {
             LoadDropdowns();
+            ViewBag.ActiveTab = tab;
             return View(new Observation());
         }
 
@@ -338,29 +347,13 @@ namespace WebApplication1.Controllers
                         observations = _db.GetControllerObservations();
                         reportTitle = "Controller Observations Report";
                         break;
-                    case "AIS":
-                        observations = _db.GetAISObservations();
-                        reportTitle = "AIS - Aeronautical Information Services Observations Report";
+                    case "Employees":
+                        observations = _db.GetAllEmployeeObservations();
+                        reportTitle = "Employees & Operation Staff Observations Report";
                         break;
-                    case "CNS":
-                        observations = _db.GetCNSObservations();
-                        reportTitle = "CNS - Communication, Navigation & Surveillance Observations Report";
-                        break;
-                    case "AFTN":
-                        observations = _db.GetAFTNObservations();
-                        reportTitle = "AFTN - Aeronautical Fixed Telecommunication Network Observations Report";
-                        break;
-                    case "ATFM":
-                        observations = _db.GetATFMObservations();
-                        reportTitle = "ATFM - Air Traffic Flow Management Observations Report";
-                        break;
-                    case "OpsStaff":
-                        observations = _db.GetOpsStaffObservations();
-                        reportTitle = "Ops Staff & Administration Observations Report";
-                        break;
-                    default: // Employee (legacy support)
-                        observations = _db.GetEmployeeObservations();
-                        reportTitle = "Users Observations Report";
+                    default: // Legacy support for old individual tabs
+                        observations = _db.GetAllEmployeeObservations();
+                        reportTitle = "Employees & Operation Staff Observations Report";
                         break;
                 }
 
@@ -503,35 +496,15 @@ namespace WebApplication1.Controllers
                         reportTitle = "Controller Observations Report";
                         headers = new string[] { "#", "Controller", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
                         break;
-                    case "AIS":
-                        observations = _db.GetAISObservations();
-                        reportTitle = "AIS - Aeronautical Information Services Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
+                    case "Employees":
+                        observations = _db.GetAllEmployeeObservations();
+                        reportTitle = "Employees & Operation Staff Observations Report";
+                        headers = new string[] { "#", "Employee", "Department", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
                         break;
-                    case "CNS":
-                        observations = _db.GetCNSObservations();
-                        reportTitle = "CNS - Communication, Navigation & Surveillance Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
-                        break;
-                    case "AFTN":
-                        observations = _db.GetAFTNObservations();
-                        reportTitle = "AFTN - Aeronautical Fixed Telecommunication Network Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
-                        break;
-                    case "ATFM":
-                        observations = _db.GetATFMObservations();
-                        reportTitle = "ATFM - Air Traffic Flow Management Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
-                        break;
-                    case "OpsStaff":
-                        observations = _db.GetOpsStaffObservations();
-                        reportTitle = "Ops Staff & Administration Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
-                        break;
-                    default: // Employee (legacy support)
-                        observations = _db.GetEmployeeObservations();
-                        reportTitle = "Users Observations Report";
-                        headers = new string[] { "#", "Employee", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
+                    default: // Legacy support for old individual tabs
+                        observations = _db.GetAllEmployeeObservations();
+                        reportTitle = "Employees & Operation Staff Observations Report";
+                        headers = new string[] { "#", "Employee", "Department", "Obs#", "Flight No.", "Country", "Days", "Depart Date", "Return Date", "License Number", "Notes" };
                         break;
                 }
 
@@ -847,8 +820,11 @@ namespace WebApplication1.Controllers
         //    }
         //}
 
-
-
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        return userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) ? userId : 0;
+    }
     }
 }
 

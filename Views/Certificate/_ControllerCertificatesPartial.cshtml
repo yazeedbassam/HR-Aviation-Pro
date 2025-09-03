@@ -5,21 +5,26 @@
 }
 
 <!-- Header with record count and export buttons -->
+@if (Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_VIEW") || Html.IsAdvancedAdmin())
+{
 <div class="d-flex flex-wrap justify-content-between align-items-center my-3">
     <div class="d-flex align-items-center">
         <h5 class="mb-0">Controller Certificates & Courses</h5>
         <span id="controller-cert-counter" class="badge bg-primary ms-3">@Model.Count Records</span>
     </div>
     <div>
-        <button type="button" onclick="exportToFile('Controller', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm">
-            <i class="bi bi-file-earmark-pdf"></i> Export PDF
-        </button>
-        <button type="button" onclick="exportToFile('Controller', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm">
-            <i class="bi bi-file-earmark-excel"></i> Export Excel
-        </button>
+        @if (Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_EXPORT") || Html.IsAdvancedAdmin())
+        {
+            <button type="button" onclick="exportToFile('Controller', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </button>
+            <button type="button" onclick="exportToFile('Controller', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+        }
     </div>
 </div>
-
+}
 
 <div class="table-responsive">
     <table id="controllerCertsTable" class="table table-bordered table-striped table-hover align-middle table-compact">
@@ -68,23 +73,50 @@
                     <td class="text-center">
                         @if (!string.IsNullOrEmpty(cert.FilePath))
                         {
-                            <a class="btn btn-outline-primary btn-sm" href="@Url.Content(cert.FilePath)" target="_blank" title="Download File"><i class="fa-solid fa-file-pdf"></i></a>
+                            <a class="btn btn-outline-primary btn-sm" href="@Url.Content(cert.FilePath)" target="_blank" title="Download File"><i class="fa-solid fa-download"></i></a>
                         }
                     </td>
                     <td class="action-btns">
-                        <button type="button" class="btn btn-info btn-sm" title="View Details"
-                                data-bs-toggle="modal" data-bs-target="#certificateDetailsModal"
-                                data-person-name="@cert.ControllerName"
-                                data-person-type="Controller"
-                                data-type-name="@cert.TypeName"
-                                data-title="@cert.Title"
-                                data-issue-date="@cert.IssueDate?.ToString("yyyy-MM-dd")"
-                                data-expiry-date="@cert.ExpiryDate?.ToString("yyyy-MM-dd")"
-                                data-status="@cert.Status">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-                        <a href="@Url.Action("Edit", "Certificate", new { id = cert.CertificateId })" class="btn btn-warning btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <a href="@Url.Action("Delete", "Certificate", new { id = cert.CertificateId })" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Are you sure?');"><i class="fa-solid fa-trash"></i></a>
+                        @{
+                            // Dynamic permission checking for Controller Certificate operations
+                            var canView = Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_VIEW");
+                            var canAdd = Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_ADD");
+                            var canEdit = Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_EDIT");
+                            var canDelete = Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_DELETE");
+                            var canExport = Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_EXPORT");
+                            var isAdmin = Html.IsAdvancedAdmin();
+                            
+                            // Log permissions for debugging
+                            System.Diagnostics.Debug.WriteLine($"🔍 Controller Certificate Permissions - View:{canView}, Add:{canAdd}, Edit:{canEdit}, Delete:{canDelete}, Export:{canExport}, IsAdmin:{isAdmin}");
+                        }
+                        
+                        @* View Button - Only visible if user has view permission *@
+                        @if (canView || isAdmin)
+                        {
+                            <button type="button" class="btn btn-info btn-sm" title="View Details"
+                                    data-bs-toggle="modal" data-bs-target="#certificateDetailsModal"
+                                    data-person-name="@cert.ControllerName"
+                                    data-person-type="Controller"
+                                    data-type-name="@cert.TypeName"
+                                    data-title="@cert.Title"
+                                    data-issue-date="@cert.IssueDate?.ToString("yyyy-MM-dd")"
+                                    data-expiry-date="@cert.ExpiryDate?.ToString("yyyy-MM-dd")"
+                                    data-status="@cert.Status">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        }
+                        
+                        @* Edit Button - Only visible if user has edit permission *@
+                        @if (canEdit || isAdmin)
+                        {
+                            <a href="@Url.Action("Edit", "Certificate", new { id = cert.CertificateId })" class="btn btn-warning btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        }
+                        
+                        @* Delete Button - Only visible if user has delete permission *@
+                        @if (canDelete || isAdmin)
+                        {
+                            <a href="@Url.Action("Delete", "Certificate", new { id = cert.CertificateId })" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Are you sure?');"><i class="fa-solid fa-trash"></i></a>
+                        }
                     </td>
                 </tr>
             }

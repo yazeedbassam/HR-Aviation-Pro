@@ -39,7 +39,43 @@ namespace WebApplication1.Controllers
                 // أضف بقية الخصائص التي تحتاجها
             }).ToList();
 
-            viewModel.AllEmployees = _db.GetEmployees(null, null, null, null, null, null, null, null, null);
+            try
+            {
+                viewModel.AllEmployees = _db.GetEmployees(null, null, null, null, null, null, null, null, null);
+                System.Diagnostics.Debug.WriteLine($"DataDetails - AllEmployees loaded: {viewModel.AllEmployees?.Count ?? 0}");
+                
+                // إنشاء قائمة الموظفين المدمجين (AIS, CNS, AFTN, Ops Staff)
+                var allEmployees = _db.GetEmployees(null, null, null, null, null, null, null, null, null);
+                
+                // فلترة أكثر مرونة للأقسام
+                viewModel.AllEmployeesAndOpsStaff = allEmployees?.Where(e => 
+                    !string.IsNullOrEmpty(e.Department) && (
+                        e.Department.Contains("AIS", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("CNS", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("AFTN", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("Administration", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("Safety", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("Quality", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("Ops", StringComparison.OrdinalIgnoreCase) ||
+                        e.Department.Contains("Operations", StringComparison.OrdinalIgnoreCase)
+                    )
+                ).ToList() ?? new List<Employee>();
+                
+                // إذا لم نجد أي موظفين بالفلترة، نعرض جميع الموظفين
+                if (!viewModel.AllEmployeesAndOpsStaff.Any() && allEmployees?.Any() == true)
+                {
+                    System.Diagnostics.Debug.WriteLine("DataDetails - No employees found with department filter, showing all employees");
+                    viewModel.AllEmployeesAndOpsStaff = allEmployees.ToList();
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"DataDetails - AllEmployeesAndOpsStaff filtered: {viewModel.AllEmployeesAndOpsStaff?.Count ?? 0}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DataDetails - Error loading Employees: {ex.Message}");
+                viewModel.AllEmployees = new List<Employee>();
+                viewModel.AllEmployeesAndOpsStaff = new List<Employee>();
+            }
 
             // الآن نستخدم الدوال الجديدة التي تجمع البيانات
             try
@@ -89,10 +125,30 @@ namespace WebApplication1.Controllers
             // Debug logging
             System.Diagnostics.Debug.WriteLine($"DataDetails - Controllers: {viewModel.AllControllers?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"DataDetails - Employees: {viewModel.AllEmployees?.Count ?? 0}");
+            System.Diagnostics.Debug.WriteLine($"DataDetails - AllEmployeesAndOpsStaff: {viewModel.AllEmployeesAndOpsStaff?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"DataDetails - Licenses: {viewModel.AllLicenses?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"DataDetails - Certificates: {viewModel.AllCertificates?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"DataDetails - Observations: {viewModel.AllObservations?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"DataDetails - Projects: {viewModel.AllProjects?.Count ?? 0}");
+            
+            // Debug logging for employee departments
+            if (viewModel.AllEmployees?.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"DataDetails - Employee departments found:");
+                foreach (var emp in viewModel.AllEmployees.Take(5))
+                {
+                    System.Diagnostics.Debug.WriteLine($"  - {emp.FullName}: {emp.Department}");
+                }
+            }
+            
+            if (viewModel.AllEmployeesAndOpsStaff?.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"DataDetails - Filtered employees found:");
+                foreach (var emp in viewModel.AllEmployeesAndOpsStaff.Take(5))
+                {
+                    System.Diagnostics.Debug.WriteLine($"  - {emp.FullName}: {emp.Department}");
+                }
+            }
 
             // Additional detailed logging
             if (viewModel.AllLicenses?.Count > 0)

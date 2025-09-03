@@ -1,0 +1,33 @@
+# This is a placeholder for Excel file creation
+# The actual Excel file will be created with proper formatting
+
+Controllers Import Template Structure:
+
+Sheet 1: Instructions
+- Clear instructions in Arabic and English
+- Required vs Optional fields
+- Password rules
+
+Sheet 2: Template Data
+Columns:
+A: FullName (Required)
+B: Username (Required) 
+C: JobTitle (Required)
+D: Division (Required)
+E: OrganizationalStructure (Required)
+F: ICAO (Required)
+G: Email (Optional)
+H: PhoneNumber (Optional)
+I: CustomPassword (Optional - leave empty for default "123")
+J: EducationLevel (Optional)
+K: DateOfBirth (Optional - YYYY-MM-DD)
+L: MaritalStatus (Optional)
+M: Address (Optional)
+N: HireDate (Optional - YYYY-MM-DD)
+O: EmploymentStatus (Optional)
+P: CurrentDepartment (Optional)
+Q: NeedLicense (Optional - TRUE/FALSE)
+R: IsActive (Optional - TRUE/FALSE)
+
+Sample Data Row:
+John Doe | john.doe | Air Traffic Controller | ANSS | GACA | OERK | john@example.com | +966501234567 | | Master's Degree | 1990-01-01 | Married | Riyadh, Saudi Arabia | 2023-01-01 | Active | ATC Department | TRUE | TRUE 

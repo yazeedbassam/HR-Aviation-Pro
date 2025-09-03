@@ -47,15 +47,29 @@
 
 <div class="container-fluid">
     <div class="card custom-card bg-white px-3 py-4">
+        <!-- Header with Title and Global Buttons -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
             <div class="main-header">
-                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                <i class="fa-solid fa-search me-2"></i>
                 @ViewData["Title"]
             </div>
             <div>
-                <a asp-action="Create" class="btn btn-success btn-sm me-2">
-                    <i class="fa-solid fa-plus"></i> Add New Observation
-                </a>
+                @* Controller Observations Add Button *@
+                @if (Html.HasAdvancedPermission("CONTROLLEROBSERVATION_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a href="@Url.Action("Create", "Observations", new { tab = "controllers" })" class="btn btn-success btn-sm me-2" id="add-controller-observation">
+                        <i class="fa-solid fa-plus"></i> + Add Controller Observation
+                    </a>
+                }
+                
+                @* Employee Observations Add Button *@
+                @if (Html.HasAdvancedPermission("EMPLOYEEOBSERVATION_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a href="@Url.Action("Create", "Observations", new { tab = "employees" })" class="btn btn-success btn-sm me-2" id="add-employee-observation">
+                        <i class="fa-solid fa-plus"></i> + Add Employee Observation
+                    </a>
+                }
+                
                 <a href="/" class="btn btn-secondary btn-sm">
                     <i class="fa-solid fa-house"></i> Home
                 </a>
@@ -71,45 +85,23 @@
             <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
         }
 
+        <!-- Tabs Navigation -->
         <ul class="nav nav-tabs" id="observationTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="controllers-obs-tab" data-bs-toggle="tab" data-bs-target="#controllers-obs-pane" type="button" role="tab">Controller Observati</button>
+                <button class="nav-link active" id="controllers-obs-tab" data-bs-toggle="tab" data-bs-target="#controllers-obs-pane" type="button" role="tab">Controller Observations</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ais-obs-tab" data-bs-toggle="tab" data-bs-target="#ais-obs-pane" type="button" role="tab">AIS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="cns-obs-tab" data-bs-toggle="tab" data-bs-target="#cns-obs-pane" type="button" role="tab">CNS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="aftn-obs-tab" data-bs-toggle="tab" data-bs-target="#aftn-obs-pane" type="button" role="tab">AFTN</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="atfm-obs-tab" data-bs-toggle="tab" data-bs-target="#atfm-obs-pane" type="button" role="tab">ATFM</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="opsstaff-obs-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-obs-pane" type="button" role="tab">Ops Staff & Admin</button>
+                <button class="nav-link" id="employees-obs-tab" data-bs-toggle="tab" data-bs-target="#employees-obs-pane" type="button" role="tab">Employees & Operation Staff</button>
             </li>
         </ul>
 
+        <!-- Tabs Content -->
         <div class="tab-content pt-2" id="observationTabContent">
             <div class="tab-pane fade show active" id="controllers-obs-pane" role="tabpanel">
                 @await Html.PartialAsync("_ControllerObservationsPartial", Model.ControllerObservations)
             </div>
-            <div class="tab-pane fade" id="ais-obs-pane" role="tabpanel">
-                @await Html.PartialAsync("_AISObservationsPartial", Model.AISObservations)
-            </div>
-            <div class="tab-pane fade" id="cns-obs-pane" role="tabpanel">
-                @await Html.PartialAsync("_CNSObservationsPartial", Model.CNSObservations)
-            </div>
-            <div class="tab-pane fade" id="aftn-obs-pane" role="tabpanel">
-                @await Html.PartialAsync("_AFTNObservationsPartial", Model.AFTNObservations)
-            </div>
-            <div class="tab-pane fade" id="atfm-obs-pane" role="tabpanel">
-                @await Html.PartialAsync("_ATFMObservationsPartial", Model.ATFMObservations)
-            </div>
-            <div class="tab-pane fade" id="opsstaff-obs-pane" role="tabpanel">
-                @await Html.PartialAsync("_OpsStaffObservationsPartial", Model.OpsStaffObservations)
+            <div class="tab-pane fade" id="employees-obs-pane" role="tabpanel">
+                @await Html.PartialAsync("_EmployeeObservationsPartial", Model.EmployeesAndOpsStaffObservations)
             </div>
         </div>
     </div>
@@ -124,18 +116,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <ul class="list-unstyled details-list">
-                    <li><strong class="detail-label">Person:</strong> <span id="modalPersonName"></span></li>
-                    <li><strong class="detail-label">Observation #:</strong> <span id="modalObsNo"></span></li>
-                    <li><strong class="detail-label">License Number:</strong> <span id="modalLicenseNo"></span></li>
+                <ul class="details-list">
+                    <li><span class="detail-label">Person:</span> <span id="modalPersonName"></span></li>
+                    <li><span class="detail-label">Department:</span> <span id="modalPersonDepartment"></span></li>
                     <hr />
-                    <li><strong class="detail-label">Flight / Mission:</strong> <span id="modalFlightNo"></span></li>
-                    <li><strong class="detail-label">Country:</strong> <span id="modalCountry"></span></li>
-                    <li><strong class="detail-label">Duration:</strong> <span id="modalDuration"></span> days</li>
-                    <li><strong class="detail-label">Depart Date:</strong> <span id="modalDepartDate"></span></li>
-                    <li><strong class="detail-label">Return Date:</strong> <span id="modalReturnDate"></span></li>
-                    <hr />
-                    <li><strong class="detail-label">Notes:</strong> <p id="modalNotes" class="d-inline"></p></li>
+                    <li><span class="detail-label">Observation #:</span> <span id="modalObservationNo"></span></li>
+                    <li><span class="detail-label">Flight No:</span> <span id="modalFlightNo"></span></li>
+                    <li><span class="detail-label">Country:</span> <span id="modalCountry"></span></li>
+                    <li><span class="detail-label">Days:</span> <span id="modalDays"></span></li>
+                    <li><span class="detail-label">Depart Date:</span> <span id="modalDepartDate"></span></li>
+                    <li><span class="detail-label">Return Date:</span> <span id="modalReturnDate"></span></li>
+                    <li><span class="detail-label">License Number:</span> <span id="modalLicenseNumber"></span></li>
+                    <li><span class="detail-label">Notes:</span> <span id="modalNotes"></span></li>
                 </ul>
             </div>
         </div>
@@ -145,18 +137,15 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- CENTRALIZED SCRIPT FOR FILTERING AND EXPORT ---
-
-        // Function to initialize filtering for a specific table
         function initializeTable(tableId, counterId) {
-            const table = document.getElementById(tableId);
-            if (!table) return;
+            const container = document.getElementById(tableId.replace('#', ''));
+            if (!container) return;
 
-            const filterInputs = table.querySelectorAll('.filters .filter-input');
+            const table = container.querySelector('table');
+            const filterInputs = container.querySelectorAll('.filters .filter-input');
             const tableRows = table.querySelectorAll('tbody tr');
-            const counter = document.getElementById(counterId);
-            const clearBtn = table.querySelector('.clear-filters-btn');
-            const totalRows = tableRows.length;
+            const counter = container.querySelector(`#${counterId}`);
+            const clearBtn = container.querySelector('.clear-filters-btn');
 
             function applyFilters() {
                 let visibleRowCount = 0;
@@ -169,25 +158,40 @@
                     let isVisible = true;
                     for (const filter of filters) {
                         if (filter.value === '') continue;
-
                         const cell = row.cells[filter.columnIndex];
-                        const cellText = cell ? cell.innerText.toLowerCase() : '';
-
+                        if (!cell) continue;
+                        
+                        // Special handling for Observation No. column (first column)
+                        let cellText = '';
+                        if (filter.columnIndex === 0) {
+                            // Extract trip number from badge text
+                            const badge = cell.querySelector('.badge');
+                            if (badge) {
+                                const badgeText = badge.innerText.toLowerCase();
+                                if (badgeText.includes('1st')) {
+                                    cellText = '1st first trip';
+                                } else {
+                                    // Extract number from badge text like "2", "3", etc.
+                                    const match = badgeText.match(/\d+/);
+                                    if (match) {
+                                        cellText = match[0] + ' trip';
+                                    }
+                                }
+                            }
+                        } else {
+                            cellText = cell.innerText.toLowerCase();
+                        }
+                        
                         if (!cellText.includes(filter.value)) {
                             isVisible = false;
                             break;
                         }
                     }
-
                     row.style.display = isVisible ? '' : 'none';
-                    if (isVisible) {
-                        visibleRowCount++;
-                    }
+                    if (isVisible) visibleRowCount++;
                 });
 
-                if (counter) {
-                    counter.innerText = `Showing ${visibleRowCount} of ${totalRows} Records`;
-                }
+                if (counter) counter.innerText = `Showing ${visibleRowCount} of ${tableRows.length} Records`;
             }
 
             filterInputs.forEach(input => {
@@ -210,20 +214,22 @@
         // Initialize both tables on page load
         document.addEventListener('DOMContentLoaded', function () {
             initializeTable('controllerObsTable', 'controller-obs-counter');
-            initializeTable('employeeObsTable', 'employee-obs-counter');
+            initializeTable('employeesObsTable', 'employees-obs-counter');
         });
 
         function getExportUrl(personType, action) {
             let tableId;
             switch(personType) {
-                case 'Controller': tableId = '#controllerObsTable'; break;
-                case 'AIS': tableId = '#aisObsTable'; break;
-                case 'CNS': tableId = '#cnsObsTable'; break;
-                case 'AFTN': tableId = '#aftnObsTable'; break;
-                case 'ATFM': tableId = '#atfmObsTable'; break;
-                case 'OpsStaff': tableId = '#opsstaffObsTable'; break;
-                default: tableId = '#employeeObsTable';
+                case 'Controller': 
+                    tableId = '#controllerObsTable'; 
+                    break;
+                case 'Employees': 
+                    tableId = '#employeesObsTable'; 
+                    break;
+                default: 
+                    tableId = '#employeesObsTable';
             }
+            
             const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
             const params = new URLSearchParams();
 
@@ -248,19 +254,47 @@
             document.body.removeChild(a);
         }
 
-        const detailsModal = document.getElementById('observationDetailsModal');
-        if (detailsModal) {
-            detailsModal.addEventListener('show.bs.modal', function (event) {
+        // Tab switching logic for buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const controllersTab = document.getElementById('controllers-obs-tab');
+            const employeesTab = document.getElementById('employees-obs-tab');
+            const addControllerObservation = document.getElementById('add-controller-observation');
+            const addEmployeeObservation = document.getElementById('add-employee-observation');
+
+            function updateButtons(activeTab) {
+                if (activeTab === 'controllers') {
+                    addControllerObservation.style.display = 'inline-block';
+                    addEmployeeObservation.style.display = 'none';
+                } else {
+                    addControllerObservation.style.display = 'none';
+                    addEmployeeObservation.style.display = 'inline-block';
+                }
+            }
+
+            // Listen for tab changes
+            controllersTab.addEventListener('click', () => updateButtons('controllers'));
+            employeesTab.addEventListener('click', () => updateButtons('employees'));
+
+            // Set initial state
+            updateButtons('controllers');
+        });
+
+        // Modal logic
+        const observationDetailsModal = document.getElementById('observationDetailsModal');
+        if (observationDetailsModal) {
+            observationDetailsModal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
-                document.getElementById('modalPersonName').textContent = button.dataset.personName || "-";
-                document.getElementById('modalObsNo').textContent = button.dataset.obsNo || "-";
-                document.getElementById('modalLicenseNo').textContent = button.dataset.licenseNo || "-";
-                document.getElementById('modalFlightNo').textContent = button.dataset.flightNo || "-";
-                document.getElementById('modalCountry').textContent = button.dataset.country || "-";
-                document.getElementById('modalDuration').textContent = button.dataset.duration || "-";
-                document.getElementById('modalDepartDate').textContent = button.dataset.departDate || "-";
-                document.getElementById('modalReturnDate').textContent = button.dataset.returnDate || "-";
-                document.getElementById('modalNotes').textContent = button.dataset.notes || "No notes.";
+
+                document.getElementById('modalPersonName').textContent = button.getAttribute('data-person-name') || "-";
+                document.getElementById('modalPersonDepartment').textContent = button.getAttribute('data-person-type') || "-";
+                document.getElementById('modalObservationNo').textContent = button.getAttribute('data-obs-no') || "-";
+                document.getElementById('modalFlightNo').textContent = button.getAttribute('data-flight-no') || "-";
+                document.getElementById('modalCountry').textContent = button.getAttribute('data-country') || "-";
+                document.getElementById('modalDays').textContent = button.getAttribute('data-duration') || "-";
+                document.getElementById('modalDepartDate').textContent = button.getAttribute('data-depart-date') || "-";
+                document.getElementById('modalReturnDate').textContent = button.getAttribute('data-return-date') || "-";
+                document.getElementById('modalLicenseNumber').textContent = button.getAttribute('data-license-no') || "-";
+                document.getElementById('modalNotes').textContent = button.getAttribute('data-notes') || "-";
             });
         }
     </script>

@@ -9,6 +9,7 @@ namespace WebApplication1.ViewModels
     {
         public List<ControllerUser> AllControllers { get; set; }
         public List<Employee> AllEmployees { get; set; }
+        public List<Employee> AllEmployeesAndOpsStaff { get; set; }
         public List<License> AllLicenses { get; set; } // قد تحتاج لـ ViewModel مخصص للرخص إذا أردت عرض ControllerName/EmployeeName
         public List<CertificateViewModel> AllCertificates { get; set; }
         public List<Observation> AllObservations { get; set; }
@@ -34,6 +35,7 @@ namespace WebApplication1.ViewModels
         {
             AllControllers = new List<ControllerUser>();
             AllEmployees = new List<Employee>();
+            AllEmployeesAndOpsStaff = new List<Employee>();
             AllLicenses = new List<License>();
             AllCertificates = new List<CertificateViewModel>();
             AllObservations = new List<Observation>();

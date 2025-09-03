@@ -3,7 +3,14 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using WebApplication1.Models;
 
 namespace WebApplication1.Services
@@ -24,6 +31,9 @@ namespace WebApplication1.Services
         // UI Visibility Control
         Task<List<MenuItemPermission>> GetVisibleMenuItemsAsync(int userId);
         Task<bool> IsMenuItemVisibleAsync(int userId, string menuItemKey);
+        Task<List<MenuPermission>> GetUserMenuPermissionsAsync(int userId);
+        void ClearUserMenuCache(int userId);
+        void ForceReloadUserMenuData(int userId);
         
         // Data Filtering
         Task<string> GetDataFilterClauseAsync(int userId, string tableName, string userIdColumn = "UserId");
@@ -56,6 +66,14 @@ namespace WebApplication1.Services
         // Caching
         void ClearUserCache(int userId);
         void ClearAllCache();
+        
+        // Dynamic Cache Management
+        void AutoClearExpiredCache();
+        void SetCacheWithAutoExpiry<T>(string key, T value, TimeSpan expiration);
+        bool TryGetCacheWithExpiry<T>(string key, out T value);
+        
+        // Operation Permission Check
+        Task<bool> CanUserPerformOperationAsync(string username, string operation);
     }
 
     public class AdvancedPermissionService : IAdvancedPermissionService
@@ -64,13 +82,15 @@ namespace WebApplication1.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<AdvancedPermissionService> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IServiceProvider _serviceProvider;
 
-        public AdvancedPermissionService(IConfiguration configuration, IMemoryCache cache, ILogger<AdvancedPermissionService> logger, IHttpContextAccessor httpContextAccessor)
+        public AdvancedPermissionService(IConfiguration configuration, IMemoryCache cache, ILogger<AdvancedPermissionService> logger, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
         {
             _connectionString = configuration.GetConnectionString("SqlServerDbConnection") ?? throw new ArgumentNullException(nameof(configuration));
             _cache = cache;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<bool> HasPermissionAsync(int userId, string permissionKey, int? departmentId = null)
@@ -83,41 +103,59 @@ namespace WebApplication1.Services
                     return cachedResult;
                 }
 
-                // Special case for admin user - always return true for PERMISSIONS_MANAGE
-                var currentUsername = GetCurrentUsername();
-                if (currentUsername?.ToLower() == "admin" && permissionKey == "PERMISSIONS_MANAGE")
+                using var connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                // CRITICAL FIX: Check if user is Admin first - Admin has ALL permissions
+                var isAdmin = await connection.QueryFirstOrDefaultAsync<bool>(
+                    "SELECT CASE WHEN RoleName = 'Admin' THEN 1 ELSE 0 END FROM users WHERE UserId = @UserId",
+                    new { UserId = userId });
+                
+                if (isAdmin)
                 {
+                    _logger.LogInformation("User {UserId} is Admin - granting permission {PermissionKey}", userId, permissionKey);
                     _cache.Set(cacheKey, true, TimeSpan.FromMinutes(5));
                     return true;
                 }
 
-                using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                // Check if user has the permission in UserDepartmentPermissions table
-                var sql = @"
-                    SELECT COUNT(1) 
-                    FROM UserDepartmentPermissions udp
-                    JOIN Permissions p ON udp.PermissionId = p.PermissionId
-                    WHERE udp.UserId = @UserId 
-                    AND p.PermissionKey = @PermissionKey
-                    AND udp.IsActive = 1";
-                
+                // Check if user has the permission using the correct stored procedure
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", userId);
                 parameters.Add("@PermissionKey", permissionKey);
+                parameters.Add("@DepartmentId", departmentId);
                 
-                if (departmentId.HasValue)
+                // First try the stored procedure
+                try
                 {
-                    sql += " AND udp.DepartmentId = @DepartmentId";
-                    parameters.Add("@DepartmentId", departmentId.Value);
+                    var hasPermission = await connection.QueryFirstOrDefaultAsync<bool>(
+                        "EXEC CheckUserPermission @UserId, @PermissionKey, @DepartmentId", parameters);
+                    
+                    if (hasPermission)
+                    {
+                        _logger.LogInformation("Permission found via stored procedure for user {UserId}, permission {PermissionKey}", userId, permissionKey);
+                        _cache.Set(cacheKey, true, TimeSpan.FromMinutes(5));
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Stored procedure failed, trying direct query: {Message}", ex.Message);
                 }
                 
-                var result = await connection.QueryFirstOrDefaultAsync<int>(sql, parameters);
-                var hasPermission = result > 0;
+                // Fallback: Direct query to check permissions using existing tables
+                var directQuery = @"
+                    SELECT COUNT(*) 
+                    FROM UserOperationPermissions uop
+                    INNER JOIN Permissions p ON uop.PermissionId = p.PermissionId
+                    WHERE uop.UserId = @UserId AND p.PermissionKey = @PermissionKey";
                 
-                _cache.Set(cacheKey, hasPermission, TimeSpan.FromMinutes(5));
-                return hasPermission;
+                var directResult = await connection.QueryFirstOrDefaultAsync<int>(directQuery, new { UserId = userId, PermissionKey = permissionKey });
+                var finalPermission = directResult > 0;
+                
+                _logger.LogInformation("Permission check for user {UserId}, permission {PermissionKey}: {Result}", userId, permissionKey, finalPermission);
+                
+                _cache.Set(cacheKey, finalPermission, TimeSpan.FromMinutes(5));
+                return finalPermission;
             }
             catch (Exception ex)
             {
@@ -270,115 +308,308 @@ namespace WebApplication1.Services
 
         public async Task<List<MenuItemPermission>> GetVisibleMenuItemsAsync(int userId)
         {
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: Starting for user {UserId}", userId);
+            
             var cacheKey = $"visible_menu_items_{userId}";
             if (_cache.TryGetValue(cacheKey, out List<MenuItemPermission> cachedResult))
+            {
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: Returning cached result for user {UserId} with {Count} items", userId, cachedResult.Count);
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: Cached items for user {UserId}: {Items}", userId, 
+                    string.Join(", ", cachedResult.Select(x => $"{x.Key} ({x.Text})")));
                 return cachedResult;
+            }
+            
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: No cache found for user {UserId}, building fresh menu", userId);
 
             var menuItems = new List<MenuItemPermission>();
 
+            // Get menu permissions from the new system
+            var menuPermissions = await GetUserMenuPermissionsAsync(userId);
+            var menuPermissionsDict = menuPermissions.ToDictionary(m => m.MenuKey, m => m.IsVisible);
+            
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: Retrieved {Count} menu permissions for user {UserId}", menuPermissions.Count, userId);
+            foreach (var mp in menuPermissions)
+            {
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - {MenuKey}: {IsVisible}", userId, mp.MenuKey, mp.IsVisible);
+            }
+
             // Dashboard
-            if (await HasPermissionAsync(userId, "DASHBOARD_VIEW"))
+            if (menuPermissionsDict.GetValueOrDefault("DASHBOARD", false))
             {
                 menuItems.Add(new MenuItemPermission { Key = "dashboard", Text = "Dashboard", Icon = "bi-bar-chart", Url = "/Dashboard", IsVisible = true });
             }
 
-            // Organization
-            if (await HasAnyPermissionAsync(userId, "ORGANIZATION_VIEW", "STRUCTURE_VIEW", "DIVISIONS_VIEW"))
+            // Organization - Check if user has specific organizational permissions
+            // Only show if user has explicit permission to view organizational structure
+            var hasOrgView = menuPermissionsDict.GetValueOrDefault("ORGANIZATION_VIEW", false);
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - ORGANIZATION_VIEW permission: {HasOrgView}", userId, hasOrgView);
+            
+            if (hasOrgView)
             {
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - Adding ORGANIZATIONAL STRUCTURE menu", userId);
                 menuItems.Add(new MenuItemPermission 
                 { 
                     Key = "organization", 
-                    Text = "Organization", 
+                    Text = "ORGANIZATIONAL STRUCTURE", 
                     Icon = "bi-building", 
                     IsVisible = true,
                     SubItems = new List<MenuItemPermission>
                     {
-                        new MenuItemPermission { Key = "structure", Text = "Structure", Icon = "bi-globe", Url = "/Country", IsVisible = await HasPermissionAsync(userId, "STRUCTURE_VIEW") },
-                        new MenuItemPermission { Key = "divisions", Text = "Divisions", Icon = "bi-airplane", Url = "/Airport", IsVisible = await HasPermissionAsync(userId, "DIVISIONS_VIEW") }
+                        new MenuItemPermission { Key = "structure", Text = "Countries & Regions", Icon = "bi-globe", Url = "/Country", IsVisible = true },
+                        new MenuItemPermission { Key = "divisions", Text = "Airports & Divisions", Icon = "bi-building", Url = "/Airport", IsVisible = true }
                     }
                 });
             }
-
-            // Staff
-            if (await HasAnyPermissionAsync(userId, "STAFF_VIEW", "CONTROLLERS_VIEW", "AIS_VIEW", "CNS_VIEW", "AFTN_VIEW", "OPS_STAFF_VIEW"))
+            else
             {
-                menuItems.Add(new MenuItemPermission 
-                { 
-                    Key = "staff", 
-                    Text = "Staff", 
-                    Icon = "bi-people", 
-                    IsVisible = true,
-                    SubItems = new List<MenuItemPermission>
-                    {
-                        new MenuItemPermission { Key = "controllers", Text = "Controllers", Icon = "bi-person-badge", Url = "/ControllerUser", IsVisible = await HasPermissionAsync(userId, "CONTROLLERS_VIEW") },
-                        new MenuItemPermission { Key = "ais", Text = "AIS", Icon = "bi-info-circle", Url = "/Employees/AIS", IsVisible = await HasPermissionAsync(userId, "AIS_VIEW") },
-                        new MenuItemPermission { Key = "cns", Text = "CNS", Icon = "bi-wifi", Url = "/Employees/CNS", IsVisible = await HasPermissionAsync(userId, "CNS_VIEW") },
-                        new MenuItemPermission { Key = "aftn", Text = "AFTN", Icon = "bi-transmission", Url = "/Employees/AFTN", IsVisible = await HasPermissionAsync(userId, "AFTN_VIEW") },
-                        new MenuItemPermission { Key = "ops_staff", Text = "Ops Staff & Administration", Icon = "bi-gear", Url = "/Employees/OpsStaff", IsVisible = await HasPermissionAsync(userId, "OPS_STAFF_VIEW") }
-                    }
-                });
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - NOT adding ORGANIZATIONAL STRUCTURE menu (permission denied)", userId);
             }
 
-            // Documents
-            if (await HasAnyPermissionAsync(userId, "LICENSES_VIEW", "CERTIFICATES_VIEW", "OBSERVATIONS_VIEW"))
+            // Staff - Check if user has staff permissions
+            var hasStaffPermissions = menuPermissionsDict.GetValueOrDefault("EMPLOYEES", false) || 
+                                     menuPermissionsDict.GetValueOrDefault("CONTROLLERS", false);
+            
+            if (hasStaffPermissions)
             {
-                menuItems.Add(new MenuItemPermission 
-                { 
-                    Key = "documents", 
-                    Text = "Documents", 
-                    Icon = "bi-file-earmark-text", 
-                    IsVisible = true,
-                    SubItems = new List<MenuItemPermission>
-                    {
-                        new MenuItemPermission { Key = "licenses", Text = "Licenses", Icon = "bi-card-checklist", Url = "/License/Index", IsVisible = await HasPermissionAsync(userId, "LICENSES_VIEW") },
-                        new MenuItemPermission { Key = "certificates", Text = "Certificates", Icon = "bi-award", Url = "/Certificate/Index", IsVisible = await HasPermissionAsync(userId, "CERTIFICATES_VIEW") },
-                        new MenuItemPermission { Key = "observations", Text = "Observations", Icon = "bi-binoculars", Url = "/Observations/Index", IsVisible = await HasPermissionAsync(userId, "OBSERVATIONS_VIEW") }
-                    }
-                });
+                var staffSubItems = new List<MenuItemPermission>();
+                
+                if (menuPermissionsDict.GetValueOrDefault("CONTROLLERS", false))
+                {
+                    staffSubItems.Add(new MenuItemPermission { Key = "controllers", Text = "Controllers", Icon = "bi-person-badge", Url = "/ControllerUser", IsVisible = true });
+                }
+                
+                if (menuPermissionsDict.GetValueOrDefault("EMPLOYEES", false))
+                {
+                    staffSubItems.Add(new MenuItemPermission { Key = "employees", Text = "Employee Staff", Icon = "bi-people-fill", Url = "/Employees", IsVisible = true });
+                }
+                
+                if (staffSubItems.Any())
+                {
+                    menuItems.Add(new MenuItemPermission 
+                    { 
+                        Key = "staff", 
+                        Text = "STAFF", 
+                        Icon = "bi-people", 
+                        IsVisible = true,
+                        SubItems = staffSubItems
+                    });
+                }
             }
 
-            // Activities
-            if (await HasPermissionAsync(userId, "COURSES_VIEW"))
+            // Documents - Check if user has document permissions
+            var hasDocPermissions = menuPermissionsDict.GetValueOrDefault("LICENSES", false) || 
+                                   menuPermissionsDict.GetValueOrDefault("CERTIFICATES", false) || 
+                                   menuPermissionsDict.GetValueOrDefault("OBSERVATIONS", false);
+            
+            if (hasDocPermissions)
             {
+                var docSubItems = new List<MenuItemPermission>();
+                
+                if (menuPermissionsDict.GetValueOrDefault("LICENSES", false))
+                {
+                    docSubItems.Add(new MenuItemPermission { Key = "licenses", Text = "Licenses & Permits", Icon = "bi-card-checklist", Url = "/License/Index", IsVisible = true });
+                }
+                
+                if (menuPermissionsDict.GetValueOrDefault("CERTIFICATES", false))
+                {
+                    docSubItems.Add(new MenuItemPermission { Key = "certificates", Text = "Certificates & Qualifications", Icon = "bi-award", Url = "/Certificate/Index", IsVisible = true });
+                }
+                
+                if (menuPermissionsDict.GetValueOrDefault("OBSERVATIONS", false))
+                {
+                    docSubItems.Add(new MenuItemPermission { Key = "observations", Text = "Performance Observations", Icon = "bi-binoculars", Url = "/Observations/Index", IsVisible = true });
+                }
+                
+                if (docSubItems.Any())
+                {
+                    menuItems.Add(new MenuItemPermission 
+                    { 
+                        Key = "documents", 
+                        Text = "DOCUMENTS & RECORDS", 
+                        Icon = "bi-file-earmark-text", 
+                        IsVisible = true,
+                        SubItems = docSubItems
+                    });
+                }
+            }
+
+            // Training & Development - Check if user has PROJECT_VIEW permission (new system)
+            var permissionManagerService = _serviceProvider.GetRequiredService<IAdvancedPermissionManagerService>();
+            var hasProjectView = await permissionManagerService.CanPerformOperationAsync(userId, "Project", "View");
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - PROJECT_VIEW permission: {HasProjectView}", userId, hasProjectView);
+            
+            if (hasProjectView)
+            {
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - Adding TRAINING & DEVELOPMENT menu", userId);
                 menuItems.Add(new MenuItemPermission 
                 { 
-                    Key = "activities", 
-                    Text = "Activities", 
+                    Key = "training", 
+                    Text = "TRAINING & DEVELOPMENT", 
                     Icon = "bi-activity", 
                     IsVisible = true,
                     SubItems = new List<MenuItemPermission>
                     {
-                        new MenuItemPermission { Key = "courses", Text = "Courses", Icon = "bi-calendar-event", Url = "/Projects/Index", IsVisible = true }
+                        new MenuItemPermission { Key = "courses", Text = "Training Courses & Programs", Icon = "bi-calendar-event", Url = "/Projects/Index", IsVisible = true }
                     }
                 });
             }
-
-            // System Settings (Admin only)
-            if (await HasAnyPermissionAsync(userId, "SYSTEM_SETTINGS_VIEW", "CONFIGURATION_MANAGEMENT", "ROLES_MANAGEMENT"))
+            else
             {
-                menuItems.Add(new MenuItemPermission 
-                { 
-                    Key = "system_settings", 
-                    Text = "System Settings", 
-                    Icon = "bi-gear", 
-                    IsVisible = true,
-                    SubItems = new List<MenuItemPermission>
-                    {
-                        new MenuItemPermission { Key = "configuration", Text = "Configuration Management", Icon = "bi-sliders", Url = "/Configuration", IsVisible = await HasPermissionAsync(userId, "CONFIGURATION_MANAGEMENT") },
-                        new MenuItemPermission { Key = "roles", Text = "Roles Management", Icon = "bi-shield-lock", Url = "/Permission", IsVisible = await HasPermissionAsync(userId, "ROLES_MANAGEMENT") },
-                        new MenuItemPermission { Key = "simplified_permissions", Text = "إدارة الصلاحيات المبسطة", Icon = "bi-shield-check", Url = "/SimplifiedPermission", IsVisible = await HasPermissionAsync(userId, "PERMISSIONS_MANAGE") }
-                    }
-                });
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - NOT adding TRAINING & DEVELOPMENT menu (permission denied)", userId);
             }
 
+            // System Settings - Check if user has permissions management access
+            if (menuPermissionsDict.GetValueOrDefault("PERMISSIONS", false) || 
+                menuPermissionsDict.GetValueOrDefault("CONFIGURATION", false))
+            {
+                var settingsSubItems = new List<MenuItemPermission>();
+                
+                if (menuPermissionsDict.GetValueOrDefault("CONFIGURATION", false))
+                {
+                    settingsSubItems.Add(new MenuItemPermission { Key = "configuration", Text = "Configuration Management", Icon = "bi-sliders", Url = "/Configuration", IsVisible = true });
+                }
+                
+                if (menuPermissionsDict.GetValueOrDefault("PERMISSIONS", false))
+                {
+                    settingsSubItems.Add(new MenuItemPermission { Key = "permissions", Text = "إدارة الصلاحيات المتقدمة", Icon = "bi-shield-check", Url = "/PermissionManager", IsVisible = true });
+                }
+                
+                if (settingsSubItems.Any())
+                {
+                    menuItems.Add(new MenuItemPermission 
+                    { 
+                        Key = "system_settings", 
+                        Text = "System Settings", 
+                        Icon = "bi-gear", 
+                        IsVisible = true,
+                        SubItems = settingsSubItems
+                    });
+                }
+            }
+
+            _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: Final result for user {UserId} - {Count} visible menu items", userId, menuItems.Count);
+            foreach (var item in menuItems)
+            {
+                _logger.LogInformation("🔍 GetVisibleMenuItemsAsync: User {UserId} - Final menu item: {Key} ({Text}) with {SubCount} sub-items", 
+                    userId, item.Key, item.Text, item.SubItems?.Count ?? 0);
+            }
+            
             _cache.Set(cacheKey, menuItems, TimeSpan.FromMinutes(10));
             return menuItems;
+        }
+
+        public async Task<List<MenuPermission>> GetUserMenuPermissionsAsync(int userId)
+        {
+            try
+            {
+                var cacheKey = $"user_menu_permissions_{userId}";
+                if (_cache.TryGetValue(cacheKey, out List<MenuPermission> cachedResult))
+                    return cachedResult;
+
+                // Define all possible menu items
+                var allMenuItems = new[] { "PROFILE", "NOTIFICATIONS", "DASHBOARD", "EMPLOYEES", "CONTROLLERS", "LICENSES", "CERTIFICATES", "OBSERVATIONS", "CONFIGURATION", "PERMISSIONS", "ORGANIZATION_VIEW", "PROJECT_VIEW" };
+                
+                _logger.LogInformation("🔍 GetUserMenuPermissionsAsync: Looking for {Count} menu items for user {UserId}: {MenuItems}", 
+                    allMenuItems.Length, userId, string.Join(", ", allMenuItems));
+                
+                using var connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var parameters = new DynamicParameters();
+                parameters.Add("@UserId", userId);
+                
+                var sql = @"
+                    SELECT MenuKey, IsVisible
+                    FROM UserMenuPermissions
+                    WHERE UserId = @UserId AND IsActive = 1
+                ";
+                
+                var existingPermissions = await connection.QueryAsync<(string MenuKey, bool IsVisible)>(sql, parameters);
+                var permissionsDict = existingPermissions.ToDictionary(x => x.MenuKey, x => x.IsVisible);
+                
+                _logger.LogInformation("🔍 GetUserMenuPermissionsAsync: Retrieved {Count} permissions from database for user {UserId}: {Permissions}", 
+                    existingPermissions.Count(), userId, string.Join(", ", existingPermissions.Select(p => $"{p.MenuKey}={p.IsVisible}")));
+
+                var permissions = new List<MenuPermission>();
+                foreach (var menuKey in allMenuItems)
+                {
+                    permissions.Add(new MenuPermission
+                    {
+                        MenuKey = menuKey,
+                        IsVisible = permissionsDict.GetValueOrDefault(menuKey, false)
+                    });
+                }
+                
+                _logger.LogInformation("🔍 GetUserMenuPermissionsAsync: Final result for user {UserId}: {Count} permissions: {Permissions}", 
+                    userId, permissions.Count, string.Join(", ", permissions.Select(p => $"{p.MenuKey}={p.IsVisible}")));
+
+                _cache.Set(cacheKey, permissions, TimeSpan.FromMinutes(10));
+                return permissions;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting menu permissions for user {UserId}", userId);
+                return new List<MenuPermission>();
+            }
         }
 
         public async Task<bool> IsMenuItemVisibleAsync(int userId, string menuItemKey)
         {
             var menuItems = await GetVisibleMenuItemsAsync(userId);
             return menuItems.Any(item => item.Key == menuItemKey && item.IsVisible);
+        }
+
+        public void ClearUserMenuCache(int userId)
+        {
+            try
+            {
+                _cache.Remove($"visible_menu_items_{userId}");
+                _cache.Remove($"user_menu_permissions_{userId}");
+                
+                // Clear all related caches
+                var menuKeys = new[] { "PROFILE", "NOTIFICATIONS", "DASHBOARD", "EMPLOYEES", "CONTROLLERS", "LICENSES", "CERTIFICATES", "OBSERVATIONS", "CONFIGURATION", "PERMISSIONS", "ORGANIZATION_VIEW", "PROJECT_VIEW" };
+                foreach (var menuKey in menuKeys)
+                {
+                    _cache.Remove($"menu_permission_{userId}_{menuKey}");
+                }
+                
+                _logger.LogInformation("🔥 FORCE CLEARED all menu cache for user {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error clearing menu cache for user {UserId}", userId);
+            }
+        }
+
+        public void ForceReloadUserMenuData(int userId)
+        {
+            try
+            {
+                // Clear all caches first
+                ClearUserMenuCache(userId);
+                
+                // Force reload from database
+                var freshMenuPermissions = GetUserMenuPermissionsAsync(userId).GetAwaiter().GetResult();
+                _logger.LogInformation("🔥 FORCE RELOADED {Count} menu permissions for user {UserId}", freshMenuPermissions.Count, userId);
+                
+                foreach (var mp in freshMenuPermissions)
+                {
+                    _logger.LogInformation("🔥 FORCE RELOAD: User {UserId} - {MenuKey}: {IsVisible}", userId, mp.MenuKey, mp.IsVisible);
+                }
+                
+                // Force rebuild menu items
+                var freshMenuItems = GetVisibleMenuItemsAsync(userId).GetAwaiter().GetResult();
+                _logger.LogInformation("🔥 FORCE REBUILT {Count} visible menu items for user {UserId}", freshMenuItems.Count, userId);
+                
+                foreach (var item in freshMenuItems)
+                {
+                    _logger.LogInformation("🔥 FORCE REBUILT: User {UserId} - {Key} ({Text})", userId, item.Key, item.Text);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error force reloading menu data for user {UserId}", userId);
+            }
         }
 
         public async Task<string> GetDataFilterClauseAsync(int userId, string tableName, string userIdColumn = "UserId")
@@ -929,6 +1160,184 @@ namespace WebApplication1.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error removing user permission: UserId={UserId}, PermissionId={PermissionId}", userId, permissionId);
+                return false;
+            }
+        }
+        
+        // نظام الكاش الديناميكي - يمسح نفسه تلقائياً
+        public void AutoClearExpiredCache()
+        {
+            try
+            {
+                // مسح الكاش المنتهي الصلاحية كل 3 دقائق
+                var lastClearTime = _cache.Get<DateTime>("LastAutoClearTime");
+                if (lastClearTime == default(DateTime) || DateTime.Now - lastClearTime > TimeSpan.FromMinutes(3))
+                {
+                    // مسح جميع الكاش المنتهي الصلاحية
+                    var keysToRemove = new List<string>();
+                    
+                    // البحث عن الكاش المنتهي الصلاحية
+                    // استخدام reflection للحصول على مفاتيح الكاش
+                    var cacheField = _cache.GetType().GetField("_coherentState", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (cacheField != null)
+                    {
+                        var coherentState = cacheField.GetValue(_cache);
+                        if (coherentState != null)
+                        {
+                            var entriesCollection = coherentState.GetType().GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            if (entriesCollection != null)
+                            {
+                                var entries = entriesCollection.GetValue(coherentState) as System.Collections.IDictionary;
+                                if (entries != null)
+                                {
+                                    foreach (var entry in entries.Keys)
+                                    {
+                                        var key = entry.ToString();
+                                        if (key.StartsWith("CacheTime_"))
+                                        {
+                                            var cacheTime = _cache.Get<DateTime>(key);
+                                            if (DateTime.Now - cacheTime > TimeSpan.FromMinutes(5))
+                                            {
+                                                var permissionKey = key.Replace("CacheTime_", "");
+                                                keysToRemove.Add(permissionKey);
+                                                keysToRemove.Add(key);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // مسح الكاش المنتهي الصلاحية
+                    foreach (var key in keysToRemove)
+                    {
+                        _cache.Remove(key);
+                    }
+                    
+                    _cache.Set("LastAutoClearTime", DateTime.Now, TimeSpan.FromMinutes(10));
+                    _logger.LogInformation("Auto-clear cache completed. Removed {Count} expired entries", keysToRemove.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in auto-clear cache");
+            }
+        }
+        
+        // حفظ في الكاش مع انتهاء صلاحية تلقائي
+        public void SetCacheWithAutoExpiry<T>(string key, T value, TimeSpan expiration)
+        {
+            try
+            {
+                _cache.Set(key, value, expiration);
+                _cache.Set($"CacheTime_{key}", DateTime.Now, expiration);
+                _logger.LogDebug("Cache set: {Key} with expiration {Expiration}", key, expiration);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting cache for key: {Key}", key);
+            }
+        }
+        
+        // جلب من الكاش مع التحقق من انتهاء الصلاحية
+        public bool TryGetCacheWithExpiry<T>(string key, out T value)
+        {
+            try
+            {
+                if (_cache.TryGetValue(key, out T cachedResult))
+                {
+                    var cacheTimeKey = $"CacheTime_{key}";
+                    if (_cache.TryGetValue(cacheTimeKey, out DateTime cacheTime))
+                    {
+                        if (DateTime.Now - cacheTime > TimeSpan.FromMinutes(5))
+                        {
+                            // مسح الكاش المنتهي الصلاحية
+                            _cache.Remove(key);
+                            _cache.Remove(cacheTimeKey);
+                            _logger.LogDebug("Cache expired and removed: {Key}", key);
+                            value = default(T);
+                            return false;
+                        }
+                        value = cachedResult;
+                        return true;
+                    }
+                }
+                value = default(T);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cache for key: {Key}", key);
+                value = default(T);
+                return false;
+            }
+        }
+        
+        // التحقق من صلاحية العملية
+        public async Task<bool> CanUserPerformOperationAsync(string username, string operation)
+        {
+            try
+            {
+                var cacheKey = $"operation_permission_{username}_{operation}";
+                
+                // محاولة جلب من الكاش
+                if (TryGetCacheWithExpiry(cacheKey, out bool cachedResult))
+                {
+                    return cachedResult;
+                }
+                
+                // جلب من قاعدة البيانات
+                using var connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                // CRITICAL FIX: البحث عن المستخدم في جدول Users أولاً (الأولوية الأعلى)
+                var userQuery = "SELECT userid FROM users WHERE username = @username";
+                var userId = await connection.QueryFirstOrDefaultAsync<int?>(userQuery, new { username });
+                
+                if (userId.HasValue)
+                {
+                    // التحقق من الصلاحية للمستخدم العادي
+                    var hasPermission = await HasPermissionAsync(userId.Value, operation);
+                    SetCacheWithAutoExpiry(cacheKey, hasPermission, TimeSpan.FromMinutes(5));
+                    _logger.LogInformation("User {Username} found in Users table with UserId {UserId}, permission {Operation}: {Result}", username, userId.Value, operation, hasPermission);
+                    return hasPermission;
+                }
+                
+                // البحث في جدول controllers إذا لم يكن مستخدم عادي
+                var controllerQuery = "SELECT controllerid FROM controllers WHERE username = @username";
+                var controllerId = await connection.QueryFirstOrDefaultAsync<int?>(controllerQuery, new { username });
+                
+                if (controllerId.HasValue)
+                {
+                    // التحقق من الصلاحية للمراقب
+                    var hasPermission = await HasPermissionAsync(controllerId.Value, operation);
+                    SetCacheWithAutoExpiry(cacheKey, hasPermission, TimeSpan.FromMinutes(5));
+                    _logger.LogInformation("User {Username} found in Controllers table with ControllerId {ControllerId}, permission {Operation}: {Result}", username, controllerId.Value, operation, hasPermission);
+                    return hasPermission;
+                }
+                
+                // البحث في جدول employees إذا لم يكن مراقب
+                var employeeQuery = "SELECT employeeid FROM employees WHERE username = @username";
+                var employeeId = await connection.QueryFirstOrDefaultAsync<int?>(employeeQuery, new { username });
+                
+                if (employeeId.HasValue)
+                {
+                    // التحقق من الصلاحية للموظف
+                    var hasPermission = await HasPermissionAsync(employeeId.Value, operation);
+                    SetCacheWithAutoExpiry(cacheKey, hasPermission, TimeSpan.FromMinutes(5));
+                    _logger.LogInformation("User {Username} found in Employees table with EmployeeId {EmployeeId}, permission {Operation}: {Result}", username, employeeId.Value, operation, hasPermission);
+                    return hasPermission;
+                }
+                
+                // المستخدم غير موجود
+                _logger.LogWarning("User {Username} not found in any table", username);
+                SetCacheWithAutoExpiry(cacheKey, false, TimeSpan.FromMinutes(5));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking operation permission for user {Username} and operation {Operation}", username, operation);
                 return false;
             }
         }

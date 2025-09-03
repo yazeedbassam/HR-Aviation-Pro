@@ -1,0 +1,376 @@
+@model List<WebApplication1.Services.UserPermissionSummaryModel>
+@{
+    ViewData["Title"] = "إدارة الصلاحيات المتقدمة";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-shield-check"></i>
+                        إدارة الصلاحيات المتقدمة
+                    </h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("PermissionTemplates")" class="btn btn-info btn-sm">
+                            <i class="bi bi-collection"></i>
+                            قوالب الصلاحيات
+                        </a>
+                        <a href="@Url.Action("DeleteUsers")" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i>
+                            حذف المستخدمين
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="usersTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>الاسم الكامل</th>
+                                    <th>الدور</th>
+                                    <th>صلاحيات القائمة</th>
+                                    <th>صلاحيات العمليات</th>
+                                    <th>صلاحيات الهيكل التنظيمي</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    <i class="bi bi-person text-white"></i>
+                                                </div>
+                                                <strong>@user.Username</strong>
+                                            </div>
+                                        </td>
+                                        <td>@user.FullName</td>
+                                        <td>
+                                            <span class="badge bg-@(user.RoleName == "Admin" ? "danger" : user.RoleName == "Manager" ? "warning" : "info")">
+                                                @user.RoleName
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@(user.MenuPermissionsCount > 0 ? "success" : "secondary")">
+                                                @user.MenuPermissionsCount
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@(user.OperationPermissionsCount > 0 ? "success" : "secondary")">
+                                                @user.OperationPermissionsCount
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@(user.OrganizationalPermissionsCount > 0 ? "success" : "secondary")">
+                                                @user.OrganizationalPermissionsCount
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="@Url.Action("UserPermissions", new { userId = user.UserId })" 
+                                                   class="btn btn-primary btn-sm" title="إدارة الصلاحيات">
+                                                    <i class="bi bi-gear"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-info btn-sm" 
+                                                        onclick="showTemplates(@user.UserId)" title="تطبيق قالب">
+                                                    <i class="bi bi-collection"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-warning btn-sm" 
+                                                        onclick="copyPermissions(@user.UserId)" title="نسخ صلاحيات">
+                                                    <i class="bi bi-files"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="resetPermissions(@user.UserId)" title="إعادة تعيين">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Selection Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تطبيق قالب الصلاحيات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اختر قالب الصلاحيات:</label>
+                    <select class="form-select" id="templateSelect">
+                        <option value="1">موظف عادي - صلاحيات محدودة</option>
+                        <option value="2">مدير قسم - صلاحيات متوسطة</option>
+                        <option value="3">مدير عام - صلاحيات كاملة</option>
+                    </select>
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    سيتم استبدال جميع الصلاحيات الحالية بالصلاحيات المحددة في القالب.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="applyTemplate()">تطبيق القالب</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Permissions Modal -->
+<div class="modal fade" id="copyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">نسخ الصلاحيات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اختر المستخدم لنسخ صلاحياته:</label>
+                    <select class="form-select" id="copyFromSelect">
+                        @foreach (var user in Model)
+                        {
+                            <option value="@user.UserId">@user.FullName (@user.Username)</option>
+                        }
+                    </select>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    سيتم استبدال جميع الصلاحيات الحالية بالصلاحيات المنسوخة.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="copyFromUser()">نسخ الصلاحيات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentUserId = 0;
+
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#usersTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[0, "asc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": 6 }
+                ]
+            });
+        });
+
+        function showTemplates(userId) {
+            currentUserId = userId;
+            $('#templateModal').modal('show');
+        }
+
+        function applyTemplate() {
+            const templateId = $('#templateSelect').val();
+            
+            $.ajax({
+                url: '@Url.Action("ApplyTemplate")',
+                type: 'POST',
+                data: {
+                    userId: currentUserId,
+                    templateId: templateId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        $('#templateModal').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showAlert('error', response.message);
+                    }
+                },
+                error: function() {
+                    showAlert('error', 'حدث خطأ أثناء تطبيق القالب');
+                }
+            });
+        }
+
+        function copyPermissions(userId) {
+            currentUserId = userId;
+            $('#copyModal').modal('show');
+        }
+
+        function copyFromUser() {
+            const fromUserId = $('#copyFromSelect').val();
+            
+            $.ajax({
+                url: '@Url.Action("CopyPermissions")',
+                type: 'POST',
+                data: {
+                    fromUserId: fromUserId,
+                    toUserId: currentUserId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        $('#copyModal').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showAlert('error', response.message);
+                    }
+                },
+                error: function() {
+                    showAlert('error', 'حدث خطأ أثناء نسخ الصلاحيات');
+                }
+            });
+        }
+
+        function resetPermissions(userId) {
+            if (confirm('هل أنت متأكد من إعادة تعيين جميع صلاحيات هذا المستخدم؟')) {
+                $.ajax({
+                    url: '@Url.Action("ResetPermissions")',
+                    type: 'POST',
+                    data: { userId: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert('success', response.message);
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showAlert('error', response.message);
+                        }
+                    },
+                    error: function() {
+                        showAlert('error', 'حدث خطأ أثناء إعادة تعيين الصلاحيات');
+                    }
+                });
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+            
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="${icon}"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('.card-body').prepend(alertHtml);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
+
+        // Quick Fix Functions
+        function clearUserCache(userId) {
+            if (confirm('هل أنت متأكد من مسح الكاش لهذا المستخدم؟')) {
+                $.ajax({
+                    url: '@Url.Action("ClearUserCache")',
+                    type: 'POST',
+                    data: { userId: userId },
+                    success: function(response) {
+                        showAlert('success', 'تم مسح الكاش بنجاح');
+                        setTimeout(() => location.reload(), 1500);
+                    },
+                    error: function() {
+                        showAlert('error', 'حدث خطأ أثناء مسح الكاش');
+                    }
+                });
+            }
+        }
+
+        function fixCountryAirportPermissions() {
+            if (confirm('هل أنت متأكد من تطبيق صلاحيات الدول والمطارات على yazeed.bassam؟')) {
+                $.ajax({
+                    url: '@Url.Action("FixCountryAirportPermissions")',
+                    type: 'POST',
+                    success: function(response) {
+                        showAlert('success', 'تم تطبيق الصلاحيات بنجاح');
+                        setTimeout(() => location.reload(), 1500);
+                    },
+                    error: function() {
+                        showAlert('error', 'حدث خطأ أثناء تطبيق الصلاحيات');
+                    }
+                });
+            }
+        }
+    </script>
+}
+
+<!-- Quick Fix Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-tools"></i>
+                    الحلول السريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>مسح الكاش للمستخدمين:</h6>
+                        <div class="btn-group" role="group">
+                            @foreach (var user in Model.Take(5)) // Show first 5 users
+                            {
+                                <button type="button" class="btn btn-outline-warning btn-sm" 
+                                        onclick="clearUserCache(@user.UserId)" 
+                                        title="مسح الكاش لـ @user.Username">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                    @user.Username
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>إصلاح صلاحيات الدول والمطارات:</h6>
+                        <button type="button" class="btn btn-success btn-sm" 
+                                onclick="fixCountryAirportPermissions()">
+                            <i class="bi bi-gear-fill"></i>
+                            إصلاح صلاحيات yazeed.bassam
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

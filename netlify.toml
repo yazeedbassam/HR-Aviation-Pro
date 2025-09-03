@@ -1,0 +1,54 @@
+[build]
+  publish = "bin/Release/net8.0/publish"
+  command = "dotnet publish -c Release -o bin/Release/net8.0/publish"
+
+[build.environment]
+  DOTNET_VERSION = "8.0.x"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
+
+[build.processing.skip]
+  - "*.pdf"
+  - "*.doc"
+  - "*.docx"
+  - "*.xls"
+  - "*.xlsx"
+
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
+[dev]
+  command = "dotnet run"
+  port = 5000
+  publish = "bin/Debug/net8.0"
+  targetPort = 5000
+
+[context.production.environment]
+  ASPNETCORE_ENVIRONMENT = "Production"
+
+[context.deploy-preview.environment]
+  ASPNETCORE_ENVIRONMENT = "Staging"
+
+[context.branch-deploy.environment]
+  ASPNETCORE_ENVIRONMENT = "Development" 

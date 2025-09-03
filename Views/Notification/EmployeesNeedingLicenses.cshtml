@@ -1,0 +1,187 @@
+@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Employees Needing Licenses";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .employees-table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .emp-table {
+        width: 100%;
+        font-size: 0.92rem;
+        min-width: 980px;
+        background: #fcfcfc;
+    }
+
+    .emp-table th, .emp-table td {
+        vertical-align: middle !important;
+        text-align: left;
+        padding: 6px 8px;
+        white-space: nowrap;
+    }
+
+    .emp-table thead th {
+        font-size: 0.99rem;
+        background: #e3f2fd;
+        color: #1565c0;
+        font-weight: 600;
+        border-bottom: 2px solid #bbdefb;
+    }
+
+    .emp-table i.fab.fa-whatsapp {
+        font-size: 1.2em !important;
+        color: #25d366 !important;
+    }
+
+    .search-box-compact {
+        max-width: 230px;
+        font-size: 0.97rem;
+        height: 32px;
+        padding: 4px 10px;
+        border-radius: 7px;
+    }
+
+    .btn-sm, .form-control, .form-select {
+        font-size: 0.93rem !important;
+        padding: 2px 11px !important;
+        border-radius: 6px;
+        min-height: 30px;
+    }
+
+    .export-btns button {
+        margin-left: 3px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 style="font-size:1.1em; font-weight:600; color:#1565c0;">
+        <i class="fa-solid fa-user-tie"></i> Employees Needing Licenses
+    </h2>
+    <a href="@Url.Action("Notifications", "Account")" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Return to Notifications
+    </a>
+</div>
+
+@if (User.IsInRole("Admin"))
+{
+    <div class="mb-3">
+        <div class="row">
+            <div class="col-md-6">
+                <a href="@Url.Action("ExportEmployeesNeedingLicensesToPDF", "Notification")" class="btn btn-danger btn-sm w-100">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Export Report PDF
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a href="@Url.Action("ExportEmployeesNeedingLicensesToExcel", "Notification")" class="btn btn-success btn-sm w-100">
+                    <i class="fa-solid fa-file-excel"></i>
+                    Export Report Excel
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="mb-2 row align-items-center">
+    <div class="col-md-5">
+        <input type="text" id="empFilter" class="form-control search-box-compact" placeholder="Search in employees..." />
+    </div>
+    <div class="col-md-7 text-end export-btns">
+        <button onclick="exportEmployeesPDF()" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <button onclick="exportEmployeesExcel()" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-excel"></i> Excel</button>
+    </div>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="alert alert-success">
+        <i class="fa-solid fa-check-circle"></i>
+        No employees currently need licenses.
+    </div>
+}
+else
+{
+    <div class="employees-table-container">
+        <table id="empTable" class="table emp-table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Job Title</th>
+                    <th>Hire Date</th>
+                    <th>Location</th>
+                    <th class="text-center">WhatsApp</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row["FullName"]</td>
+                        <td>@row["PhoneNumber"]</td>
+                        <td>@row["Email"]</td>
+                        <td>@row["Department"]</td>
+                        <td>@row["JobTitle"]</td>
+                        <td>@(row["HireDate"] != DBNull.Value ? Convert.ToDateTime(row["HireDate"]).ToString("yyyy-MM-dd") : "N/A")</td>
+                        <td>@(row["OrganizationalStructure"] != DBNull.Value ? row["OrganizationalStructure"] : "HQ - Main Office")</td>
+                        <td class="text-center">
+                            @{
+                                var phone = row["PhoneNumber"].ToString();
+                                if (!string.IsNullOrEmpty(phone) && phone.StartsWith("0"))
+                                {
+                                    phone = "962" + phone.Substring(1);
+                                }
+                                var name = row["FullName"].ToString();
+                                var waUrl = $"https://wa.me/{phone}?text=Dear {name}, you need to obtain a license for your position. Please contact HR to arrange for license application.%0A%0Aالسيد/السيدة {name}، تحتاج إلى الحصول على رخصة لوظيفتك. يرجى الاتصال بالموارد البشرية لترتيب طلب الرخصة.";
+                            }
+                            <a href="@waUrl" target="_blank" title="Send WhatsApp Message">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div class="text-center mt-4">
+    <a href="@Url.Action("Notifications", "Account")" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left me-2"></i>
+        Return to Notifications
+    </a>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterInput = document.getElementById('empFilter');
+            if (filterInput) {
+                filterInput.addEventListener('keyup', function () {
+                    const filter = this.value.toLowerCase();
+                    const rows = document.querySelectorAll('#empTable tbody tr');
+                    rows.forEach(function (row) {
+                        const rowText = row.innerText.toLowerCase();
+                        row.style.display = rowText.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+        });
+
+        function exportEmployeesPDF() {
+            const filter = document.getElementById('empFilter').value;
+            window.open('/Notification/ExportEmployeesNeedingLicensesToPDF?filter=' + encodeURIComponent(filter), '_blank');
+        }
+
+        function exportEmployeesExcel() {
+            const filter = document.getElementById('empFilter').value;
+            window.open('/Notification/ExportEmployeesNeedingLicensesToExcel?filter=' + encodeURIComponent(filter), '_blank');
+        }
+    </script>
+} 

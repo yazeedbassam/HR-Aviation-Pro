@@ -48,21 +48,25 @@
 </style>
 
 <!-- Header with record count and export buttons -->
+@if (Html.HasAdvancedPermission("CONTROLLERLICENSE_VIEW") || Html.IsAdvancedAdmin())
+{
 <div class="d-flex flex-wrap justify-content-between align-items-center my-3">
     <div class="d-flex align-items-center">
         <h5 class="mb-0">Air Traffic Controller Licenses</h5>
         <span id="controller-record-counter" class="badge bg-primary ms-3">@Model.Count Records</span>
     </div>
     <div>
-        <button type="button" onclick="exportToFile('Controller', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm">
-            <i class="bi bi-file-earmark-pdf"></i> Export PDF
-        </button>
-        <button type="button" onclick="exportToFile('Controller', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm">
-            <i class="bi bi-file-earmark-excel"></i> Export Excel
-        </button>
+        @if (Html.HasAdvancedPermission("CONTROLLERLICENSE_EXPORT") || Html.IsAdvancedAdmin())
+        {
+            <button type="button" onclick="exportToFile('Controller', 'ExportToPDF', 'pdf')" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </button>
+            <button type="button" onclick="exportToFile('Controller', 'ExportToExcel', 'xlsx')" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+        }
     </div>
 </div>
-
 
 <div class="table-responsive">
     <table id="controllerLicensesTable" class="table table-bordered table-striped table-hover align-middle table-compact">
@@ -129,28 +133,97 @@
                         }
                     </td>
                     <td class="action-btns">
-                        <button type="button" class="btn btn-info btn-sm" title="View Details"
-                                data-bs-toggle="modal" data-bs-target="#licenseDetailsModal"
-                                data-licensetype="@(license.LicenseType + (!string.IsNullOrEmpty(license.RANGE) ? " - " + license.RANGE : ""))"
-                                data-personname="@license.ControllerName"
-                                data-personjob="@license.ControllerCurrentDepartment"
-                                data-licensenumber="@license.licensenumber"
-                                data-issuedate="@(license.IssueDate?.ToString("yyyy-MM-dd"))"
-                                data-expirydate="@(license.ExpiryDate?.ToString("yyyy-MM-dd"))"
-                                data-statusmessage="@license.AlertMessage"
-                                data-note="@license.Note">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-                        <a href="@Url.Action("Edit", "License", new { id = license.LicenseId })" class="btn btn-warning btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
-                        <form method="post" action="@Url.Action("DeleteConfirmed", "License", new { id = license.LicenseId })" class="d-inline" onsubmit="return confirm('Are you sure?');">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                        </form>
+                        @{
+                            // Dynamic permission checking for Controller License operations
+                            var canView = Html.HasAdvancedPermission("CONTROLLERLICENSE_VIEW");
+                            var canAdd = Html.HasAdvancedPermission("CONTROLLERLICENSE_ADD");
+                            var canEdit = Html.HasAdvancedPermission("CONTROLLERLICENSE_EDIT");
+                            var canDelete = Html.HasAdvancedPermission("CONTROLLERLICENSE_DELETE");
+                            var canExport = Html.HasAdvancedPermission("CONTROLLERLICENSE_EXPORT");
+                            var isAdmin = Html.IsAdvancedAdmin();
+                            
+                            // Log permissions for debugging
+                            System.Diagnostics.Debug.WriteLine($"🔍 Controller License Permissions - View:{canView}, Add:{canAdd}, Edit:{canEdit}, Delete:{canDelete}, Export:{canExport}, IsAdmin:{isAdmin}");
+                        }
+                        
+                        @* View Button - Only visible if user has view permission *@
+                        @if (canView || isAdmin)
+                        {
+                            <button type="button" class="btn btn-info btn-sm" title="View Details"
+                                    data-bs-toggle="modal" data-bs-target="#licenseDetailsModal"
+                                    data-licensetype="@(license.LicenseType + (!string.IsNullOrEmpty(license.RANGE) ? " - " + license.RANGE : ""))"
+                                    data-personname="@license.ControllerName"
+                                    data-personjob="@license.ControllerCurrentDepartment"
+                                    data-licensenumber="@license.licensenumber"
+                                    data-issuedate="@(license.IssueDate?.ToString("yyyy-MM-dd"))"
+                                    data-expirydate="@(license.ExpiryDate?.ToString("yyyy-MM-dd"))"
+                                    data-statusmessage="@license.AlertMessage"
+                                    data-note="@license.Note">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        }
+                        
+                        @* Edit Button - Only visible if user has edit permission *@
+                        @if (canEdit || isAdmin)
+                        {
+                            <a href="@Url.Action("Edit", "License", new { id = license.LicenseId })" class="btn btn-warning btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                        }
+                        
+                        @* Delete Button - Only visible if user has delete permission *@
+                        @if (canDelete || isAdmin)
+                        {
+                            <form method="post" action="@Url.Action("DeleteConfirmed", "License", new { id = license.LicenseId })" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this license?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        }
+                        
+                        @* Export Button - Only visible if user has export permission *@
+                        @if (canExport || isAdmin)
+                        {
+                            <button type="button" class="btn btn-success btn-sm" title="Export License" onclick="exportLicense(@license.LicenseId)">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        }
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+    
+    <script>
+        // Dynamic export function for Controller Licenses
+        function exportLicense(licenseId) {
+            if (confirm('هل تريد تصدير هذا الترخيص؟')) {
+                // Create a form to submit the export request
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("ExportLicense", "License")';
+                form.style.display = 'none';
+                
+                // Add anti-forgery token
+                var token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                // Add license ID
+                var idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'licenseId';
+                idInput.value = licenseId;
+                form.appendChild(idInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            }
+        }
+    </script>
 </div>
 
 <script>
@@ -198,3 +271,4 @@
         }
     })();
 </script>
+}

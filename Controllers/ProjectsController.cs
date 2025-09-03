@@ -13,10 +13,12 @@ using Microsoft.AspNetCore.Http;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
 using WebApplication1.ViewModels; // Ensure this using statement is present
+using WebApplication1.Attributes;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
-    public class ProjectsController : Controller
+public class ProjectsController : Controller
     {
         private readonly SqlServerDb _db;
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -30,6 +32,12 @@ namespace WebApplication1.Controllers
         // GET: /Projects
         public IActionResult Index()
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_VIEW") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             try
             {
                 var allProjects = _db.GetAllProjects();
@@ -62,6 +70,12 @@ namespace WebApplication1.Controllers
         // GET: /Projects/Create
         public IActionResult Create()
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_ADD") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             var viewModel = new ProjectCreateViewModel();
             LoadDropdownsForCreate(viewModel);
             return View(viewModel);
@@ -72,6 +86,12 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(ProjectCreateViewModel viewModel)
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_ADD") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -106,6 +126,12 @@ namespace WebApplication1.Controllers
         // GET: Projects/Details/5
         public IActionResult Details(int id)
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_VIEW") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             var project = _db.GetProjectById(id);
             if (project == null) return NotFound();
 
@@ -141,6 +167,12 @@ namespace WebApplication1.Controllers
         // GET: Projects/Edit/5
         public IActionResult Edit(int id)
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_EDIT") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             var project = _db.GetProjectById(id);
             if (project == null)
             {
@@ -175,6 +207,12 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, ProjectEditViewModel viewModel)
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_EDIT") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             if (id != viewModel.ProjectId)
             {
                 return NotFound();
@@ -293,6 +331,12 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
+            // Check permission using new system
+            if (!HttpContext.HasAdvancedPermission("PROJECT_DELETE") && !HttpContext.IsAdvancedAdmin())
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = Request.Path });
+            }
+
             var project = _db.GetProjectById(id);
             if (project == null)
             {

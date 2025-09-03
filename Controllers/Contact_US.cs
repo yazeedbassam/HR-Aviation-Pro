@@ -1,40 +1,35 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Net.Mail;
-using System.Net;
-using System;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
     public class Contact_US : Controller
     {
+        private readonly IEmailService _emailService;
+
+        public Contact_US(IEmailService emailService)
+        {
+            _emailService = emailService;
+        }
+
         [HttpPost]
-        public IActionResult SendEmail(string name, string email, string message)
+        public async Task<IActionResult> SendEmail(string name, string email, string message)
         {
             try
             {
-                var smtpClient = new SmtpClient("smtp.office365.com")
+                var success = await _emailService.SendContactFormAsync(name, email, message);
+                
+                if (success)
                 {
-                    Port = 587,
-                    Credentials = new NetworkCredential("yazeedbassam@hotmail.com", "sdfsdfsdfdsfdsfsdf"),
-                    EnableSsl = true,
-                };
-
-                var mailMessage = new MailMessage
+                    return Json(new { success = true, message = "تم إرسال رسالتك بنجاح!" });
+                }
+                else
                 {
-                    From = new MailAddress(email),
-                    Subject = "رسالة جديدة من نموذج الاتصال",
-                    Body = $"الاسم: {name}\nالبريد الإلكتروني: {email}\nالرسالة:\n{message}",
-                    IsBodyHtml = false
-                };
-                mailMessage.To.Add("yazeedbassam@hotmail.com"); // غالبًا ما يكون نفس بريد hotmail الخاص بك
-
-                smtpClient.Send(mailMessage);
-
-                return Json(new { success = true, message = "تم إرسال رسالتك بنجاح!" });
+                    return Json(new { success = false, message = "حدث خطأ أثناء إرسال الرسالة." });
+                }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // يمكنك هنا تسجيل الخطأ
                 return Json(new { success = false, message = "حدث خطأ أثناء إرسال الرسالة." });
             }
         }

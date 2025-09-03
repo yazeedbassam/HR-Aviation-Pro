@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http; // For IFormFile
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient; // Required for SqlParameter
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using QuestPDF.Drawing;
@@ -10,47 +12,47 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
-using System.Data; // Required for DataTable, DataRow
-using System.IO;
-using WebApplication1.DataAccess; // Make sure SqlDb is accessible
-using WebApplication1.Models; // Make sure Certificate model is accessible
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-
-using Microsoft.Extensions.Configuration;
-using System;
 using System.Collections.Generic;
-
+using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
-using System.Drawing;
+using WebApplication1.DataAccess;
+using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
+    [Authorize]
     public class CertificateController : Controller
     {
         private readonly SqlServerDb _db;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IAdvancedPermissionManagerService _permissionService;
 
-        public CertificateController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+        public CertificateController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IAdvancedPermissionManagerService permissionService)
         {
             _db = new SqlServerDb(configuration);
             _webHostEnvironment = webHostEnvironment;
+            _permissionService = permissionService;
         }
         // GET: /Certificate
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized();
+
+                if (!await _permissionService.CanPerformOperationAsync(userId, "Certificate", "View"))
+                {
+                    return Forbid();
+                }
                 var viewModel = new CertificateIndexViewModel
                 {
                     ControllerCertificates = _db.GetControllerCertificates(),
-                    AISCertificates = _db.GetAISCertificates(),
-                    CNSCertificates = _db.GetCNSCertificates(),
-                    AFTNCertificates = _db.GetAFTNCertificates(),
-                    OpsStaffCertificates = _db.GetOpsStaffCertificates()
+                    EmployeesAndOpsStaffCertificates = _db.GetAllEmployeeCertificates()
                 };
 
                 ViewBag.SuccessMessage = TempData["SuccessMessage"];
@@ -58,16 +60,18 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = $"An error occurred while fetching data: {ex.Message}";
+                ViewBag.ErrorMessage = $"An error occurred: {ex.Message}";
                 return View(new CertificateIndexViewModel());
             }
         }
         // --- ?????? ??? ?????? ?? CertificateController.cs ---
 
         // GET: Certificate/Create
-        public IActionResult Create()
+        public IActionResult Create(string tab = "controllers")
         {
             LoadDropdowns();
+            ViewBag.ActiveTab = tab;
+            
             // Initialize the model with today's date for issue and expiry
             var model = new CertificateViewModel
             {
@@ -355,6 +359,8 @@ namespace WebApplication1.Controllers
                                      .Select(row => new SelectListItem { Value = row["ControllerId"].ToString(), Text = row["FullName"].ToString() }).ToList();
             ViewBag.Employees = _db.ExecuteQuery("SELECT EmployeeID, FullName FROM Employees ORDER BY FullName").AsEnumerable()
                                      .Select(row => new SelectListItem { Value = row["EmployeeID"].ToString(), Text = row["FullName"].ToString() }).ToList();
+            
+            // Load certificate types directly from DocumentTypes table
             ViewBag.CertificateTypes = _db.GetCertificateTypes();
         }
       
@@ -404,29 +410,14 @@ namespace WebApplication1.Controllers
                     reportTitle = "Controllers - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.ControllerName != null && c.ControllerName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
-                case "AIS":
-                    certificates = _db.GetAISCertificates();
-                    reportTitle = "AIS - Aeronautical Information Services - Documents";
+                case "Employees":
+                    certificates = _db.GetAllEmployeeCertificates();
+                    reportTitle = "Employees & Operation Staff - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
-                case "CNS":
-                    certificates = _db.GetCNSCertificates();
-                    reportTitle = "CNS - Communication, Navigation & Surveillance - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                case "AFTN":
-                    certificates = _db.GetAFTNCertificates();
-                    reportTitle = "AFTN - Aeronautical Fixed Telecommunication Network - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                case "OpsStaff":
-                    certificates = _db.GetOpsStaffCertificates();
-                    reportTitle = "Ops Staff & Administration - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                default: // Employee (legacy support)
-                    certificates = _db.GetEmployeeCertificates();
-                    reportTitle = "AIS / CNS / AFTN / Ops Staff - Documents";
+                default: // Legacy support for old individual tabs
+                    certificates = _db.GetAllEmployeeCertificates();
+                    reportTitle = "Employees & Operation Staff - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
             }
@@ -523,29 +514,14 @@ namespace WebApplication1.Controllers
                     reportTitle = "Controllers - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.ControllerName != null && c.ControllerName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
-                case "AIS":
-                    certificates = _db.GetAISCertificates();
-                    reportTitle = "AIS - Aeronautical Information Services - Documents";
+                case "Employees":
+                    certificates = _db.GetAllEmployeeCertificates();
+                    reportTitle = "Employees & Operation Staff - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
-                case "CNS":
-                    certificates = _db.GetCNSCertificates();
-                    reportTitle = "CNS - Communication, Navigation & Surveillance - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                case "AFTN":
-                    certificates = _db.GetAFTNCertificates();
-                    reportTitle = "AFTN - Aeronautical Fixed Telecommunication Network - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                case "OpsStaff":
-                    certificates = _db.GetOpsStaffCertificates();
-                    reportTitle = "Ops Staff & Administration - Documents";
-                    if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
-                    break;
-                default: // Employee (legacy support)
-                    certificates = _db.GetEmployeeCertificates();
-                    reportTitle = "AIS / CNS / AFTN / Ops Staff - Documents";
+                default: // Legacy support for old individual tabs
+                    certificates = _db.GetAllEmployeeCertificates();
+                    reportTitle = "Employees & Operation Staff - Certificates & Courses";
                     if (!string.IsNullOrEmpty(personName)) certificates = certificates.Where(c => c.EmployeeName != null && c.EmployeeName.Contains(personName, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
             }
@@ -566,5 +542,10 @@ namespace WebApplication1.Controllers
             }
         }
 
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            return userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) ? userId : 0;
+        }
     }
 }

@@ -1,0 +1,302 @@
+@model WebApplication1.Services.CacheStatistics
+@{
+    ViewData["Title"] = "مراقبة الكاش";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-memory"></i>
+                        مراقبة وإدارة الكاش
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-info">@Model.TotalItems عنصر</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Success/Error Messages -->
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            <i class="icon fas fa-check"></i>
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            <i class="icon fas fa-ban"></i>
+                            @TempData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <!-- Cache Statistics -->
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>@Model.TotalItems</h3>
+                                    <p>إجمالي العناصر</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>@Model.HitCount</h3>
+                                    <p>عدد النجاحات</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>@Model.MissCount</h3>
+                                    <p>عدد الفشل</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-primary">
+                                <div class="inner">
+                                    <h3>@(Model.HitRate.ToString("P1"))</h3>
+                                    <p>معدل النجاح</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cache Actions -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="card card-outline card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-tools"></i>
+                                        إجراءات الكاش
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <form method="post" asp-action="ClearCache" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-block" 
+                                                        onclick="return confirm('هل أنت متأكد من مسح جميع عناصر الكاش؟')">
+                                                    <i class="fas fa-trash"></i>
+                                                    مسح الكاش بالكامل
+                                                </button>
+                                            </form>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <form method="post" asp-action="RefreshCache" style="display: inline;">
+                                                <button type="submit" class="btn btn-warning btn-block">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                    تحديث الكاش
+                                                </button>
+                                            </form>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <form method="post" asp-action="ClearByPattern" class="form-inline">
+                                                <div class="input-group">
+                                                    <input type="text" name="pattern" class="form-control" 
+                                                           placeholder="نمط البحث (مثال: permission_*)">
+                                                    <div class="input-group-append">
+                                                        <button type="submit" class="btn btn-info">
+                                                            <i class="fas fa-search"></i>
+                                                            مسح بالنمط
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cache Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card card-outline card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-info-circle"></i>
+                                        معلومات الكاش
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <td><strong>آخر إعادة تعيين:</strong></td>
+                                            <td>@Model.LastReset.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>إجمالي الطلبات:</strong></td>
+                                            <td>@Model.TotalRequests</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>معدل النجاح:</strong></td>
+                                            <td>@(Model.HitRate.ToString("P2"))</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>استخدام الذاكرة:</strong></td>
+                                            <td>@(Model.MemoryUsageBytes / 1024) KB</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card card-outline card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-chart-pie"></i>
+                                        إحصائيات الكاش
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="cacheChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cache Patterns -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card card-outline card-secondary">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-list"></i>
+                                        أنماط الكاش الشائعة
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info">
+                                                    <i class="fas fa-shield-alt"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">الصلاحيات</span>
+                                                    <span class="info-box-number">permission_*</span>
+                                                    <small>انتهاء الصلاحية: 5 دقائق</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-success">
+                                                    <i class="fas fa-cogs"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">التكوين</span>
+                                                    <span class="info-box-number">Configuration_*</span>
+                                                    <small>انتهاء الصلاحية: 30 دقيقة</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-warning">
+                                                    <i class="fas fa-bars"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">القوائم</span>
+                                                    <span class="info-box-number">menu_*</span>
+                                                    <small>انتهاء الصلاحية: 10 دقائق</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-primary">
+                                                    <i class="fas fa-users"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">المستخدمين</span>
+                                                    <span class="info-box-number">user_*</span>
+                                                    <small>انتهاء الصلاحية: 15 دقيقة</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Auto-refresh statistics every 30 seconds
+        setInterval(function() {
+            $.get('@Url.Action("GetStatistics")', function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            });
+        }, 30000);
+
+        // Cache Chart
+        var ctx = document.getElementById('cacheChart').getContext('2d');
+        var cacheChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['نجاحات', 'فشل'],
+                datasets: [{
+                    data: [@Model.HitCount, @Model.MissCount],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+} 

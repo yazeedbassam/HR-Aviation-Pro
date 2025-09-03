@@ -23,6 +23,9 @@ public class Employee
     public string? Gender { get; set; }
     // هذه خاصية إضافية سنستخدمها لاحقاً لعرض اسم المستخدم بجانب الموظف
     public string? Username { get; set; }
+    
+    // Role information
+    public string? Role { get; set; }
 
 
 

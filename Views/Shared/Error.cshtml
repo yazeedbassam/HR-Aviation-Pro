@@ -1,4 +1,4 @@
-﻿@model ErrorViewModel
+﻿@model ErrorViewModel?
 @{
     ViewData["Title"] = "Error";
 }
@@ -7,7 +7,7 @@
     <h1 class="text-danger">عذراً، حدث خطأ</h1>
     <h2 class="text-muted">حدث خطأ أثناء معالجة طلبك</h2>
     
-    @if (Model.ShowRequestId)
+    @if (Model?.ShowRequestId == true)
     {
         <p class="text-muted">
             <small>Request ID: <code>@Model.RequestId</code></small>
@@ -19,7 +19,7 @@
         <a href="/Account/Login" class="btn btn-secondary">تسجيل الدخول</a>
     </div>
     
-    @if (Context.RequestServices.GetService<IWebHostEnvironment>().IsDevelopment())
+    @if (Context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true)
     {
         <div class="mt-4 p-3 bg-light rounded">
             <h4>Development Mode</h4>

@@ -1,61 +1,73 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
 using WebApplication1.Services;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
 using Color = System.Drawing.Color;
 
 
 namespace WebApplication1.Controllers
 {
-    public class LicenseController : Controller
+    [Authorize]
+public class LicenseController : Controller
     {
         private readonly SqlServerDb _db;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IConfigurationService _configurationService;
+        private readonly IAdvancedPermissionManagerService _permissionService;
 
-        public LicenseController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IConfigurationService configurationService)
+        public LicenseController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IConfigurationService configurationService, IAdvancedPermissionManagerService permissionService)
         {
             _db = new SqlServerDb(configuration);
             _webHostEnvironment = webHostEnvironment;
             _configurationService = configurationService;
+            _permissionService = permissionService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized();
+
+                // Check if user has permission to view either controller licenses or employee licenses
+                var canViewControllerLicenses = await _permissionService.CanPerformOperationAsync(userId, "ControllerLicense", "View");
+                var canViewEmployeeLicenses = await _permissionService.CanPerformOperationAsync(userId, "EmployeeLicense", "View");
+                
+                if (!canViewControllerLicenses && !canViewEmployeeLicenses)
+                {
+                    return Forbid();
+                }
+                // Get all employee licenses (including all departments)
+                var allEmployeeAndOpsStaffLicenses = _db.GetEmployeeLicenses();
+
                 var viewModel = new LicenseIndexViewModel
                 {
                     ControllerLicenses = _db.GetControllerLicenses(),
-                    AISLicenses = _db.GetAISLicenses(),
-                    CNSLicenses = _db.GetCNSLicenses(),
-                    AFTNLicenses = _db.GetAFTNLicenses(),
-                    OpsStaffLicenses = _db.GetOpsStaffLicenses()
+                    EmployeesAndOpsStaffLicenses = allEmployeeAndOpsStaffLicenses
                 };
 
                 // Calculate alert messages for all licenses
                 var allLicenses = viewModel.ControllerLicenses
-                    .Concat(viewModel.AISLicenses)
-                    .Concat(viewModel.CNSLicenses)
-                    .Concat(viewModel.AFTNLicenses)
-                    .Concat(viewModel.OpsStaffLicenses);
+                    .Concat(viewModel.EmployeesAndOpsStaffLicenses);
 
                 foreach (var license in allLicenses)
                 {
@@ -87,9 +99,10 @@ namespace WebApplication1.Controllers
             }
         }
 
-        public IActionResult Create()
+        public IActionResult Create(string tab = "controllers")
         {
             LoadControllersAndEmployeesForDropdown();
+            ViewBag.ActiveTab = tab;
             return View(new License());
         }
 
@@ -187,6 +200,50 @@ namespace WebApplication1.Controllers
             try
             {
                 _db.ExecuteNonQuery(insertQuery, parameters);
+                
+                // Update notifications immediately after adding new license
+                try
+                {
+                    // Clear old notifications first
+                    _db.ExecuteNonQuery("DELETE FROM notifications");
+                    
+                    // Get licenses expiring soon and create notifications
+                    var licenseNotificationsSql = @"
+                        INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read)
+                        SELECT 
+                            c.userid,
+                            c.controllerid,
+                            'Dear ' + c.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN controllers c ON l.controllerid = c.controllerid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            e.userid,
+                            NULL,
+                            'Dear ' + e.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN employees e ON l.employeeid = e.employeeid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())";
+                    
+                    _db.ExecuteNonQuery(licenseNotificationsSql);
+                }
+                catch (Exception notificationEx)
+                {
+                    // Log the error but don't fail the license creation
+                    Console.WriteLine($"Failed to update notifications: {notificationEx.Message}");
+                }
+                
                 TempData["SuccessMessage"] = "License added successfully!";
                 return RedirectToAction(nameof(Index));
             }
@@ -352,6 +409,50 @@ namespace WebApplication1.Controllers
             try
             {
                 _db.ExecuteNonQuery(updateQuery, parameters);
+                
+                // Update notifications immediately after updating license
+                try
+                {
+                    // Clear old notifications first
+                    _db.ExecuteNonQuery("DELETE FROM notifications");
+                    
+                    // Get licenses expiring soon and create notifications
+                    var licenseNotificationsSql = @"
+                        INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read)
+                        SELECT 
+                            c.userid,
+                            c.controllerid,
+                            'Dear ' + c.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN controllers c ON l.controllerid = c.controllerid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            e.userid,
+                            NULL,
+                            'Dear ' + e.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN employees e ON l.employeeid = e.employeeid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())";
+                    
+                    _db.ExecuteNonQuery(licenseNotificationsSql);
+                }
+                catch (Exception notificationEx)
+                {
+                    // Log the error but don't fail the license update
+                    Console.WriteLine($"Failed to update notifications: {notificationEx.Message}");
+                }
+                
                 TempData["SuccessMessage"] = "License updated successfully!";
                 return RedirectToAction(nameof(Index));
             }
@@ -373,9 +474,61 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            _db.DeleteLicenseById(id);
-            TempData["SuccessMessage"] = "License deleted successfully.";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                _db.DeleteLicenseById(id);
+                
+                // Update notifications immediately after deleting license
+                try
+                {
+                    // Clear old notifications first
+                    _db.ExecuteNonQuery("DELETE FROM notifications");
+                    
+                    // Get licenses expiring soon and create notifications
+                    var licenseNotificationsSql = @"
+                        INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read)
+                        SELECT 
+                            c.userid,
+                            c.controllerid,
+                            'Dear ' + c.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN controllers c ON l.controllerid = c.controllerid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            e.userid,
+                            NULL,
+                            'Dear ' + e.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                            l.licensetype,
+                            l.expirydate,
+                            GETDATE(),
+                            0
+                        FROM licenses l
+                        INNER JOIN employees e ON l.employeeid = e.employeeid
+                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())";
+                    
+                    _db.ExecuteNonQuery(licenseNotificationsSql);
+                }
+                catch (Exception notificationEx)
+                {
+                    // Log the error but don't fail the license deletion
+                    Console.WriteLine($"Failed to update notifications: {notificationEx.Message}");
+                }
+                
+                TempData["SuccessMessage"] = "License deleted successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Failed to delete license: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // Helper method to load dropdown lists for the view
@@ -420,6 +573,13 @@ namespace WebApplication1.Controllers
                 if (!string.IsNullOrEmpty(controllerName)) licenses = licenses.Where(l => l.ControllerName != null && l.ControllerName.Contains(controllerName, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (!string.IsNullOrEmpty(department)) licenses = licenses.Where(l => l.ControllerCurrentDepartment != null && l.ControllerCurrentDepartment.Contains(department, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (!string.IsNullOrEmpty(airport)) licenses = licenses.Where(l => l.AirportName != null && l.AirportName.Contains(airport, StringComparison.OrdinalIgnoreCase)).ToList();
+                    break;
+                case "Employees":
+                    // Get all employee licenses (including all departments)
+                    licenses = _db.GetEmployeeLicenses();
+                    reportTitle = "Employees & Operation Staff Licenses Report";
+                    if (!string.IsNullOrEmpty(employeeName)) licenses = licenses.Where(l => l.EmployeeName != null && l.EmployeeName.Contains(employeeName, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (!string.IsNullOrEmpty(department)) licenses = licenses.Where(l => l.EmployeeDepartment != null && l.EmployeeDepartment.Contains(department, StringComparison.OrdinalIgnoreCase)).ToList();
                     break;
                 case "AIS":
                     licenses = _db.GetAISLicenses();
@@ -605,6 +765,16 @@ namespace WebApplication1.Controllers
                 if (!string.IsNullOrEmpty(airport)) licenses = licenses.Where(l => !string.IsNullOrEmpty(l.AirportName) && l.AirportName.Contains(airport, StringComparison.OrdinalIgnoreCase)).ToList();
                 headers = new string[] { "#", "Controller", "Department", "Airport", "License Type", "License No.", "Issue Date", "Expiry Date", "Note" };
                     break;
+                case "Employees":
+                    // Get all employee licenses (including all departments)
+                    licenses = _db.GetEmployeeLicenses();
+                    reportTitle = "Employees & Operation Staff Licenses Report";
+                    if (!string.IsNullOrEmpty(employeeName)) licenses = licenses.Where(l => l.EmployeeName != null && l.EmployeeName.Contains(employeeName, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (!string.IsNullOrEmpty(department)) licenses = licenses.Where(l => l.EmployeeDepartment != null && l.EmployeeDepartment.Contains(department, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (!string.IsNullOrEmpty(licenseType)) licenses = licenses.Where(l => l.LicenseType != null && l.LicenseType.Contains(licenseType, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (!string.IsNullOrEmpty(licenseNumber)) licenses = licenses.Where(l => !string.IsNullOrEmpty(l.licensenumber) && l.licensenumber.Contains(licenseNumber, StringComparison.OrdinalIgnoreCase)).ToList();
+                    headers = new string[] { "#", "Employee", "Department", "License Type", "License No.", "Issue Date", "Expiry Date", "Note" };
+                    break;
                 case "AIS":
                     licenses = _db.GetAISLicenses();
                     reportTitle = "AIS - Aeronautical Information Services Licenses Report";
@@ -721,6 +891,11 @@ namespace WebApplication1.Controllers
             }
         }
 
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            return userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) ? userId : 0;
+        }
     }
 }
 

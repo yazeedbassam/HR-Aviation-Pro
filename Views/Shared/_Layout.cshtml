@@ -1,10 +1,30 @@
 ﻿@using System.Security.Claims
+@using WebApplication1.Services
+@inject IAdvancedPermissionManagerService PermissionManagerService
 @{
     string photoUrl = ViewBag.PhotoPath as string;
     var avatarChar = string.IsNullOrWhiteSpace(User.Identity?.Name)
         ? "?"
         : User.Identity.Name.Substring(0, 1).ToUpper();
     string username = User.Identity?.Name ?? "";
+    
+    // Get current user ID
+    var userIdClaim = User.FindFirst("UserId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    int currentUserId = int.TryParse(userIdClaim, out int uid) ? uid : 0;
+    
+    // Check menu permissions
+    var canViewDashboard = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "DASHBOARD") : false;
+    var canViewEmployees = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "EMPLOYEES") : false;
+    var canViewControllers = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "CONTROLLERS") : false;
+    var canViewLicenses = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "LICENSES") : false;
+    var canViewCertificates = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "CERTIFICATES") : false;
+    var canViewObservations = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "OBSERVATIONS") : false;
+    var canViewConfiguration = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "CONFIGURATION") : false;
+    var canViewPermissions = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "PERMISSIONS") : false;
+    
+    // Check specific menu permissions for ORGANIZATION_VIEW and PROJECT_VIEW (Training & Development)
+    var canViewOrganization = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "ORGANIZATION_VIEW") : false;
+    var canViewTraining = currentUserId > 0 ? await PermissionManagerService.CanViewMenuAsync(currentUserId, "PROJECT_VIEW") : false;
 }
 
 <!DOCTYPE html>
@@ -26,7 +46,7 @@
     <!-- Navbar/Header -->
     <nav class="navbar navbar-expand-lg atc-navbar shadow-sm">
         <div class="container-fluid">
-            <button class="btn btn-outline-success d-lg-none me-2" id="openSidebarBtn" type="button" aria-label="Menu">
+            <button class="btn btn-outline-success d-lg-none me-2" id="navbarSidebarBtn" type="button" aria-label="Menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <span class="navbar-brand fw-bold fs-3">
@@ -67,19 +87,19 @@
     
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="atc-sidebar p-3" id="sidebarMenu">
-            <div class="sidebar-logo mb-3 fs-5 fw-bold">
-                <div class="aviation-logo" style="display: flex; align-items: center; gap: 8px;">
-                    <div class="aviation-logo-icon" style="width: 24px; height: 24px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                        <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo" style="width: 18px; height: 18px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); opacity: 0.9;">
-                    </div>
-                    <div class="aviation-logo-text">
-                        <div class="aviation-logo-main" style="font-size: 16px;">AVIATION HR PRO</div>
-                    </div>
+        <aside class="atc-sidebar" id="sidebarMenu">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="/images/aviation-hr-pro-logo.png" alt="AVIATION HR PRO Logo">
+                    <span>AVIATION HR PRO</span>
                 </div>
             </div>
-            <ul class="nav flex-column gap-1">
-                @if (Html.IsAdmin())
+            
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <ul class="sidebar-nav">
+                @if (canViewDashboard)
                 {
                     <li>
                         <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")"
@@ -88,90 +108,118 @@
                         </a>
                     </li>
                 }
-                @if (Html.IsController() || Html.IsAdmin())
-                {
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
-                            <i class="bi bi-bell"></i>
-                            Notifications @await Component.InvokeAsync("NotificationCount")
-                        </a>
-                    </li>
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
-                            <i class="bi bi-person"></i> Profile
-                        </a>
-                    </li>
-                }
+                <!-- Notifications - Always visible for authenticated users -->
+                <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
+                        <i class="bi bi-bell"></i>
+                        <span>Notifications</span>
+                        <span class="sidebar-badge">@await Component.InvokeAsync("NotificationCount")</span>
+                    </a>
+                </li>
                 
-                                 <!-- Show all sections for all authenticated users -->
-                 @if (User.Identity?.IsAuthenticated == true)
-                 {
+                <!-- Profile - Always visible for authenticated users -->
+                <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                </li>
+                
+                <!-- Show additional sections based on permissions -->
+                @if (User.Identity?.IsAuthenticated == true)
+                {
                      <!-- Organizational Structure Section -->
-                     <li class="sidebar-section">
-                         <div class="sidebar-section-header" onclick="toggleSection('orgSection')">
-                             <span><i class="bi bi-building"></i> Organizational Structure</span>
-                             <i class="bi bi-chevron-down"></i>
-                         </div>
-                         <div class="sidebar-section-content" id="orgSection">
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Country" ? "active" : "")" href="/Country">
-                                 <i class="bi bi-globe"></i> Countries & Regions
-                             </a>
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Airport" ? "active" : "")" href="/Airport">
-                                 <i class="bi bi-building"></i> Airports & Divisions
-                             </a>
-                         </div>
-                     </li>
+                     @if (canViewOrganization)
+                     {
+                         <li class="sidebar-section">
+                             <div class="sidebar-section-header" onclick="toggleSection('orgSection')">
+                                 <span><i class="bi bi-building"></i> Organizational Structure</span>
+                                 <i class="bi bi-chevron-down"></i>
+                             </div>
+                             <div class="sidebar-section-content" id="orgSection">
+                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Country" ? "active" : "")" href="/Country">
+                                     <i class="bi bi-globe"></i> Countries & Regions
+                                 </a>
+                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Airport" ? "active" : "")" href="/Airport">
+                                     <i class="bi bi-building"></i> Airports & Divisions
+                                 </a>
+                             </div>
+                         </li>
+                     }
                      
                      <!-- STAFF Section -->
-                     <li class="sidebar-section">
-                         <div class="sidebar-section-header" onclick="toggleSection('staffSection')">
-                             <span><i class="bi bi-people"></i> STAFF</span>
-                             <i class="bi bi-chevron-down"></i>
-                         </div>
-                         <div class="sidebar-section-content" id="staffSection">
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ControllerUser" ? "active" : "")" href="/ControllerUser">
-                                 <i class="bi bi-person-badge"></i> Controllers
-                             </a>
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employees" ? "active" : "")" href="/Employees">
-                                 <i class="bi bi-people-fill"></i> Employee Staff
-                             </a>
-                         </div>
-                     </li>
+                     @if (canViewControllers || canViewEmployees)
+                     {
+                         <li class="sidebar-section">
+                             <div class="sidebar-section-header" onclick="toggleSection('staffSection')">
+                                 <span><i class="bi bi-people"></i> STAFF</span>
+                                 <i class="bi bi-chevron-down"></i>
+                             </div>
+                             <div class="sidebar-section-content" id="staffSection">
+                                 @if (canViewControllers)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ControllerUser" ? "active" : "")" href="/ControllerUser">
+                                         <i class="bi bi-person-badge"></i> Controllers
+                                     </a>
+                                 }
+                                 @if (canViewEmployees)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employees" ? "active" : "")" href="/Employees">
+                                         <i class="bi bi-people-fill"></i> Employee Staff
+                                     </a>
+                                 }
+                             </div>
+                         </li>
+                     }
                      
                      <!-- Documents Section -->
-                     <li class="sidebar-section">
-                         <div class="sidebar-section-header" onclick="toggleSection('docsSection')">
-                             <span><i class="bi bi-file-earmark-text"></i> Documents & Records</span>
-                             <i class="bi bi-chevron-down"></i>
-                         </div>
-                         <div class="sidebar-section-content" id="docsSection">
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "License" ? "active" : "")" href="/License/Index">
-                                 <i class="bi bi-card-checklist"></i> Licenses & Permits
-                             </a>
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Certificate" ? "active" : "")" href="/Certificate/Index">
-                                 <i class="bi bi-award"></i> Certificates & Qualifications
-                             </a>
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Observations" ? "active" : "")" href="/Observations/Index">
-                                 <i class="bi bi-binoculars"></i> Performance Observations
-                             </a>
-                         </div>
-                     </li>
+                     @if (canViewLicenses || canViewCertificates || canViewObservations)
+                     {
+                         <li class="sidebar-section">
+                             <div class="sidebar-section-header" onclick="toggleSection('docsSection')">
+                                 <span><i class="bi bi-file-earmark-text"></i> Documents & Records</span>
+                                 <i class="bi bi-chevron-down"></i>
+                             </div>
+                             <div class="sidebar-section-content" id="docsSection">
+                                 @if (canViewLicenses)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "License" ? "active" : "")" href="/License/Index">
+                                         <i class="bi bi-card-checklist"></i> Licenses & Permits
+                                     </a>
+                                 }
+                                 @if (canViewCertificates)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Certificate" ? "active" : "")" href="/Certificate/Index">
+                                         <i class="bi bi-award"></i> Certificates & Qualifications
+                                     </a>
+                                 }
+                                 @if (canViewObservations)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Observations" ? "active" : "")" href="/Observations/Index">
+                                         <i class="bi bi-binoculars"></i> Performance Observations
+                                     </a>
+                                 }
+                             </div>
+                         </li>
+                     }
                      
                      <!-- Training & Development Section -->
-                     <li class="sidebar-section">
-                         <div class="sidebar-section-header" onclick="toggleSection('activitiesSection')">
-                             <span><i class="bi bi-activity"></i> Training & Development</span>
-                             <i class="bi bi-chevron-down"></i>
-                         </div>
-                         <div class="sidebar-section-content" id="activitiesSection">
-                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Projects" ? "active" : "")" href="/Projects/Index">
-                                 <i class="bi bi-calendar-event"></i> Training Courses & Programs
-                             </a>
-                         </div>
-                     </li>
+                     @if (canViewTraining)
+                     {
+                         <li class="sidebar-section">
+                             <div class="sidebar-section-header" onclick="toggleSection('activitiesSection')">
+                                 <span><i class="bi bi-activity"></i> Training & Development</span>
+                                 <i class="bi bi-chevron-down"></i>
+                             </div>
+                             <div class="sidebar-section-content" id="activitiesSection">
+                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Projects" ? "active" : "")" href="/Projects/Index">
+                                     <i class="bi bi-calendar-event"></i> Training Courses & Programs
+                                 </a>
+                             </div>
+                         </li>
+                     }
                      
-                     <!-- System Settings Section (Admin Only) -->
-                     @if (Html.IsAdmin())
+                     <!-- System Settings Section -->
+                     @if (canViewConfiguration || canViewPermissions)
                      {
                          <li class="sidebar-section">
                              <div class="sidebar-section-header" onclick="toggleSection('settingsSection')">
@@ -179,57 +227,75 @@
                                  <i class="bi bi-chevron-down"></i>
                              </div>
                              <div class="sidebar-section-content" id="settingsSection">
-                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuration" ? "active" : "")" href="/Configuration">
-                                     <i class="bi bi-sliders"></i> Configuration Management
-                                 </a>
-                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimplifiedPermission" ? "active" : "")" href="/SimplifiedPermission/Index">
-                                     <i class="bi bi-shield-check"></i> إدارة الصلاحيات المبسطة
-                                 </a>
-                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdvancedPermission" ? "active" : "")" href="/AdvancedPermission/Dashboard">
-                                     <i class="bi bi-shield-star"></i> إدارة الصلاحيات المتقدمة
-                                 </a>
-                                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Permission" ? "active" : "")" href="/Permission">
-                                     <i class="bi bi-shield-lock"></i> إدارة الأدوار (قديم)
-                                 </a>
+                                 @if (canViewConfiguration)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuration" ? "active" : "")" href="/Configuration">
+                                         <i class="bi bi-sliders"></i> Configuration Management
+                                     </a>
+                                 }
+                                 @if (canViewPermissions)
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "PermissionManager" ? "active" : "")" href="/PermissionManager">
+                                         <i class="bi bi-shield-check"></i> إدارة الصلاحيات المتقدمة
+                                     </a>
+                                 }
+                                 
+                                 <!-- System Logs - Admin Only -->
+                                 @if (User.IsInRole("Admin"))
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SystemLogs" ? "active" : "")" href="/SystemLogs">
+                                         <i class="bi bi-list-alt"></i> سجلات النظام
+                                     </a>
+                                 }
+                                 
+                                 <!-- Cache Monitor - Admin Only -->
+                                 @if (User.IsInRole("Admin"))
+                                 {
+                                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "CacheMonitor" ? "active" : "")" href="/CacheMonitor">
+                                         <i class="bi bi-memory"></i> مراقبة الكاش
+                                     </a>
+                                 }
                              </div>
                          </li>
                      }
                  }
-                @if (User.IsInRole("AIS Admin"))
-                {
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
-                            <i class="bi bi-bell"></i>
-                            Notifications @await Component.InvokeAsync("NotificationCount")
-                        </a>
-                    </li>
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
-                            <i class="bi bi-person"></i> Profile
-                        </a>
-                    </li>
-                }
-                @if (User.IsInRole("Employee"))
-                {
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
-                            <i class="bi bi-bell"></i>
-                            Notifications @await Component.InvokeAsync("NotificationCount")
-                        </a>
-                    </li>
-                    <li>
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
-                            <i class="bi bi-person"></i> Profile
-                        </a>
-                    </li>
-                }
-
-            </ul>
+                                 @if (User.IsInRole("AIS Admin"))
+                 {
+                     <li>
+                         <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
+                             <i class="bi bi-bell"></i>
+                             <span>Notifications</span>
+                             <span class="sidebar-badge">@await Component.InvokeAsync("NotificationCount")</span>
+                         </a>
+                     </li>
+                     <li>
+                         <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
+                             <i class="bi bi-person"></i> Profile
+                         </a>
+                     </li>
+                 }
+                                 @if (User.IsInRole("Employee"))
+                 {
+                     <li>
+                         <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")" href="/Account/Notifications">
+                             <i class="bi bi-bell"></i>
+                             <span>Notifications</span>
+                             <span class="sidebar-badge">@await Component.InvokeAsync("NotificationCount")</span>
+                         </a>
+                     </li>
+                     <li>
+                         <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")" href="/Account/Profile">
+                             <i class="bi bi-person"></i> Profile
+                         </a>
+                     </li>
+                 }
+                </ul>
+            </div>
         </aside>
         <button id="openSidebarBtn" title="Menu" style="display:none;">
             <i class="bi bi-list"></i>
         </button>
-        <div class="overlay-bg" id="sidebarOverlay"></div>
+        <div class="overlay-bg" id="mainOverlay"></div>
         <!-- Main Content -->
         <main class="atc-main-content p-4 flex-grow-1">
             @RenderBody()
@@ -260,97 +326,134 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
-         <!-- 2. Load sidebar script -->
-     <script>
-                   document.addEventListener('DOMContentLoaded', function() {
-              var sidebarToggle = document.getElementById('sidebarToggle');
-              var sidebar = document.querySelector('.atc-sidebar');
-              var mainContent = document.querySelector('.atc-main-content');
-              var overlay = document.getElementById('sidebarOverlay');
+    <!-- 2. Load sidebar script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var sidebarToggle = document.getElementById('sidebarToggle');
+            var sidebar = document.querySelector('.atc-sidebar');
+            var mainContent = document.querySelector('.atc-main-content');
+            var overlay = document.getElementById('sidebarOverlay');
 
-              // فتح القائمة الجانبية افتراضياً عند تحميل الصفحة
-              sidebar.classList.add('open');
-              mainContent.classList.add('sidebar-open');
-              sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
-              sidebarToggle.title = 'إغلاق القائمة الجانبية';
+            // التحقق من حجم الشاشة
+            function checkScreenSize() {
+                if (window.innerWidth <= 991) {
+                    // الشاشات الصغيرة - إغلاق القائمة افتراضياً
+                    sidebar.classList.remove('open');
+                    mainContent.classList.remove('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                    sidebarToggle.title = 'فتح القائمة الجانبية';
+                    if (overlay) overlay.classList.remove('active');
+                } else {
+                    // الشاشات الكبيرة - فتح القائمة افتراضياً
+                    sidebar.classList.add('open');
+                    mainContent.classList.add('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+                    sidebarToggle.title = 'إغلاق القائمة الجانبية';
+                    if (overlay) overlay.classList.remove('active');
+                }
+            }
 
-              // التحكم في فتح وإغلاق القائمة الجانبية
-              if (sidebarToggle) {
-                  sidebarToggle.onclick = function () {
-                      if (sidebar.classList.contains('open')) {
-                          // إغلاق القائمة
-                          sidebar.classList.remove('open');
-                          mainContent.classList.remove('sidebar-open');
-                          sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
-                          sidebarToggle.title = 'فتح القائمة الجانبية';
-                      } else {
-                          // فتح القائمة
-                          sidebar.classList.add('open');
-                          mainContent.classList.add('sidebar-open');
-                          sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
-                          sidebarToggle.title = 'إغلاق القائمة الجانبية';
-                      }
-                  }
-              }
+            // التحكم في فتح وإغلاق القائمة الجانبية
+            if (sidebarToggle) {
+                sidebarToggle.onclick = function () {
+                    toggleSidebar();
+                }
+            }
+            
+            // زر الـ navbar للشاشات الصغيرة
+            var navbarSidebarBtn = document.getElementById('navbarSidebarBtn');
+            if (navbarSidebarBtn) {
+                navbarSidebarBtn.onclick = function () {
+                    toggleSidebar();
+                }
+            }
+            
+            // دالة فتح/إغلاق القائمة الجانبية
+            function toggleSidebar() {
+                if (sidebar.classList.contains('open')) {
+                    // إغلاق القائمة
+                    sidebar.classList.remove('open');
+                    mainContent.classList.remove('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                    sidebarToggle.title = 'فتح القائمة الجانبية';
+                    if (overlay) overlay.classList.remove('active');
+                } else {
+                    // فتح القائمة
+                    sidebar.classList.add('open');
+                    mainContent.classList.add('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+                    sidebarToggle.title = 'إغلاق القائمة الجانبية';
+                    if (overlay && window.innerWidth <= 991) overlay.classList.add('active');
+                }
+            }
 
-             // إغلاق القائمة عند النقر على Overlay (للجوال)
-             if (overlay) {
-                 overlay.onclick = function () {
-                     sidebar.classList.remove('open');
-                     mainContent.classList.remove('sidebar-open');
-                     sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
-                     sidebarToggle.title = 'فتح القائمة الجانبية';
-                 }
-             }
-             
-             // Initialize sidebar sections - expand the section that contains the active page
-             initializeSidebarSections();
-         });
+            // إغلاق القائمة عند النقر على Overlay (للجوال)
+            if (overlay) {
+                overlay.onclick = function () {
+                    sidebar.classList.remove('open');
+                    mainContent.classList.remove('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                    sidebarToggle.title = 'فتح القائمة الجانبية';
+                    overlay.classList.remove('active');
+                }
+            }
+            
+            // مراقبة تغيير حجم الشاشة
+            window.addEventListener('resize', checkScreenSize);
+            
+            // التحقق الأولي من حجم الشاشة
+            checkScreenSize();
+            
+            // Initialize sidebar sections
+            initializeSidebarSections();
+        });
         
-                 // Function to toggle sidebar sections
-         function toggleSection(sectionId) {
-             const content = document.getElementById(sectionId);
-             const header = content.previousElementSibling;
-             
-             if (content.classList.contains('collapsed')) {
-                 content.classList.remove('collapsed');
-                 header.classList.remove('collapsed');
-             } else {
-                 content.classList.add('collapsed');
-                 header.classList.add('collapsed');
-             }
-         }
+        // Function to toggle sidebar sections
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                header.classList.add('collapsed');
+            }
+        }
         
-                                                     // Function to initialize sidebar sections
-                                         function initializeSidebarSections() {
-                const sections = ['orgSection', 'staffSection', 'docsSection', 'activitiesSection', 'settingsSection'];
-               
-               // Keep all sections open by default
-               sections.forEach(sectionId => {
-                   const content = document.getElementById(sectionId);
-                   if (content) {
-                       // Always keep sections open
-                       content.classList.remove('collapsed');
-                       content.previousElementSibling.classList.remove('collapsed');
-                   }
-               });
-           }
+        // Function to initialize sidebar sections
+        function initializeSidebarSections() {
+            const sections = ['orgSection', 'staffSection', 'docsSection', 'activitiesSection', 'settingsSection'];
+            
+            // Keep all sections open by default
+            sections.forEach(sectionId => {
+                const content = document.getElementById(sectionId);
+                if (content) {
+                    // Always keep sections open
+                    content.classList.remove('collapsed');
+                    content.previousElementSibling.classList.remove('collapsed');
+                }
+            });
+        }
         
-                 // Add keyboard navigation support
-         document.addEventListener('keydown', function(e) {
-             if (e.key === 'Escape') {
-                 const sidebar = document.querySelector('.atc-sidebar');
-                 const mainContent = document.querySelector('.atc-main-content');
-                 const sidebarToggle = document.getElementById('sidebarToggle');
-                 
-                 if (sidebar.classList.contains('open')) {
-                     sidebar.classList.remove('open');
-                     mainContent.classList.remove('sidebar-open');
-                     sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
-                     sidebarToggle.title = 'فتح القائمة الجانبية';
-                 }
-             }
-         });
+        // Add keyboard navigation support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const sidebar = document.querySelector('.atc-sidebar');
+                const mainContent = document.querySelector('.atc-main-content');
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    mainContent.classList.remove('sidebar-open');
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                    sidebarToggle.title = 'فتح القائمة الجانبية';
+                    if (overlay) overlay.classList.remove('active');
+                }
+            }
+        });
     </script>
 
     <!-- 3. Render page-specific scripts LAST, after all main libraries are loaded -->

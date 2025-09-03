@@ -1,6 +1,20 @@
 ﻿@model System.Data.DataTable
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link href="~/css/medianotification.css" rel="stylesheet" />
+
+<!-- 
+    Notifications Page - Data comes from notifications table
+    This ensures data consistency between display and export
+    Code updated to resolve data inconsistency issues
+    
+    Displayed Data:
+    - Mobile: from controllers table (phone_number) or employees table (phonenumber)
+    - Email: from controllers table (email) or employees table (email)  
+    - Department: from controllers table (current_department) or employees table (department)
+    
+    COALESCE used to ensure no empty values are displayed
+-->
+
 <style>
     .notifications-table-container {
         width: 100%;
@@ -10,7 +24,7 @@
     .noti-table {
         width: 100%;
         font-size: 0.92rem;
-        min-width: 980px;
+        min-width: 1080px;
         background: #fcfcfc;
     }
 
@@ -44,6 +58,37 @@
             color: #25d366 !important;
         }
 
+        /* Status column styling */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 80px;
+            display: inline-block;
+        }
+
+        .status-suspended {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .status-critical {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .status-warning {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-unknown {
+            background-color: #6c757d;
+            color: white;
+        }
+
     .search-box-compact {
         max-width: 230px;
         font-size: 0.97rem;
@@ -62,6 +107,81 @@
     .export-btns button {
         margin-left: 3px;
     }
+
+    /* Email Button Styles */
+    .btn-email-notifications {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+    }
+
+    .btn-email-notifications:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+        color: white;
+    }
+
+    .btn-email-notifications:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+    }
+
+    /* Modal Enhancements */
+    .modal-header {
+        background: linear-gradient(135deg, #147858, #28a745);
+        color: white;
+        border-radius: 10px 10px 0 0;
+    }
+
+    .modal-content {
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .form-check-input:checked {
+        background-color: #147858;
+        border-color: #147858;
+    }
+
+    .form-check-input:focus {
+        border-color: #147858;
+        box-shadow: 0 0 0 0.2rem rgba(20, 120, 88, 0.25);
+    }
+
+    /* Progress Bar */
+    .progress {
+        height: 25px;
+        border-radius: 15px;
+        background: #e9ecef;
+    }
+
+    .progress-bar {
+        background: linear-gradient(135deg, #147858, #28a745);
+        border-radius: 15px;
+    }
+
+    /* Alert Enhancements */
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #ffeaa7;
+        color: #856404;
+    }
 </style>
 
 <h2 class="mb-3" style="font-size:1.1em; font-weight:600; color:#147858;">
@@ -72,67 +192,141 @@
 {
     <div class="mb-3">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <a href="@Url.Action("ControllersNeedingLicenses", "Notification")" class="btn btn-warning btn-sm w-100">
                     <i class="fa-solid fa-exclamation-triangle"></i>
-                    المراقبين الذين يحتاجون رخص
+                    Controllers Needing Licenses
                 </a>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <a href="@Url.Action("EmployeesNeedingLicenses", "Notification")" class="btn btn-info btn-sm w-100">
+                    <i class="fa-solid fa-user-tie"></i>
+                    Employees Needing Licenses
+                </a>
+            </div>
+            <div class="col-md-3">
                 <a href="@Url.Action("InactiveControllers", "Notification")" class="btn btn-secondary btn-sm w-100">
                     <i class="fa-solid fa-user-slash"></i>
-                    المراقبين غير النشطين
+                    Inactive Controllers
                 </a>
             </div>
-            <div class="col-md-4">
-                <a href="@Url.Action("ExportControllersNeedingLicensesToPDF", "Notification")" class="btn btn-danger btn-sm w-100">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    تصدير تقرير PDF
-                </a>
+            <div class="col-md-3">
+                <form method="post" asp-action="TestNotificationService" class="d-inline">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        Send Email to All
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 }
 
-@if (User.IsInRole("Admin"))
-{
-    <form method="post" asp-action="SendExpiryEmails" class="mb-2">
-        <button type="submit" class="btn btn-danger btn-sm">
-            <i class="fa-solid fa-envelope"></i> إرسال بريد إلكتروني للتراخيص منتهية الصلاحية
-        </button>
-    </form>
-}
-
 <div class="mb-2 row align-items-center">
     <div class="col-md-5">
-        <input type="text" id="notiFilter" class="form-control search-box-compact" placeholder="ابحث في الإشعارات أو اسم المستخدم..." />
+        <input type="text" id="notiFilter" class="form-control search-box-compact" placeholder="Search in notifications or username..." />
     </div>
     <div class="col-md-7 text-end export-btns">
         <button onclick="exportNotificationsPDF()" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</button>
         <button onclick="exportNotificationsExcel()" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        <button onclick="sendEmailNotifications()" class="btn btn-email-notifications btn-sm" id="emailBtn">
+            <i class="fa-solid fa-envelope"></i> Send to Checked
+        </button>
+        <button onclick="sendWhatsAppNotifications()" class="btn btn-success btn-sm">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </button>
+    </div>
+</div>
+
+<!-- Modal for Email Options -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="emailModalLabel">
+                    <i class="fas fa-envelope me-2"></i>Send Email Notifications
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label fw-bold text-primary">
+                                <i class="fas fa-bell me-2"></i>Notification Type:
+                            </label>
+                            <div class="alert alert-info">
+                                <i class="fas fa-star text-warning me-2"></i>
+                                <strong>Selected Rows Only</strong> - Emails will be sent to selected rows only
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> 
+                    <span id="emailNote">A notification email will be sent to selected rows with their license details</span>
+                </div>
+                
+                <div id="selectedRowsInfo" class="alert alert-warning d-none">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> No rows selected. Please select the required rows first.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSendEmails()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Notifications
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">
+                    <i class="fa-solid fa-spinner fa-spin text-primary"></i> Sending Notifications...
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="emailProgress"></div>
+                </div>
+                <div id="progressText">Preparing emails...</div>
+            </div>
+        </div>
     </div>
 </div>
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="alert alert-success">لا يوجد تنبيهات حالياً.</div>
+    <div class="alert alert-success">No notifications currently.</div>
 }
 else
 {
     <div class="notifications-table-container">
         <table id="notiTable" class="table noti-table table-striped table-hover">
-            <thead>
+            <thead class="table-dark">
                 <tr>
-                    <th>User Name</th>
+                    <th>
+                        <input type="checkbox" id="selectAll" class="form-check-input" title="Select All">
+                    </th>
+                    <th>Username</th>
                     <th>User Type</th>
                     <th>Expiry Date</th>
                     <th>License Type</th>
-                    <th>Days Left</th>
+                    <th>Remaining Days</th>
+                    <th>Status</th>
                     <th>Mobile</th>
                     <th>Email</th>
                     <th>Department</th>
                     <th>Location</th>
-                    <th class="text-center">WhatsApp</th>
+                    <th>WhatsApp</th>
                 </tr>
             </thead>
             <tbody>
@@ -152,9 +346,12 @@ else
                         }
                     }
                     <tr class="@rowClass">
+                        <td>
+                            <input type="checkbox" class="form-check-input row-checkbox" value="@row["NotificationId"]">
+                        </td>
                         <td>@row["ControllerName"]</td>
                         <td>@row["UserType"]</td>
-                        <td>@Convert.ToDateTime(row["licenseexpirydate"]).ToString("yyyy-MM-dd")</td>
+                        <td>@(row["licenseexpirydate"] != DBNull.Value ? Convert.ToDateTime(row["licenseexpirydate"]).ToString("yyyy-MM-dd") : "N/A")</td>
                         <td>@row["licensetype"]</td>
                         <td>
                             @if (row["RemainingDays"] != DBNull.Value)
@@ -178,24 +375,61 @@ else
                                 <span>N/A</span>
                             }
                         </td>
-                        <td>@row["phone_number"]</td>
-                        <td>@row["email"]</td>
-                        <td>@row["Department"]</td>
+                        <td>
+                            @if (row["Status"] != DBNull.Value && row["StatusColor"] != DBNull.Value)
+                            {
+                                string status = row["Status"].ToString();
+                                string color = row["StatusColor"].ToString();
+                                string statusClass = "";
+                                
+                                switch (status.ToLower())
+                                {
+                                    case "suspended":
+                                        statusClass = "status-suspended";
+                                        break;
+                                    case "critical":
+                                        statusClass = "status-critical";
+                                        break;
+                                    case "warning":
+                                        statusClass = "status-warning";
+                                        break;
+                                    default:
+                                        statusClass = "status-unknown";
+                                        break;
+                                }
+                                
+                                <span class="status-badge @statusClass">@status</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">N/A</span>
+                            }
+                        </td>
+                        <td>@(row["phone_number"] != DBNull.Value && !string.IsNullOrEmpty(row["phone_number"].ToString()) ? row["phone_number"] : "N/A")</td>
+                        <td>@(row["email"] != DBNull.Value && !string.IsNullOrEmpty(row["email"].ToString()) ? row["email"] : "N/A")</td>
+                        <td>@(row["Department"] != DBNull.Value && !string.IsNullOrEmpty(row["Department"].ToString()) ? row["Department"] : "N/A")</td>
                         <td>@(row["airportname"] != DBNull.Value ? row["airportname"] : "N/A")</td>
                         <td class="text-center">
                             @{
-                                var phone = row["phone_number"].ToString();
-                                if (!string.IsNullOrEmpty(phone) && phone.StartsWith("0"))
+                                var phone = row["phone_number"]?.ToString();
+                                if (!string.IsNullOrEmpty(phone) && phone != "N/A")
                                 {
-                                    phone = "962" + phone.Substring(1);
+                                    if (phone.StartsWith("0"))
+                                    {
+                                        phone = "962" + phone.Substring(1);
+                                    }
+                                    var licenseType = row["licensetype"]?.ToString() ?? "License";
+                                    var name = row["ControllerName"]?.ToString() ?? "User";
+                                    var waUrl = $"https://wa.me/{phone}?text=Dear {name}, your {licenseType} needs to be renewed. Thank you.%0A%0Aالسيد/السيدة {name}، يرجى إجراء اللازم لتجديد {licenseType} الخاصة بك. شكرًا";
+                                    <a href="@waUrl" target="_blank" title="Send WhatsApp Message">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
                                 }
-                                var licenseType = row["licensetype"].ToString();
-                                var name = row["ControllerName"].ToString();
-                                var waUrl = $"https://wa.me/{phone}?text=Dear {name}, your {licenseType} needs to be renewed. Thank you.%0A%0Aالسيد/السيدة {name}، يرجى إجراء اللازم لتجديد {licenseType} الخاصة بك. شكرًا";
+                                else
+                                {
+                                    <span class="text-muted">No Phone</span>
+                                }
                             }
-                            <a href="@waUrl" target="_blank" title="Send WhatsApp Message">
-                                <i class="fab fa-whatsapp"></i>
-                            </a>
                         </td>
                     </tr>
                 }
@@ -206,6 +440,140 @@ else
 
 @section Scripts {
     <script>
+        let selectedRows = new Set();
+        
+        // تحديد/إلغاء تحديد الكل
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+                if (this.checked) {
+                    selectedRows.add(checkbox.value);
+                } else {
+                    selectedRows.delete(checkbox.value);
+                }
+            });
+            updateEmailNote();
+        });
+        
+        // تحديد/إلغاء تحديد صف واحد
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-checkbox')) {
+                if (e.target.checked) {
+                    selectedRows.add(e.target.value);
+                } else {
+                    selectedRows.delete(e.target.value);
+                }
+                updateEmailNote();
+                updateSelectAllState();
+            }
+        });
+        
+        // تحديث حالة "تحديد الكل"
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+            
+            if (checkedCount === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+        
+        // تحديث ملاحظة الإيميل
+        function updateEmailNote() {
+            const emailNote = document.getElementById('emailNote');
+            const selectedRowsInfo = document.getElementById('selectedRowsInfo');
+            
+            if (selectedRows.size === 0) {
+                emailNote.textContent = 'No rows selected. Please select the required rows first.';
+                selectedRowsInfo.classList.remove('d-none');
+            } else {
+                emailNote.textContent = `A notification email will be sent to ${selectedRows.size} selected person(s) with their license details`;
+                selectedRowsInfo.classList.add('d-none');
+            }
+        }
+        
+        // فتح نافذة الإيميل
+        function sendEmailNotifications() {
+            document.getElementById('emailModal').classList.add('show');
+            document.getElementById('emailModal').style.display = 'block';
+            document.body.classList.add('modal-open');
+            updateEmailNote();
+        }
+        
+        // تأكيد إرسال الإيميلات
+        function confirmSendEmails() {
+            const emailNote = document.getElementById('emailNote');
+            const selectedRowsInfo = document.getElementById('selectedRowsInfo');
+            
+            if (selectedRows.size === 0) {
+                showAlert('Please select the required rows first.', 'warning');
+                return;
+            }
+            
+            // إغلاق النافذة
+            const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
+            modal.hide();
+            
+            // فتح نافذة التقدم
+            document.getElementById('progressModal').classList.add('show');
+            document.getElementById('progressModal').style.display = 'block';
+            document.body.classList.add('modal-open');
+            
+            // رسالة التأكيد
+            let confirmMessage = `Emails will be sent to ${selectedRows.size} selected person(s)`;
+            
+            showAlert(confirmMessage, 'info');
+            
+            // إرسال الإيميلات
+            sendBulkEmails(selectedRows);
+        }
+        
+        // إرسال الإيميلات
+        function sendBulkEmails(selectedIds) {
+            
+            $.ajax({
+                url: '/Account/SendBulkEmailNotifications',
+                type: 'POST',
+                data: {
+                    selectedIds: Array.from(selectedIds)
+                },
+                success: function(response) {
+                    if (response.success) {
+                        updateProgress(100, 'Emails sent successfully!');
+                        showAlert(`✅ ${response.emailsSent} emails sent successfully out of ${response.totalEmails}!`, 'success');
+                        
+                        // إعادة تعيين الاختيارات
+                        selectedRows.clear();
+                        document.querySelectorAll('.row-checkbox').forEach(checkbox => checkbox.checked = false);
+                        document.getElementById('selectAll').checked = false;
+                        document.getElementById('selectAll').indeterminate = false;
+                        
+                        setTimeout(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                            modal.hide();
+                        }, 2000);
+                    } else {
+                        updateProgress(0, 'Failed to send emails');
+                        showAlert(`❌ ${response.message}`, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    updateProgress(0, 'Error occurred while sending emails');
+                    showAlert('❌ Error occurred while sending emails', 'danger');
+                    console.error('Error:', error);
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const filterInput = document.getElementById('notiFilter');
             if (filterInput) {
@@ -228,6 +596,235 @@ else
         function exportNotificationsExcel() {
             const filter = document.getElementById('notiFilter').value;
             window.open('/Notification/ExportNotificationsToExcel?filter=' + encodeURIComponent(filter), '_blank');
+        }
+
+        // Email Notification Functions
+        function sendEmailNotifications() {
+            // التحقق من وجود بيانات في الجدول
+            const tableRows = document.querySelectorAll('#notiTable tbody tr');
+            if (tableRows.length === 0) {
+                showAlert('No data available to send notifications', 'warning');
+                return;
+            }
+
+            // عرض Modal الخيارات
+            const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+            emailModal.show();
+        }
+
+        function confirmSendEmails() {
+            const emailNote = document.getElementById('emailNote');
+            const selectedRowsInfo = document.getElementById('selectedRowsInfo');
+            
+            // التحقق من التأكيد
+            const confirmMessage = `Are you sure you want to send notifications to selected rows only?\n\nAn email will be sent to ${selectedRows.size} person(s).`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // إغلاق Modal الخيارات
+            const emailModal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
+            emailModal.hide();
+
+            // عرض Modal التقدم
+            const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+            progressModal.show();
+
+            // إرسال الطلب
+            sendBulkEmails(selectedRows);
+        }
+
+        async function sendBulkEmails(selectedIds) {
+            try {
+                const filter = document.getElementById('notiFilter').value;
+                
+                // تحديث شريط التقدم
+                updateProgress(10, 'Preparing data...');
+                
+                const response = await fetch('/Account/SendBulkEmailNotifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        selectedIds: Array.from(selectedIds),
+                        filter: filter
+                    })
+                });
+
+                updateProgress(50, 'Sending emails...');
+
+                const result = await response.json();
+                
+                updateProgress(100, 'Sent successfully!');
+                
+                // انتظار قليل لإظهار شريط التقدم
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (result.success) {
+                    showAlert(`✅ ${result.emailsSent} emails sent successfully out of ${result.totalEmails}!`, 'success');
+                    
+                    // تحديث عداد الإشعارات إذا كان موجوداً
+                    updateNotificationBadge(result.emailsSent);
+                } else {
+                    showAlert(`❌ Error occurred: ${result.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('❌ Error occurred while sending emails', 'danger');
+                console.error('Error:', error);
+            } finally {
+                // إغلاق Modal التقدم
+                const progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                progressModal.hide();
+            }
+        }
+
+        function updateNotificationBadge(emailsSent) {
+            // البحث عن عداد الإشعارات في الـ sidebar
+            const badge = document.querySelector('.sidebar .badge');
+            if (badge) {
+                const currentCount = parseInt(badge.textContent) || 0;
+                const newCount = Math.max(0, currentCount - emailsSent);
+                badge.textContent = newCount;
+                
+                // إخفاء العداد إذا كان صفر
+                if (newCount === 0) {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // إضافة تأثيرات بصرية
+            alertDiv.style.transform = 'translateX(100%)';
+            alertDiv.style.transition = 'transform 0.3s ease';
+            
+            setTimeout(() => {
+                alertDiv.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // إزالة التنبيه تلقائياً بعد 8 ثواني
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) {
+                            alertDiv.remove();
+                        }
+                    }, 300);
+                }
+            }, 8000);
+        }
+
+        // تحديث شريط التقدم
+        function updateProgress(percentage, text) {
+            const progressBar = document.getElementById('emailProgress');
+            const progressText = document.getElementById('progressText');
+            
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+                progressBar.setAttribute('aria-valuenow', percentage);
+            }
+            if (progressText) {
+                progressText.textContent = text;
+            }
+        }
+
+        // إضافة تأثيرات إضافية للصفحة
+        document.addEventListener('DOMContentLoaded', function () {
+            // إضافة تأثيرات للجدول
+            const table = document.getElementById('notiTable');
+            if (table) {
+                table.addEventListener('mouseover', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        e.target.parentElement.style.transform = 'scale(1.01)';
+                        e.target.parentElement.style.transition = 'transform 0.2s ease';
+                    }
+                });
+                
+                table.addEventListener('mouseout', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        e.target.parentElement.style.transform = 'scale(1)';
+                    }
+                });
+            }
+
+            // تحسين البحث
+            const filterInput = document.getElementById('notiFilter');
+            if (filterInput) {
+                let searchTimeout;
+                filterInput.addEventListener('keyup', function () {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        const filter = this.value.toLowerCase();
+                        const rows = document.querySelectorAll('#notiTable tbody tr');
+                        let visibleCount = 0;
+                        
+                        rows.forEach(function (row) {
+                            const rowText = row.innerText.toLowerCase();
+                            const isVisible = rowText.includes(filter);
+                            row.style.display = isVisible ? '' : 'none';
+                            if (isVisible) visibleCount++;
+                        });
+                        
+                        // إظهار رسالة إذا لم يتم العثور على نتائج
+                        showSearchResults(visibleCount, rows.length, filter);
+                    }, 300);
+                });
+            }
+        });
+
+        function showSearchResults(visibleCount, totalCount, filter) {
+            // إزالة رسائل البحث السابقة
+            const existingAlert = document.querySelector('.search-results-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            if (filter && visibleCount === 0) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info search-results-alert';
+                alertDiv.innerHTML = `
+                    <i class="fa-solid fa-search"></i>
+                    <strong>No Results:</strong> No results found for "${filter}"
+                `;
+                
+                const table = document.getElementById('notiTable');
+                if (table && table.parentNode) {
+                    table.parentNode.insertBefore(alertDiv, table);
+                }
+            } else if (filter && visibleCount < totalCount) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success search-results-alert';
+                alertDiv.innerHTML = `
+                    <i class="fa-solid fa-check-circle"></i>
+                    <strong>Search Results:</strong> Found ${visibleCount} out of ${totalCount} results
+                `;
+                
+                const table = document.getElementById('notiTable');
+                if (table && table.parentNode) {
+                    table.parentNode.insertBefore(alertDiv, table);
+                }
+            }
+        }
+
+        function sendWhatsAppNotifications() {
+            showAlert('WhatsApp functionality will be implemented soon!', 'info');
         }
     </script>
 }

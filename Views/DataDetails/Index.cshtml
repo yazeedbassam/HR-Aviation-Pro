@@ -148,23 +148,8 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ais-employees-tab" data-bs-toggle="tab" data-bs-target="#ais-employees" type="button" role="tab">
-                    AIS Employees
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="cns-employees-tab" data-bs-toggle="tab" data-bs-target="#cns-employees" type="button" role="tab">
-                    CNS Employees
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="aftn-employees-tab" data-bs-toggle="tab" data-bs-target="#aftn-employees" type="button" role="tab">
-                    AFTN Employees
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ops-employees-tab" data-bs-toggle="tab" data-bs-target="#ops-employees" type="button" role="tab">
-                    Ops Staff
+                <button class="nav-link" id="employees-ops-tab" data-bs-toggle="tab" data-bs-target="#employees-ops" type="button" role="tab">
+                    Employees & Operation Staff
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -233,15 +218,15 @@
             </div>
         </div>
 
-        <!-- AIS Employees Tab -->
-        <div class="tab-pane fade" id="ais-employees" role="tabpanel">
+        <!-- Employees & Operation Staff Tab -->
+        <div class="tab-pane fade" id="employees-ops" role="tabpanel">
             <div class="export-controls">
-                <button class="export-btn excel" onclick="downloadExcel('aisEmployeesTable', 'AIS_Employees')">Export Excel</button>
-                <button class="export-btn pdf" onclick="downloadPDF('aisEmployeesTable', 'AIS_Employees')">Export PDF</button>
+                <button class="export-btn excel" onclick="downloadExcel('employeesOpsTable', 'Employees_Operation_Staff')">Export Excel</button>
+                <button class="export-btn pdf" onclick="downloadPDF('employeesOpsTable', 'Employees_Operation_Staff')">Export PDF</button>
             </div>
             
             <div class="table-responsive">
-                <table class="table simple-table" id="aisEmployeesTable">
+                <table class="table simple-table" id="employeesOpsTable">
                     <thead>
                         <tr>
                             <th>Full Name</th>
@@ -253,146 +238,32 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("AIS") == true).Any() ?? false)
-                        {
-                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("AIS") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
-                            {
-                                <tr>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Username</td>
-                                    <td>@(item.Email ?? "-")</td>
-                                    <td>@(item.PhoneNumber ?? "-")</td>
-                                    <td>@(item.JobTitle ?? "-")</td>
-                                    <td>@(item.Department ?? "-")</td>
-                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- CNS Employees Tab -->
-        <div class="tab-pane fade" id="cns-employees" role="tabpanel">
-            <div class="export-controls">
-                <button class="export-btn excel" onclick="downloadExcel('cnsEmployeesTable', 'CNS_Employees')">Export Excel</button>
-                <button class="export-btn pdf" onclick="downloadPDF('cnsEmployeesTable', 'CNS_Employees')">Export PDF</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table simple-table" id="cnsEmployeesTable">
-                    <thead>
+                                <tbody>
+                @if (Model.AllEmployeesAndOpsStaff != null && Model.AllEmployeesAndOpsStaff.Any())
+                {
+                    @foreach (var item in Model.AllEmployeesAndOpsStaff)
+                    {
                         <tr>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Phone Number</th>
-                            <th>Job Title</th>
-                            <th>Department</th>
-                            <th>Status</th>
+                            <td>@item.FullName</td>
+                            <td>@item.Username</td>
+                            <td>@(item.Email ?? "-")</td>
+                            <td>@(item.PhoneNumber ?? "-")</td>
+                            <td>@(item.JobTitle ?? "-")</td>
+                            <td>@(item.Department ?? "-")</td>
+                            <td>@(item.IsActive ? "Active" : "Inactive")</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("CNS") == true).Any() ?? false)
-                        {
-                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("CNS") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
-                            {
-                                <tr>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Username</td>
-                                    <td>@(item.Email ?? "-")</td>
-                                    <td>@(item.PhoneNumber ?? "-")</td>
-                                    <td>@(item.JobTitle ?? "-")</td>
-                                    <td>@(item.Department ?? "-")</td>
-                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- AFTN Employees Tab -->
-        <div class="tab-pane fade" id="aftn-employees" role="tabpanel">
-            <div class="export-controls">
-                <button class="export-btn excel" onclick="downloadExcel('aftnEmployeesTable', 'AFTN_Employees')">Export Excel</button>
-                <button class="export-btn pdf" onclick="downloadPDF('aftnEmployeesTable', 'AFTN_Employees')">Export PDF</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table simple-table" id="aftnEmployeesTable">
-                    <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Phone Number</th>
-                            <th>Job Title</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("AFTN") == true).Any() ?? false)
-                        {
-                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("AFTN") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
-                            {
-                                <tr>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Username</td>
-                                    <td>@(item.Email ?? "-")</td>
-                                    <td>@(item.PhoneNumber ?? "-")</td>
-                                    <td>@(item.JobTitle ?? "-")</td>
-                                    <td>@(item.Department ?? "-")</td>
-                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Ops Staff Tab -->
-        <div class="tab-pane fade" id="ops-employees" role="tabpanel">
-            <div class="export-controls">
-                <button class="export-btn excel" onclick="downloadExcel('opsEmployeesTable', 'Ops_Staff')">Export Excel</button>
-                <button class="export-btn pdf" onclick="downloadPDF('opsEmployeesTable', 'Ops_Staff')">Export PDF</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table simple-table" id="opsEmployeesTable">
-                    <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Phone Number</th>
-                            <th>Job Title</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.AllEmployees?.Where(e => e.Department?.Contains("Administration") == true || e.Department?.Contains("Safety") == true || e.Department?.Contains("Quality") == true).Any() ?? false)
-                        {
-                            @foreach (var item in Model.AllEmployees?.Where(e => e.Department?.Contains("Administration") == true || e.Department?.Contains("Safety") == true || e.Department?.Contains("Quality") == true) ?? Enumerable.Empty<WebApplication1.Models.Employee>())
-                            {
-                                <tr>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Username</td>
-                                    <td>@(item.Email ?? "-")</td>
-                                    <td>@(item.PhoneNumber ?? "-")</td>
-                                    <td>@(item.JobTitle ?? "-")</td>
-                                    <td>@(item.Department ?? "-")</td>
-                                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No employee data available currently
+                        </td>
+                    </tr>
+                }
+            </tbody>
                 </table>
             </div>
         </div>

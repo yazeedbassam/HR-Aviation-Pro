@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using WebApplication1.Services;
+using System.Security.Claims;
 
 namespace WebApplication1.Attributes
 {
@@ -28,7 +29,7 @@ namespace WebApplication1.Attributes
             }
 
             // Get user ID from claims
-            var userIdClaim = httpContext.User.FindFirst("UserId");
+            var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
                 context.Result = new UnauthorizedResult();

@@ -56,12 +56,13 @@ public class NotificationCountViewComponent : ViewComponent
             }
         }
 
-        // إضافة عداد الإشعارات الجديدة للمراقبين الذين يحتاجون رخص
+        // إضافة عداد الإشعارات الجديدة للمراقبين والموظفين الذين يحتاجون رخص
         int controllersNeedingLicensesCount = _licenseNotificationService.GetControllersNeedingLicensesCount();
+        int employeesNeedingLicensesCount = _db.GetTotalNeedingLicensesCount() - controllersNeedingLicensesCount;
         int inactiveControllersCount = _licenseNotificationService.GetInactiveControllersCount();
 
         // إجمالي عدد الإشعارات
-        int totalNotifications = notificationCount + controllersNeedingLicensesCount + inactiveControllersCount;
+        int totalNotifications = notificationCount + controllersNeedingLicensesCount + employeesNeedingLicensesCount + inactiveControllersCount;
 
         return View((object)totalNotifications); // إرجاع الـ View مع عدد الإشعارات
     }

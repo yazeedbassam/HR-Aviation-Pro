@@ -7,25 +7,34 @@ using System.Security.Claims;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class ConfigurationController : Controller
     {
         private readonly IConfigurationService _configurationService;
         private readonly ILogger<ConfigurationController> _logger;
+        private readonly IAdvancedPermissionManagerService _permissionService;
 
-        public ConfigurationController(IConfigurationService configurationService, ILogger<ConfigurationController> logger)
+        public ConfigurationController(IConfigurationService configurationService, ILogger<ConfigurationController> logger, IAdvancedPermissionManagerService permissionService)
         {
             _configurationService = configurationService;
             _logger = logger;
+            _permissionService = permissionService;
         }
 
         #region Main Configuration Management
 
         // GET: Configuration
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized();
+
+                if (!await _permissionService.CanPerformOperationAsync(userId, "Configuration", "View"))
+                {
+                    return Forbid();
+                }
                 var viewModel = new ConfigurationManagementViewModel
                 {
                     Categories = _configurationService.GetAllCategories(),
@@ -220,33 +229,14 @@ namespace WebApplication1.Controllers
 
         #region Value Management
 
-        // GET: Configuration/CreateValue
+        // GET: Configuration/CreateValue - Redirect to Index with modal
         public IActionResult CreateValue(string categoryName = null)
         {
-            try
+            if (!string.IsNullOrEmpty(categoryName))
             {
-                var viewModel = new ConfigurationValueViewModel();
-                
-                if (!string.IsNullOrEmpty(categoryName))
-                {
-                    var category = _configurationService.GetCategoryByName(categoryName);
-                    if (category != null)
-                    {
-                        viewModel.CategoryId = category.CategoryId;
-                        viewModel.CategoryName = category.CategoryName;
-                        viewModel.CategoryDisplayName = category.DisplayName;
-                    }
-                }
-
-                ViewBag.Categories = new SelectList(_configurationService.GetAllCategories(), "CategoryId", "DisplayName");
-                return View(viewModel);
+                TempData["OpenCreateModal"] = categoryName;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading create value form");
-                TempData["ErrorMessage"] = "An error occurred while loading the form.";
-                return RedirectToAction(nameof(Index));
-            }
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: Configuration/CreateValue
@@ -543,5 +533,11 @@ namespace WebApplication1.Controllers
         }
 
         #endregion
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            return userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) ? userId : 0;
+        }
     }
 } 

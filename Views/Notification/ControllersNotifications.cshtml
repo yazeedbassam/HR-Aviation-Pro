@@ -1,7 +1,7 @@
 @model IEnumerable<WebApplication1.Models.ControllerUser>
 
 @{
-    ViewData["Title"] = ViewBag.Title ?? "إشعارات المراقبين";
+    ViewData["Title"] = ViewBag.Title ?? "Controller Notifications";
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -104,9 +104,9 @@
             <div class="export-buttons">
                 <a href="@Url.Action("ExportControllersNeedingLicensesToPDF")" class="btn btn-danger btn-export">
                     <i class="fa-solid fa-file-pdf me-1"></i>
-                    تصدير PDF
+                    Export PDF
                 </a>
-                <span class="badge bg-primary fs-6">@Model.Count() مراقب</span>
+                <span class="badge bg-primary fs-6">@Model.Count() Controller(s)</span>
             </div>
 
             <div class="table-responsive">
@@ -114,15 +114,15 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>الاسم الكامل</th>
-                            <th>اسم المستخدم</th>
-                            <th>المسمى الوظيفي</th>
-                            <th>القسم</th>
-                            <th>المطار</th>
-                            <th>البلد</th>
-                            <th>البريد الإلكتروني</th>
-                            <th>رقم الهاتف</th>
-                            <th>الحالة</th>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Job Title</th>
+                            <th>Department</th>
+                            <th>Airport</th>
+                            <th>Country</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -172,14 +172,14 @@
                                     {
                                         <span class="status-badge status-active">
                                             <i class="fa-solid fa-check-circle me-1"></i>
-                                            نشط
+                                            Active
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="status-badge status-inactive">
                                             <i class="fa-solid fa-times-circle me-1"></i>
-                                            غير نشط
+                                            Inactive
                                         </span>
                                     }
                                 </td>
@@ -194,17 +194,17 @@
         {
             <div class="empty-state">
                 <i class="fa-solid fa-check-circle"></i>
-                <h5>لا توجد إشعارات</h5>
-                <p>جميع المراقبين في حالة جيدة ولا يحتاجون إلى إجراءات إضافية.</p>
+                <h5>No Notifications</h5>
+                <p>All controllers are in good condition and do not require additional actions.</p>
             </div>
         }
     </div>
 </div>
 
 <div class="text-center mt-4">
-    <a href="@Url.Action("Index", "Notification")" class="btn btn-secondary">
+    <a href="@Url.Action("Notifications", "Account")" class="btn btn-secondary">
         <i class="fa-solid fa-arrow-left me-2"></i>
-        العودة إلى الإشعارات
+        Return to Notifications
     </a>
 </div>
 

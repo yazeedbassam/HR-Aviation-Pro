@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;     // حتى نستعمل Country
+using WebApplication1.Attributes;
+using WebApplication1.Services;
 using System.Data;
 
 namespace WebApplication1.Controllers
@@ -16,6 +18,12 @@ namespace WebApplication1.Controllers
 
         public IActionResult Index()
         {
+            // Check permission
+            if (!HttpContext.HasAdvancedPermission("COUNTRY_VIEW") && !HttpContext.IsAdvancedAdmin())
+            {
+                return Forbid();
+            }
+
             List<Country> countries = new List<Country>();
 
             // جلب البيانات من قاعدة البيانات
@@ -27,7 +35,7 @@ namespace WebApplication1.Controllers
                 countries.Add(new Country
                 {
                     CountryId = Convert.ToInt32(row["CountryId"]),
-                    CountryName = row["CountryName"].ToString()
+                    CountryName = row["CountryName"]?.ToString() ?? ""
                 });
             }
 
@@ -76,7 +84,7 @@ namespace WebApplication1.Controllers
             var country = new Country
             {
                 CountryId = Convert.ToInt32(row["CountryId"]),
-                CountryName = row["CountryName"].ToString()
+                CountryName = row["CountryName"]?.ToString() ?? ""
             };
 
             return View(country);

@@ -5,7 +5,7 @@ namespace WebApplication1.ViewModels
 {
     public class ProjectDetailViewModel
     {
-        public Project Project { get; set; }
+        public Project Project { get; set; } = new Project();
         public List<ProjectParticipantViewModel> Participants { get; set; }
         public List<string> Divisions { get; set; }
         public List<ProjectFileViewModel> Files { get; set; }

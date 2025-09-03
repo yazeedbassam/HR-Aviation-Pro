@@ -10,10 +10,10 @@ namespace WebApplication1.Models
     public class ProfileViewModel
     {
         // --- Common Properties for Both User Types ---
-        public string UserType { get; set; } // "Controller" or "Employee"
+        public string UserType { get; set; } = string.Empty; // "Controller" or "Employee"
         public int UserId { get; set; } // This will hold ControllerId or EmployeeID
-        public string FullName { get; set; }
-        public string Username { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string? JobTitle { get; set; }
         public string? PhotoPath { get; set; }
         public IFormFile? PhotoFile { get; set; }
@@ -34,6 +34,14 @@ namespace WebApplication1.Models
         public string? Gender { get; set; }
         public string? Location { get; set; }
 
+        // --- Financial Information ---
+        public decimal? CurrentSalary { get; set; }
+        public decimal? SalaryAfterAnnualIncrease { get; set; }
+        public decimal? AnnualIncreasePercentage { get; set; }
+        public string? BankAccountNumber { get; set; }
+        public string? BankName { get; set; }
+        public string? TaxId { get; set; }
+        public string? InsuranceNumber { get; set; }
 
         // --- Security ---
         public string? Password { get; set; } // Optional: only for changing password

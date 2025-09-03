@@ -11,6 +11,11 @@ namespace WebApplication1.Models
         [BindProperty]
         [Required] 
         public string Password { get; set; }
+
+        [BindProperty]
+        [Required(ErrorMessage = "Please select a database connection")]
+        public string DatabaseType { get; set; }
+
         public string? ReturnUrl { get; set; }
 
         //  [Required(ErrorMessage = "الاسم مطلوب")]

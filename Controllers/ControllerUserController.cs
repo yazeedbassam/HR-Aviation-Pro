@@ -29,28 +29,39 @@ using WebApplication1.DataAccess; // Assume _db is of type SqlDb
 using WebApplication1.Models;
 using WebApplication1.Models;
 using WebApplication1.Services;
+using WebApplication1.Attributes;
 using Color = System.Drawing.Color; // Assume 'model' is of a Controller-related type
 
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class ControllerUserController : Controller
 {
     private readonly SqlServerDb _db;
     private readonly IPasswordHasher<ControllerUser> _hasher; // ???? ControllerUserViewModel
     private readonly IHostEnvironment _hostEnvironment;
+    private readonly IAdvancedPermissionManagerService _permissionService;
 
     public ControllerUserController(
         SqlServerDb db,
         IPasswordHasher<ControllerUser> hasher, // ???? ControllerUserViewModel
-        IHostEnvironment hostEnvironment)
+        IHostEnvironment hostEnvironment,
+        IAdvancedPermissionManagerService permissionService)
     {
         _db = db;
         _hasher = hasher;
         _hostEnvironment = hostEnvironment; // ???? ?? ??? ????? ?????
+        _permissionService = permissionService;
     }
     // GET: /ControllerUser
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
+        var userId = GetCurrentUserId();
+        if (userId == 0) return Unauthorized();
+
+        if (!await _permissionService.CanPerformOperationAsync(userId, "Controller", "View"))
+        {
+            return Forbid();
+        }
         // The SQL query now includes a JOIN with the Countries table
         const string sql = @"
         SELECT 
@@ -139,10 +150,35 @@ public class ControllerUserController : Controller
             return View(model);
         }
 
-        // 2) ????? ???? ????????
+        // 2) Validate that the role exists in Roles table before creating user
+        if (string.IsNullOrEmpty(model.Role))
+        {
+            ModelState.AddModelError("Role", "Role is required.");
+            return View(model);
+        }
+        
+        // Check if role exists in Roles table
+        var roleExists = _db.ExecuteQuery("SELECT COUNT(*) FROM Roles WHERE RoleName = @RoleName", 
+            new Microsoft.Data.SqlClient.SqlParameter("@RoleName", model.Role));
+        
+        if (Convert.ToInt32(roleExists.Rows[0][0]) == 0)
+        {
+            ModelState.AddModelError("Role", $"Role '{model.Role}' does not exist in the system.");
+            return View(model);
+        }
+        
+        // Create user with validated role
         _db.CreateUser(model.Username, model.Password, model.Role);
         var userRec = _db.GetUserByUsername(model.Username);
         int userId = userRec?.userId ?? 0;
+
+        // 2.1) Ensure new Controller users only get minimal permissions (Profile access only)
+        if (model.Role == "Controller" && userId > 0)
+        {
+            // Remove any default role-based permissions that might have been assigned
+            // This ensures Controller users only get explicitly assigned permissions
+            _db.RemoveDefaultRolePermissionsForUser(userId, "Controller");
+        }
 
         // 3) ??? ???????
         string sanitized = SanitizeFolderName(model.Username);
@@ -263,26 +299,31 @@ INSERT INTO controllers (
 
     private void LoadRoles()
     {
-        // Use Configuration Service instead of hardcoded values
-        var configService = HttpContext.RequestServices.GetService<IConfigurationService>();
-        if (configService != null)
+        // Get roles directly from Roles table to ensure consistency
+        try
         {
-            ViewBag.Roles = configService.GetDropdownValues("Roles");
+            var rolesQuery = "SELECT RoleName, Description FROM Roles WHERE RoleName IS NOT NULL ORDER BY RoleName";
+            var rolesData = _db.ExecuteQuery(rolesQuery);
+            
+            ViewBag.Roles = rolesData.Rows.Cast<DataRow>()
+                .Select(r => new SelectListItem(
+                    r["Description"]?.ToString() ?? r["RoleName"].ToString(),  // Display Text: Description if available, otherwise RoleName
+                    r["RoleName"].ToString()   // Value: RoleName for database operations
+                ))
+                .ToList();
         }
-        else
+        catch
         {
-            // Fallback to hardcoded values if service is not available
+            // Fallback to hardcoded values if database query fails
             ViewBag.Roles = new List<SelectListItem>
             {
-                new SelectListItem("Controller","Controller"),
-                new SelectListItem("OJAI Tower Access","SuperVisor OJAI"),
-                new SelectListItem("OJAM Access","SuperVisor OJAM"),
-                new SelectListItem("OJAQ Access","SuperVisor OJAQ"),
-                new SelectListItem("Amman TACC Access","SuperVisor TACC"),
-                new SelectListItem("DANS Queen","DANS Queen"),
-                new SelectListItem("AIS","AIS"),
-                new SelectListItem("Employee","User"),
-                new SelectListItem("CARC-Admin","Admin")
+                new SelectListItem("مدير النظام", "Admin"),
+                new SelectListItem("مراقب", "Controller"),
+                new SelectListItem("موظف", "Employee"),
+                new SelectListItem("مشرف OJAI", "SuperVisor OJAI"),
+                new SelectListItem("مشرف OJAM", "SuperVisor OJAM"),
+                new SelectListItem("مشرف OJAQ", "SuperVisor OJAQ"),
+                new SelectListItem("مشرف TACC", "SuperVisor TACC")
             };
         }
     }
@@ -592,6 +633,10 @@ INSERT INTO controllers (
     [HttpPost, ValidateAntiForgeryToken]
     public IActionResult Edit(ControllerUser model)
     {
+        // Remove file validation errors since files are optional
+        ModelState.Remove("PhotoFile");
+        ModelState.Remove("LicenseFile");
+        
         LoadCountriesAndAirports();
         LoadRoles();
         LoadJobTitle();
@@ -613,10 +658,19 @@ INSERT INTO controllers (
         string photoPath = model.PhotoPath;
         string licensePath = model.LicensePath;
 
+        // Handle photo upload
         if (model.PhotoFile != null && model.PhotoFile.Length > 0)
+        {
             photoPath = SaveUploadedFile(model.PhotoFile, "uploads", sanitizedUsername, "default.jpg");
+            Console.WriteLine($"Photo uploaded for controller {model.Username}: {photoPath}");
+        }
+        
+        // Handle license upload
         if (model.LicenseFile != null && model.LicenseFile.Length > 0)
+        {
             licensePath = SaveUploadedFile(model.LicenseFile, "licenses", sanitizedUsername, "default.pdf");
+            Console.WriteLine($"License uploaded for controller {model.Username}: {licensePath}");
+        }
 
         // ?????? ????????? ????? ????? ???????? ?? ????????
         using (var conn = _db.GetConnection())
@@ -640,8 +694,8 @@ INSERT INTO controllers (
                 UPDATE controllers SET
                     fullname = @fullName,
                     airportid = @airportId,
-                   -- photopath = @photoPath,
-                   -- licensepath = @licensePath,
+                    photopath = @photoPath,
+                    licensepath = @licensePath,
                     job_title = @jobTitle,
                     education_level = @educationLevel,
                     date_of_birth = @dateOfBirth,
@@ -673,8 +727,12 @@ INSERT INTO controllers (
                     //cmdCtrl.Parameters.AddWithValue("@role", model.Role ?? (object)DBNull.Value);
                     cmdCtrl.Parameters.AddWithValue("@fullName", (object?)model.FullName ?? DBNull.Value);
                     cmdCtrl.Parameters.AddWithValue("@airportId", (object?)model.AirportId ?? DBNull.Value);
-                    //cmdCtrl.Parameters.AddWithValue("@photoPath", (object?)photoPath ?? DBNull.Value);
-                    //cmdCtrl.Parameters.AddWithValue("@licensePath", (object?)licensePath ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@photoPath", (object?)photoPath ?? DBNull.Value);
+                    cmdCtrl.Parameters.AddWithValue("@licensePath", (object?)licensePath ?? DBNull.Value);
+                    
+                    // Log the photo and license paths being saved
+                    Console.WriteLine($"Saving photo path: {photoPath}, license path: {licensePath} for controller {model.Username}");
+                    
                     cmdCtrl.Parameters.AddWithValue("@jobTitle", (object?)model.JobTitle ?? DBNull.Value);
                     cmdCtrl.Parameters.AddWithValue("@educationLevel", (object?)model.EducationLevel ?? DBNull.Value);
                     cmdCtrl.Parameters.AddWithValue("@dateOfBirth", (object?)model.DateOfBirth ?? DBNull.Value);
@@ -704,7 +762,14 @@ INSERT INTO controllers (
             }
         }
 
-        TempData["SuccessMessage"] = "Controller updated successfully!";
+        // Create success message with details about what was updated
+        var successMessage = "Controller updated successfully!";
+        if (model.PhotoFile != null && model.PhotoFile.Length > 0)
+            successMessage += " Photo updated.";
+        if (model.LicenseFile != null && model.LicenseFile.Length > 0)
+            successMessage += " License document updated.";
+            
+        TempData["SuccessMessage"] = successMessage;
         return RedirectToAction(nameof(Index));
     }
 
@@ -717,15 +782,50 @@ INSERT INTO controllers (
     {
         try
         {
-            int licCount = _db.GetLicenseCountByController(id);
-            // (????? ????? licCount ??? TempData ?? ViewBag ???? ????? ?? ????)
+            // Check for related data before attempting deletion
+            var licenseCount = _db.GetLicenseCountByController(id);
+            var certificateCount = _db.GetCertificateCountByController(id);
+            var observationCount = _db.GetObservationCountByController(id);
+            
+            if (licenseCount > 0 || certificateCount > 0 || observationCount > 0)
+            {
+                var errorMessage = "Cannot delete controller because they have related data:";
+                if (licenseCount > 0) errorMessage += $" {licenseCount} license(s),";
+                if (certificateCount > 0) errorMessage += $" {certificateCount} certificate(s),";
+                if (observationCount > 0) errorMessage += $" {observationCount} observation(s),";
+                errorMessage = errorMessage.TrimEnd(',') + ". Please delete related data first.";
+                
+                TempData["Error"] = errorMessage;
+                return RedirectToAction(nameof(Index));
+            }
 
+            // No related data exists, safe to delete
             _db.DeleteController(id);
-            TempData["Success"] = "?? ??? ??????? ????? ????? ???? ?? ????? ????????.";
+            
+            // Clean up notifications for deleted controller
+            try
+            {
+                // Delete notifications related to this controller
+                _db.ExecuteNonQuery("DELETE FROM notifications WHERE controllerid = @controllerId", 
+                    new SqlParameter("@controllerId", id));
+                
+                // Update remaining notifications to remove orphaned references
+                _db.ExecuteNonQuery(@"
+                    UPDATE notifications 
+                    SET controllerid = NULL 
+                    WHERE controllerid NOT IN (SELECT controllerid FROM controllers WHERE controllerid IS NOT NULL)");
+            }
+            catch (Exception notificationEx)
+            {
+                // Log the error but don't fail the controller deletion
+                Console.WriteLine($"Failed to clean up notifications: {notificationEx.Message}");
+            }
+            
+            TempData["Success"] = "Controller has been deleted successfully.";
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"????? ?????: {ex.Message}";
+            TempData["Error"] = $"Error deleting controller: {ex.Message}";
         }
         return RedirectToAction(nameof(Index));
     }
@@ -1128,7 +1228,167 @@ public IActionResult ViewControllerDetails(int id)
         // Log.Error(ex, "Error in ViewControllerDetails");
         return Json(new { success = false, message = "An error occurred while fetching details." });
     }
-}
+    }
+
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        return userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) ? userId : 0;
+    }
+
+    // Import Controllers Actions
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> DownloadImportTemplate()
+    {
+        try
+        {
+            var excelService = new ExcelTemplateService();
+            var templateBytes = excelService.GenerateControllersImportTemplate();
+            
+            return File(templateBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Controllers_Import_Template.xlsx");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest("Error generating template: " + ex.Message);
+        }
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> ImportControllers(IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return Json(new { success = false, message = "No file uploaded." });
+            }
+
+            if (!file.FileName.EndsWith(".xlsx") && !file.FileName.EndsWith(".xls"))
+            {
+                return Json(new { success = false, message = "Only Excel files (.xlsx, .xls) are supported." });
+            }
+
+            // Read Excel file
+            var controllers = new List<ControllerImportModel>();
+            using (var stream = new MemoryStream())
+            {
+                await file.CopyToAsync(stream);
+                stream.Position = 0;
+
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets.FirstOrDefault(w => w.Name == "Template Data");
+                    if (worksheet == null)
+                    {
+                        return Json(new { success = false, message = "Invalid template format. 'Template Data' sheet not found." });
+                    }
+
+                    int rowCount = worksheet.Dimension?.Rows ?? 0;
+                    if (rowCount < 2) // Header + at least one data row
+                    {
+                        return Json(new { success = false, message = "Template is empty or has no data rows." });
+                    }
+
+                    // Start from row 2 (skip header)
+                    for (int row = 2; row <= rowCount; row++)
+                    {
+                        var controller = new ControllerImportModel
+                        {
+                            FullName = worksheet.Cells[row, 1].Value?.ToString() ?? "",
+                            Username = worksheet.Cells[row, 2].Value?.ToString() ?? "",
+                            JobTitle = worksheet.Cells[row, 3].Value?.ToString() ?? "",
+                            Division = worksheet.Cells[row, 4].Value?.ToString() ?? "",
+                            OrganizationalStructure = worksheet.Cells[row, 5].Value?.ToString() ?? "",
+                            ICAO = worksheet.Cells[row, 6].Value?.ToString() ?? "",
+                            Email = worksheet.Cells[row, 7].Value?.ToString() ?? "",
+                            PhoneNumber = worksheet.Cells[row, 8].Value?.ToString() ?? "",
+                            CustomPassword = worksheet.Cells[row, 9].Value?.ToString() ?? "",
+                            EducationLevel = worksheet.Cells[row, 10].Value?.ToString() ?? "",
+                            DateOfBirth = ControllerImportModel.ParseExcelDate(worksheet.Cells[row, 11].Value),
+                            MaritalStatus = worksheet.Cells[row, 12].Value?.ToString() ?? "",
+                            Address = worksheet.Cells[row, 13].Value?.ToString() ?? "",
+                            HireDate = ControllerImportModel.ParseExcelDate(worksheet.Cells[row, 14].Value),
+                            EmploymentStatus = worksheet.Cells[row, 15].Value?.ToString() ?? "",
+                            CurrentDepartment = worksheet.Cells[row, 16].Value?.ToString() ?? "",
+                            NeedLicense = (worksheet.Cells[row, 17].Value?.ToString() ?? "No").Equals("Yes", StringComparison.OrdinalIgnoreCase),
+                            IsActive = (worksheet.Cells[row, 18].Value?.ToString() ?? "Yes").Equals("Yes", StringComparison.OrdinalIgnoreCase)
+                        };
+
+                        // Validate required fields
+                        if (string.IsNullOrWhiteSpace(controller.FullName) || 
+                            string.IsNullOrWhiteSpace(controller.Username) ||
+                            string.IsNullOrWhiteSpace(controller.JobTitle) ||
+                            string.IsNullOrWhiteSpace(controller.Division) ||
+                            string.IsNullOrWhiteSpace(controller.OrganizationalStructure) ||
+                            string.IsNullOrWhiteSpace(controller.ICAO))
+                        {
+                            continue; // Skip invalid rows
+                        }
+
+                        controllers.Add(controller);
+                    }
+                }
+            }
+
+            if (controllers.Count == 0)
+            {
+                return Json(new { success = false, message = "No valid controller data found in the file." });
+            }
+
+            // Import controllers to database
+            int successCount = 0;
+            var errors = new List<string>();
+
+            foreach (var controller in controllers)
+            {
+                try
+                {
+                    // Check if controller already exists
+                    var existingController = _db.GetControllerByUsername(controller.Username);
+                    if (existingController != null)
+                    {
+                        errors.Add($"Controller with username '{controller.Username}' already exists. Skipped.");
+                        continue;
+                    }
+
+                    // Import controller using the new method
+                    var result = _db.ImportControllerFromExcel(controller);
+                    if (result)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        errors.Add($"Failed to import controller '{controller.FullName}' ({controller.Username}).");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Error importing controller '{controller.FullName}': {ex.Message}");
+                }
+            }
+
+            var message = $"Successfully imported {successCount} controllers.";
+            if (errors.Count > 0)
+            {
+                message += $" {errors.Count} errors occurred.";
+            }
+
+            return Json(new { 
+                success = true, 
+                message = message,
+                importedCount = successCount,
+                errorCount = errors.Count,
+                errors = errors
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Import failed: " + ex.Message });
+        }
+    }
 
 
 }

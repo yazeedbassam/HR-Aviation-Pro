@@ -340,6 +340,9 @@ namespace WebApplication1.Models
         // Audit Permissions
         public const string AuditLogsView = "AUDIT_LOGS_VIEW";
         public const string PermissionLogsView = "PERMISSION_LOGS_VIEW";
+        
+        // Department Overview Permissions
+        public const string DepartmentOverview = "DEPARTMENT_OVERVIEW";
     }
 
     // =====================================================
@@ -400,7 +403,8 @@ namespace WebApplication1.Models
                 PermissionKeys.SystemSettingsView,
                 PermissionKeys.SystemSettingsEdit,
                 PermissionKeys.ConfigurationManagement,
-                PermissionKeys.RolesManagement
+                PermissionKeys.RolesManagement,
+                PermissionKeys.DepartmentOverview
             },
             ["Users"] = new List<string>
             {
@@ -643,4 +647,25 @@ namespace WebApplication1.Models
         public string Description { get; set; } = string.Empty;
     }
 
+    public class DeleteUsersRequest
+    {
+        public List<int> UserIds { get; set; } = new List<int>();
+    }
+
+    public class PermissionTemplate
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public Dictionary<string, bool> MenuPermissions { get; set; } = new Dictionary<string, bool>();
+        public List<OperationPermissionTemplate> OperationPermissions { get; set; } = new List<OperationPermissionTemplate>();
+    }
+
+    public class OperationPermissionTemplate
+    {
+        public string EntityType { get; set; } = string.Empty;
+        public string OperationType { get; set; } = string.Empty;
+        public bool IsAllowed { get; set; }
+        public string Scope { get; set; } = "All";
+    }
 } 

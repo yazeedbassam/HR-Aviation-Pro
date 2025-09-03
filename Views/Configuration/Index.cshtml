@@ -286,8 +286,8 @@
 </div>
 
 <!-- Create Value Modal -->
-<div class="modal fade" id="createValueModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="createValueModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -295,7 +295,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="CreateValue" method="post">
+            <form asp-action="CreateValue" method="post" id="createValueForm">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="ValueCategoryId" class="form-label">Category</label>
@@ -330,7 +330,8 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <div class="form-check mt-4">
-                                    <input class="form-check-input" type="checkbox" id="ValueIsActive" name="IsActive" checked>
+                                    <input class="form-check-input" type="checkbox" id="ValueIsActive" checked>
+                                    <input type="hidden" name="IsActiveString" id="ValueIsActiveHidden" value="true">
                                     <label class="form-check-label" for="ValueIsActive">
                                         Active
                                     </label>
@@ -341,7 +342,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="createValueSubmitBtn">
                         <i class="fas fa-save"></i> Create Value
                     </button>
                 </div>
@@ -351,14 +352,92 @@
 </div>
 
 @section Scripts {
+    <style>
+        /* Force modal to be on top and disable background interactions */
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        
+        .modal {
+            z-index: 1050 !important;
+        }
+        
+        /* Disable sidebar interactions when modal is open */
+        body.modal-open .sidebar,
+        body.modal-open .main-content,
+        body.modal-open .page-header {
+            pointer-events: none !important;
+        }
+        
+        /* Alternative: disable all background interactions */
+        body.modal-open {
+            overflow: hidden;
+        }
+        
+        body.modal-open .modal {
+            pointer-events: auto !important;
+        }
+        
+        /* Prevent modal from being too small */
+        .modal-dialog {
+            min-width: 500px;
+        }
+        
+        /* Improve modal appearance */
+        .modal-content {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+    </style>
+    
     <script>
         function createValue(categoryName) {
             if (categoryName) {
                 // Set the category in the modal
-                document.getElementById('ValueCategoryId').value = categoryName;
+                var categorySelect = document.getElementById('ValueCategoryId');
+                if (categorySelect) {
+                    // Find by display name (text) since we're passing CategoryName
+                    for (var i = 0; i < categorySelect.options.length; i++) {
+                        var option = categorySelect.options[i];
+                        if (option.text && option.text.toLowerCase().includes(categoryName.toLowerCase())) {
+                            categorySelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
             }
-            // Show the create value modal
-            new bootstrap.Modal(document.getElementById('createValueModal')).show();
+            
+            // Show the create value modal with proper backdrop
+            var modal = new bootstrap.Modal(document.getElementById('createValueModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            modal.show();
+            
+            // Add body class to disable background interactions
+            document.body.classList.add('modal-open');
+            
+            // Remove class when modal is hidden
+            document.getElementById('createValueModal').addEventListener('hidden.bs.modal', function() {
+                document.body.classList.remove('modal-open');
+            });
+            
+            // Prevent modal from closing when clicking outside
+            document.getElementById('createValueModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    e.stopPropagation();
+                }
+            });
+        }
+        
+        // Auto-open modal if TempData indicates it
+        @if (TempData["OpenCreateModal"] != null)
+        {
+            <text>
+            document.addEventListener('DOMContentLoaded', function() {
+                createValue('@TempData["OpenCreateModal"]');
+            });
+            </text>
         }
 
         function editValue(valueId) {
@@ -382,16 +461,69 @@
             }
         }
 
-        // Auto-generate Value Key from Display Text
-        document.getElementById('ValueText').addEventListener('input', function() {
-            var displayText = this.value;
-            var valueKey = displayText
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, '_')
-                .replace(/_+/g, '_')
-                .replace(/^_|_$/g, '');
+        // Auto-generate Value Key from Display Text in modal
+        document.addEventListener('DOMContentLoaded', function() {
+            var valueTextInput = document.getElementById('ValueText');
+            var valueKeyInput = document.getElementById('ValueKey');
+            var valueIsActiveCheckbox = document.getElementById('ValueIsActive');
+            var valueIsActiveHidden = document.getElementById('ValueIsActiveHidden');
             
-            document.getElementById('ValueKey').value = valueKey;
+            if (valueTextInput && valueKeyInput) {
+                valueTextInput.addEventListener('input', function() {
+                    var displayText = this.value;
+                    var valueKey = displayText
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, '_')
+                        .replace(/_+/g, '_')
+                        .replace(/^_|_$/g, '');
+                    
+                    valueKeyInput.value = valueKey;
+                });
+            }
+            
+            // Handle checkbox change for IsActive
+            if (valueIsActiveCheckbox && valueIsActiveHidden) {
+                valueIsActiveCheckbox.addEventListener('change', function() {
+                    valueIsActiveHidden.value = this.checked ? 'true' : 'false';
+                });
+            }
+            
+            // Prevent form submission issues
+            var createValueForm = document.querySelector('#createValueModal form');
+            if (createValueForm) {
+                createValueForm.addEventListener('submit', function(e) {
+                    // Validate required fields
+                    var categorySelect = document.getElementById('ValueCategoryId');
+                    var valueKeyInput = document.getElementById('ValueKey');
+                    var valueTextInput = document.getElementById('ValueText');
+                    
+                    if (!categorySelect.value) {
+                        e.preventDefault();
+                        alert('Please select a category');
+                        categorySelect.focus();
+                        return false;
+                    }
+                    
+                    if (!valueKeyInput.value.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a value key');
+                        valueKeyInput.focus();
+                        return false;
+                    }
+                    
+                    if (!valueTextInput.value.trim()) {
+                        e.preventDefault();
+                        alert('Please enter display text');
+                        valueTextInput.focus();
+                        return false;
+                    }
+                    
+                    // Show loading state
+                    var submitBtn = document.getElementById('createValueSubmitBtn');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+                });
+            }
         });
     </script>
 } 

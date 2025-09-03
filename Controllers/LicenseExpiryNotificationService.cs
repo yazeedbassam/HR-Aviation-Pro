@@ -9,15 +9,10 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Data; // For DataTable, DataRow, DBNull
-using System.Net; // For NetworkCredential
-using System.Net.Mail; // For SmtpClient, MailMessage
-using System.Text; // For StringBuilder (used in HTML table generation)
 using System.Threading;
 using System.Threading.Tasks;
 using WebApplication1.DataAccess;
-using System.Net.Mail;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging; // ??? ??? ?????? _logger
+using WebApplication1.Services;
 
 namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ???????
 {
@@ -26,31 +21,14 @@ namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ?
     {
         private readonly ILogger<LicenseExpiryNotificationService> _logger;
         private readonly IServiceProvider _serviceProvider; // ?????? ???? (scope) ??? ?????
-        private DateTime _lastWeeklyReportSent = DateTime.MinValue; // ????? ??? ??? ?? ???? ????? ??????? ????????
-
-        // ??????? SMTP ?? appsettings.json - ??? ?? ????? ?? IConfiguration
-        private readonly string _smtpServer;
-        private readonly int _smtpPort;
-        private readonly string _smtpUsername;
-        private readonly string _smtpPassword;
-        private readonly string _fromEmail; // ?????? ?????????? ??????
 
         // Constructor: ???? ??????? ???????? (ILogger, IServiceProvider, IConfiguration)
         public LicenseExpiryNotificationService(
             ILogger<LicenseExpiryNotificationService> logger,
-            IServiceProvider serviceProvider,
-            IConfiguration configuration)
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
-
-            // ????? ??????? SMTP ?? ??????? (appsettings.json)
-            // ??????? ?? throw new ArgumentNullException ????? ???? ?????
-            _smtpServer = configuration["SmtpSettings:Server"] ?? throw new ArgumentNullException("SMTP Server not found in appsettings.json");
-            _smtpPort = int.Parse(configuration["SmtpSettings:Port"] ?? throw new ArgumentNullException("SMTP Port not found in appsettings.json"));
-            _smtpUsername = configuration["SmtpSettings:Username"] ?? throw new ArgumentNullException("SMTP Username not found in appsettings.json");
-            _smtpPassword = configuration["SmtpSettings:Password"] ?? throw new ArgumentNullException("SMTP Password not found in appsettings.json");
-            _fromEmail = configuration["SmtpSettings:ReceiverEmail"] ?? throw new ArgumentNullException("SMTP ReceiverEmail (From Email) not found in appsettings.json");
         }
 
         // ??? ?? ?????? ???????? ???? ??? ??????? ???? ????? ????? ?????
@@ -76,44 +54,11 @@ namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ?
                     }
 
                     // ?? ???? ?????? ???? ???? ??? PerformLicenseExpiryCheck ????? ?????? ????? ????
+                    // تم إزالة الإرسال التلقائي للبريد الإلكتروني - سيتم الإرسال فقط عند الطلب اليدوي
                     await PerformLicenseExpiryCheck(); // <== ?? ????? ?????????? ?? ????? db ???
                                                        //??? ????? ???????
                                                        // ????? ??????? ???????? ?? ??? ??? ??? ?? ????? ??? ???????
-                                                       // ???? ?? `GenerateWeeklyReportPDF` ? `SendWeeklyReportEmailWithPdfAndTable` ??????? ?? ??? ?????
-                    if (DateTime.Now.DayOfWeek == DayOfWeek.Sunday &&
-                        (DateTime.Now.Date > _lastWeeklyReportSent.Date)) // ?????? ???????? ???
-                    {
-                        try
-                        {
-                            _logger.LogInformation("Attempting to send weekly report...");
-
-                            // ??? ???????? ??????? ??????? ?? ?????? ???
-                            // ??? ??? DB ??? ??? GetSoonExpiringLicensesTable() ???? ????? ?? PerformLicenseExpiryCheck
-                            using (var scope = _serviceProvider.CreateScope())
-                            {
-                                var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
-
-                                // ????? ???? ??? ?????? ?? SqlServerDb
-                                DataTable soonExpiringTable = db.GetSoonExpiringLicensesTable();
-                                int expiredCount = db.GetExpiredLicensesCount();
-                                int soonExpiringCount = db.GetSoonExpiringLicensesCount();
-
-                                // ????? ??? PDF ???????
-                                byte[] pdfBytes = GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
-
-                                // ????? ?????? ?????????? ?? ??? PDF ????? HTML (???? ?? ?????)
-                                // ????? ????? "yazeedbassam@hotmail.com" ????? ???? ???????? ???? ??????? ???? ?????? ???????.
-                                //   ??????? ?????   //  await SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
-
-                                _lastWeeklyReportSent = DateTime.Now.Date; // ????? ????? ??? ?????
-                                _logger.LogInformation("Weekly report sent successfully at: {time}", DateTimeOffset.Now);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error sending weekly report.");
-                        }
-                    }
+                                                       // تم إزالة الإرسال التلقائي الأسبوعي - سيتم الإرسال فقط عند الضغط على الزر
                 }
                 catch (Exception ex)
                 {
@@ -154,10 +99,11 @@ namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ?
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+                    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
                     try
                     {
-                        // ????? ???? notifications ??? ????? ????????? ???????
+                        // Clear old notifications
                         try
                         {
                             db.ExecuteNonQuery("DELETE FROM notifications");
@@ -168,12 +114,13 @@ namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ?
                             _logger.LogError(ex, "Error clearing notifications table.");
                         }
 
+                        // Get licenses expiring soon or expired
                         DataTable dt = new DataTable();
                         using (var connection = db.GetConnection())
                         {
                             connection.Open();
                             using (var cmd = new SqlCommand(@"
-                   -- ????? ?????: ??? ????? ???? ?????? ?????????
+                   -- Query for licenses expiring soon
                  SELECT
     l.licenseid,
     l.licensetype,
@@ -185,7 +132,8 @@ namespace WebApplication1.Services // <== ?? ????? namespace ??? ?????? ?????? ?
     c.email,
     c.current_department AS Department,
     a.airportname,
-    'Controller' AS UserType
+    'Controller' AS UserType,
+    'Expiring Soon' AS Status
 FROM
     licenses l
 INNER JOIN
@@ -208,7 +156,8 @@ UNION ALL
              e.email,
              e.department AS Department,
              'HQ - Main Office' AS airportname,
-             e.department AS UserType
+             e.department AS UserType,
+             'Expiring Soon' AS Status
          FROM
              licenses l
          INNER JOIN
@@ -224,50 +173,157 @@ UNION ALL
                             }
                         }
 
-                        if (dt.Rows.Count > 0)
+                        // Get employees and controllers who need licenses but don't have any
+                        DataTable dtNeedingLicenses = new DataTable();
+                        try
                         {
-                            _logger.LogInformation("Found {count} licenses expiring soon or expired.", dt.Rows.Count);
+                            // Get employees needing licenses
+                            DataTable dtEmployeesNeeding = db.GetEmployeesNeedingLicenses();
+                            // Get controllers needing licenses
+                            DataTable dtControllersNeeding = db.GetControllersNeedingLicenses();
 
+                            // إنشاء جدول موحد مع أعمدة متوافقة
+                            dtNeedingLicenses.Columns.Add("ControllerID", typeof(int));
+                            dtNeedingLicenses.Columns.Add("FullName", typeof(string));
+                            dtNeedingLicenses.Columns.Add("PhoneNumber", typeof(string));
+                            dtNeedingLicenses.Columns.Add("Email", typeof(string));
+                            dtNeedingLicenses.Columns.Add("Department", typeof(string));
+                            dtNeedingLicenses.Columns.Add("UserType", typeof(string));
+                            dtNeedingLicenses.Columns.Add("Status", typeof(string));
+
+                            // إضافة الموظفين الذين يحتاجون رخص
+                            foreach (DataRow row in dtEmployeesNeeding.Rows)
+                            {
+                                DataRow newRow = dtNeedingLicenses.NewRow();
+                                newRow["ControllerID"] = DBNull.Value; // الموظفون ليس لديهم controllerid
+                                newRow["FullName"] = row["FullName"];
+                                newRow["PhoneNumber"] = row["PhoneNumber"];
+                                newRow["Email"] = row["Email"];
+                                newRow["Department"] = row["Department"];
+                                newRow["UserType"] = "Employee";
+                                newRow["Status"] = "Needs License";
+                                dtNeedingLicenses.Rows.Add(newRow);
+                            }
+
+                            // إضافة المراقبين الذين يحتاجون رخص
+                            foreach (DataRow row in dtControllersNeeding.Rows)
+                            {
+                                DataRow newRow = dtNeedingLicenses.NewRow();
+                                newRow["ControllerID"] = row["ControllerID"];
+                                newRow["FullName"] = row["FullName"];
+                                newRow["PhoneNumber"] = row["PhoneNumber"];
+                                newRow["Email"] = row["Email"];
+                                newRow["Department"] = row["Department"];
+                                newRow["UserType"] = row["UserType"];
+                                newRow["Status"] = row["Status"];
+                                dtNeedingLicenses.Rows.Add(newRow);
+                            }
+
+                            _logger.LogInformation("Found {count} people needing licenses.", dtNeedingLicenses.Rows.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error getting people needing licenses.");
+                        }
+
+                        // Combine both datasets
+                        DataTable combinedDt = new DataTable();
+                        if (dt.Rows.Count > 0 || dtNeedingLicenses.Rows.Count > 0)
+                        {
+                            // Create combined table structure
+                            combinedDt.Columns.Add("licenseid", typeof(int));
+                            combinedDt.Columns.Add("licensetype", typeof(string));
+                            combinedDt.Columns.Add("expirydate", typeof(DateTime));
+                            combinedDt.Columns.Add("userid", typeof(int));
+                            combinedDt.Columns.Add("controllerid", typeof(int));
+                            combinedDt.Columns.Add("fullname", typeof(string));
+                            combinedDt.Columns.Add("phone_number", typeof(string));
+                            combinedDt.Columns.Add("email", typeof(string));
+                            combinedDt.Columns.Add("Department", typeof(string));
+                            combinedDt.Columns.Add("airportname", typeof(string));
+                            combinedDt.Columns.Add("UserType", typeof(string));
+                            combinedDt.Columns.Add("Status", typeof(string));
+
+                            // Add expiring licenses
                             foreach (DataRow row in dt.Rows)
                             {
-                                // ??????? ????? ?? ????? ???? ?? ???? NULL
+                                combinedDt.ImportRow(row);
+                            }
+
+                            // Add people needing licenses
+                            foreach (DataRow row in dtNeedingLicenses.Rows)
+                            {
+                                DataRow newRow = combinedDt.NewRow();
+                                newRow["licenseid"] = DBNull.Value;
+                                newRow["licensetype"] = "No License";
+                                newRow["expirydate"] = DBNull.Value;
+                                newRow["userid"] = DBNull.Value;
+                                newRow["controllerid"] = row["ControllerID"] ?? DBNull.Value;
+                                newRow["fullname"] = row["FullName"];
+                                newRow["phone_number"] = row["PhoneNumber"];
+                                newRow["email"] = row["Email"];
+                                newRow["Department"] = row["Department"];
+                                newRow["airportname"] = row["UserType"] == "Controller" ? "Airport" : "HQ - Main Office";
+                                newRow["UserType"] = row["UserType"];
+                                newRow["Status"] = "Needs License";
+                                combinedDt.Rows.Add(newRow);
+                            }
+                        }
+
+                        if (combinedDt.Rows.Count > 0)
+                        {
+                            _logger.LogInformation("Found {count} total notifications (expiring + needing licenses).", combinedDt.Rows.Count);
+
+                            foreach (DataRow row in combinedDt.Rows)
+                            {
+                                // Handle nullable fields properly
                                 int? userId = row.Field<int?>("userid");
                                 int? controllerId = row.Field<int?>("controllerid");
-                                DateTime expiryDate = row.Field<DateTime>("expirydate");
+                                DateTime? expiryDate = row.Field<DateTime?>("expirydate");
                                 string licenseType = row.Field<string>("licensetype") ?? string.Empty;
                                 string fullname = row.Field<string>("fullname") ?? string.Empty;
                                 string toEmail = row.Field<string>("email") ?? string.Empty;
 
-                                string msg = $"Dear {fullname}, Your {licenseType} will expire : \n\n At {expiryDate:yyyy-MM-dd} :(.\n\n So, Please Update :). \n\n???? ????? ????????? ??????? ????????.";
+                                string status = row.Field<string>("Status") ?? "Expiring Soon";
+                                string msg = "";
+                                
+                                if (status == "Needs License")
+                                {
+                                    msg = $"Dear {fullname}, You need to obtain a license for your position as {row.Field<string>("Department")}.\n\nPlease contact HR to arrange for license application.\n\n???? ????? ????????? ??????? ????????.";
+                                }
+                                else
+                                {
+                                    msg = $"Dear {fullname}, Your {licenseType} will expire on {expiryDate:yyyy-MM-dd}.\n\nPlease update your license before expiry.\n\n???? ????? ????????? ??????? ????????.";
+                                }
 
-                                // ????? ??????? ??????
+                                // Insert notification into database
                                 db.ExecuteNonQuery(
-                                                                         "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
-                                    new SqlParameter("@userid", (object)userId ?? DBNull.Value), // ??????? ?? NULL
-                                    new SqlParameter("@controllerid", (object)controllerId ?? DBNull.Value), // ??????? ?? NULL
+                                    "INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read) VALUES (@userid, @controllerid, @message, @licensetype, @expirydate, GETDATE(), 0)",
+                                    new SqlParameter("@userid", (object)userId ?? DBNull.Value),
+                                    new SqlParameter("@controllerid", (object)controllerId ?? DBNull.Value),
                                     new SqlParameter("@message", msg),
                                     new SqlParameter("@licensetype", licenseType),
-                                    new SqlParameter("@expirydate", expiryDate)
+                                    new SqlParameter("@expirydate", (object)expiryDate ?? DBNull.Value)
                                 );
                                 _logger.LogInformation("Inserted new notification for user {userId}, controller {controllerId}.", userId, controllerId);
 
-                                // ????? ?????? ??????????
+                                // Send email notification using EmailService
                                 if (!string.IsNullOrWhiteSpace(toEmail))
                                 {
                                     try
                                     {
-                                        using (var smtp = new SmtpClient(_smtpServer))
+                                        if (status == "Needs License")
                                         {
-                                            smtp.Port = _smtpPort;
-                                            smtp.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
-                                            smtp.EnableSsl = true;
-
-                                            using (var mail = new MailMessage(_fromEmail, toEmail, "License Expiry Alert", msg))
-                                            {
-                                                // await smtp.SendMailAsync(mail);
-                                                _logger.LogInformation("Sent expiry email to {email}.", toEmail);
-                                            }
+                                            // Send notification for people needing licenses
+                                            await emailService.SendNotificationAsync(toEmail, "License Required", msg);
                                         }
+                                        else
+                                        {
+                                            // Send license expiry alert
+                                            await emailService.SendLicenseExpiryAlertAsync(toEmail, fullname, licenseType, expiryDate.Value);
+                                        }
+                                        
+                                        _logger.LogInformation("Sent expiry email to {email}.", toEmail);
                                     }
                                     catch (Exception ex)
                                     {
@@ -372,60 +428,20 @@ UNION ALL
             _logger.LogInformation("Sending weekly report email to {recipientEmail}...", recipientEmail);
             try
             {
-                var fromAddress = new MailAddress(_fromEmail, "ANS Management system \r\n");
-                var toAddress = new MailAddress(recipientEmail);
-                const string subject = "Weekly License Expiry Report";
-
-                // ???? ???? HTML ?? soonExpiringTable
-                StringBuilder tableHtmlBuilder = new StringBuilder();
-                tableHtmlBuilder.Append("<table border='1' cellpadding='6' style='border-collapse:collapse; font-family:Tahoma; font-size:14px; width:100%;'>");
-                tableHtmlBuilder.Append("<thead><tr style='background-color:#f2f2f2;'><th>#</th><th>Full Name</th><th>License Type</th><th>Expiry Date</th><th>Phone</th><th>Email</th></tr></thead>");
-                tableHtmlBuilder.Append("<tbody>");
-
-                int idx = 1;
-                foreach (DataRow r in soonExpiringTable.Rows)
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    tableHtmlBuilder.Append($"<tr>");
-                    tableHtmlBuilder.Append($"<td>{r["fullname"]?.ToString() ?? string.Empty}</td>");
-                    tableHtmlBuilder.Append($"<td>{r["licensetype"]?.ToString() ?? string.Empty}</td>");
-                    tableHtmlBuilder.Append($"<td>{Convert.ToDateTime(r["expirydate"]).ToString("yyyy-MM-dd")}</td>");
-                    tableHtmlBuilder.Append($"<td>{r["phone_number"]?.ToString() ?? string.Empty}</td>");
-                    tableHtmlBuilder.Append($"<td>{r["email"]?.ToString() ?? string.Empty}</td>");
-                    tableHtmlBuilder.Append($"</tr>");
+                    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                    
+                    // إرسال البريد الإلكتروني باستخدام EmailService
+                    await emailService.SendWeeklyReportAsync(recipientEmail, pdfBytes, soonExpiringTable);
+                    
+                    _logger.LogInformation("Weekly report email sent successfully to {recipientEmail}.", recipientEmail);
                 }
-                tableHtmlBuilder.Append("</tbody></table>");
-
-                string body = "Please find attached your weekly license expiry report.<br/><br/>" +
-                              "Here is a summary of licenses expiring soon or expired:<br/><br/>" +
-                              tableHtmlBuilder.ToString();
-
-                using (var smtp = new SmtpClient(_smtpServer))
-                {
-                    smtp.Port = _smtpPort;
-                    smtp.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
-                    smtp.EnableSsl = true;
-
-                    using (var message = new MailMessage(fromAddress, toAddress)
-                    {
-                        Subject = subject,
-                        Body = body,
-                        IsBodyHtml = true // ??? ???? ?????? ?? ?? ??????? ???? ????
-                    })
-                    {
-                        using (var ms = new System.IO.MemoryStream(pdfBytes)) // ??????? System.IO.MemoryStream
-                        {
-                            // ??????? System.Net.Mail.Attachment ??? ???????
-                            var attachment = new System.Net.Mail.Attachment(ms, "Weekly_Report.pdf", "application/pdf");
-                            message.Attachments.Add(attachment);
-                            await smtp.SendMailAsync(message);
-                        }
-                    }
-                }
-                _logger.LogInformation("Weekly report email sent successfully to {recipientEmail}.", recipientEmail);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending weekly report email to {recipientEmail}.", recipientEmail);
+                throw; // إعادة رمي الخطأ للمعالجة في المستوى الأعلى
             }
         }
     }

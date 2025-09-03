@@ -1,0 +1,276 @@
+@model WebApplication1.Services.DatabaseInfo
+@{
+    ViewData["Title"] = "إدارة قاعدة البيانات";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- عنوان الصفحة -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-database"></i>
+            إدارة قاعدة البيانات
+        </h1>
+    </div>
+
+    <!-- رسائل النجاح والخطأ -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            @TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- معلومات قاعدة البيانات الحالية -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i>
+                        معلومات قاعدة البيانات الحالية
+                    </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
+                            <a class="dropdown-item" href="#" onclick="refreshDatabaseInfo()">
+                                <i class="fas fa-sync-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                تحديث
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">نوع قاعدة البيانات:</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge badge-primary">@ViewBag.CurrentDatabase</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">الحالة:</label>
+                                <p class="form-control-plaintext">
+                                    @if (Model.IsAvailable)
+                                    {
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-check-circle"></i>
+                                            متصل
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-danger">
+                                            <i class="fas fa-times-circle"></i>
+                                            غير متصل
+                                        </span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">آخر فحص:</label>
+                                <p class="form-control-plaintext">@Model.LastChecked.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">الإصدار:</label>
+                                <p class="form-control-plaintext">@Model.Version</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">سلسلة الاتصال:</label>
+                        <p class="form-control-plaintext text-muted small">@Model.ConnectionString</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- إجراءات قاعدة البيانات -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cogs"></i>
+                        إجراءات قاعدة البيانات
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- اختبار الاتصال -->
+                    <form method="post" action="@Url.Action("TestConnection")" class="mb-3">
+                        <button type="submit" class="btn btn-info btn-block">
+                            <i class="fas fa-plug"></i>
+                            اختبار الاتصال
+                        </button>
+                    </form>
+
+                    <!-- تبديل قاعدة البيانات -->
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold">تبديل قاعدة البيانات:</label>
+                        <div class="input-group">
+                            <select id="databaseType" class="form-control">
+                                @foreach (var db in ViewBag.AvailableDatabases)
+                                {
+                                    if (db.ToString() == ViewBag.CurrentDatabase.ToString())
+                                    {
+                                        <option value="@db" selected>@db (الحالية)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@db">@db</option>
+                                    }
+                                }
+                            </select>
+                            <button type="button" class="btn btn-warning" onclick="switchDatabase()">
+                                <i class="fas fa-exchange-alt"></i>
+                                تبديل
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- التبديل التلقائي -->
+                    <form method="post" action="@Url.Action("TryAutoSwitch")" class="mb-3">
+                        <button type="submit" class="btn btn-secondary btn-block">
+                            <i class="fas fa-magic"></i>
+                            محاولة التبديل التلقائي
+                        </button>
+                    </form>
+
+                    <!-- معلومات إضافية -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-lightbulb"></i>
+                            نصائح:
+                        </h6>
+                        <ul class="mb-0">
+                            <li>استخدم <strong>SQL Server</strong> للتطوير المحلي</li>
+                            <li>استخدم <strong>Supabase</strong> للنشر على الإنترنت</li>
+                            <li>يمكنك التبديل بينهما في أي وقت</li>
+                            <li>سيتم حفظ البيانات في كلا المكانين</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- حالة الاتصال المباشر -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line"></i>
+                        حالة الاتصال المباشر
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="connectionStatus" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // تحديث معلومات قاعدة البيانات
+        function refreshDatabaseInfo() {
+            location.reload();
+        }
+
+        // تبديل قاعدة البيانات
+        function switchDatabase() {
+            const databaseType = document.getElementById('databaseType').value;
+            
+            if (confirm(`هل أنت متأكد من تبديل قاعدة البيانات إلى ${databaseType}؟`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("SwitchDatabase")';
+                
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'databaseType';
+                input.value = databaseType;
+                
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // تحديث حالة الاتصال كل 30 ثانية
+        function updateConnectionStatus() {
+            fetch('@Url.Action("GetDatabaseStatus")')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const statusDiv = document.getElementById('connectionStatus');
+                        const statusClass = data.isAvailable ? 'success' : 'danger';
+                        const statusIcon = data.isAvailable ? 'check-circle' : 'times-circle';
+                        const statusText = data.isAvailable ? 'متصل' : 'غير متصل';
+                        
+                        statusDiv.innerHTML = `
+                            <div class="alert alert-${statusClass}">
+                                <h4 class="alert-heading">
+                                    <i class="fas fa-${statusIcon}"></i>
+                                    قاعدة البيانات: ${data.currentDatabase}
+                                </h4>
+                                <p class="mb-0">
+                                    الحالة: <strong>${statusText}</strong><br>
+                                    آخر تحديث: ${new Date(data.timestamp).toLocaleString('ar-SA')}
+                                </p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating connection status:', error);
+                });
+        }
+
+        // تحديث الحالة عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConnectionStatus();
+            
+            // تحديث كل 30 ثانية
+            setInterval(updateConnectionStatus, 30000);
+        });
+    </script>
+} 

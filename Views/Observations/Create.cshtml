@@ -1,7 +1,8 @@
 ﻿@model WebApplication1.Models.Observation
 
 @{
-    ViewData["Title"] = "Add New Observation";
+    var pageTitle = ViewBag.ActiveTab == "controllers" ? "Add New Controller Observation" : "Add New Employee Observation";
+    ViewData["Title"] = pageTitle;
 }
 
 <style>
@@ -48,6 +49,21 @@
                 <span>@ViewData["Title"]</span>
             </div>
             <div class="card-body p-4">
+                @if (ViewBag.ActiveTab == "controllers")
+                {
+                    <div class="alert alert-info mb-3">
+                        <i class="fa-solid fa-info-circle me-2"></i>
+                        <strong>Controller Observation:</strong> You are adding an observation for an Air Traffic Controller. The Employee selection has been hidden for clarity.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-3">
+                        <i class="fa-solid fa-info-circle me-2"></i>
+                        <strong>Employee Observation:</strong> You are adding an observation for an Employee or Operation Staff member. The Controller selection has been hidden for clarity.
+                    </div>
+                }
+
                 <form asp-action="Create" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="All" class="text-danger mb-3"></div>
@@ -56,13 +72,13 @@
                         <!-- Left Column -->
                         <div class="col-md-6">
                             <h5 class="form-section-header">Select Person</h5>
-                            <div class="mb-3">
+                            <div class="mb-3" id="controller-section" style="display: @(ViewBag.ActiveTab == "employees" ? "none" : "block");">
                                 <label asp-for="ControllerId" class="form-label">Controller</label>
                                 <select asp-for="ControllerId" asp-items="ViewBag.Controllers" class="form-select form-select-sm" id="controller-select">
                                     <option value="">-- Select ATC --</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-3" id="employee-section" style="display: @(ViewBag.ActiveTab == "controllers" ? "none" : "block");">
                                 <label asp-for="EmployeeId" class="form-label">Employee</label>
                                 <select asp-for="EmployeeId" asp-items="ViewBag.Employees" class="form-select form-select-sm" id="employee-select">
                                     <option value="">-- Select Employee --</option>
@@ -99,22 +115,29 @@
                                 <label asp-for="DurationDays" class="form-label">Duration (Days)</label>
                                 <input asp-for="DurationDays" type="number" id="DurationDays" class="form-control form-control-sm" readonly />
                             </div>
-
-                            <h5 class="form-section-header">File & Notes</h5>
                             <div class="mb-3">
-                                <label asp-for="UploadFile" class="form-label">Upload File (Optional)</label>
-                                <input asp-for="UploadFile" type="file" class="form-control form-control-sm" />
+                                <label asp-for="ObservationNo" class="form-label">Observation No.</label>
+                                <input asp-for="ObservationNo" class="form-control form-control-sm" />
                             </div>
                             <div class="mb-3">
-                                <label asp-for="Notes" class="form-label"></label>
-                                <textarea asp-for="Notes" class="form-control form-control-sm" rows="1"></textarea>
+                                <label asp-for="Notes" class="form-label">Notes</label>
+                                <textarea asp-for="Notes" class="form-control form-control-sm" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="UploadFile" class="form-label">Upload File</label>
+                                <input asp-for="UploadFile" type="file" class="form-control form-control-sm" accept=".pdf,.doc,.docx" />
+                                <small class="form-text text-muted">Accepted formats: PDF, DOC, DOCX</small>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-4 border-top pt-3 btn-group-custom">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i>Add Observation</button>
-                        <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+                    <div class="btn-group-custom">
+                        <a asp-action="Index" class="btn btn-secondary btn-sm">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back to List
+                        </a>
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-save me-1"></i> Save Observation
+                        </button>
                     </div>
                 </form>
             </div>
@@ -123,54 +146,27 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const controllerSelect = document.getElementById('controller-select');
-            const employeeSelect = document.getElementById('employee-select');
-            const departDateInput = document.getElementById('DepartDate');
-            const returnDateInput = document.getElementById('ReturnDate');
-            const durationInput = document.getElementById('DurationDays');
+        // Calculate duration when dates change
+        document.getElementById('DepartDate').addEventListener('change', calculateDuration);
+        document.getElementById('ReturnDate').addEventListener('change', calculateDuration);
 
-            function calculateDuration() {
-                const departDate = new Date(departDateInput.value);
-                const returnDate = new Date(returnDateInput.value);
-
-                if (departDateInput.value && returnDateInput.value && returnDate >= departDate) {
-                    const diffTime = Math.abs(returnDate - departDate);
-                    // Add 1 to include both start and end days
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    durationInput.value = diffDays;
-                } else {
-                    durationInput.value = '';
-                }
+        function calculateDuration() {
+            const departDate = new Date(document.getElementById('DepartDate').value);
+            const returnDate = new Date(document.getElementById('ReturnDate').value);
+            
+            if (departDate && returnDate && returnDate >= departDate) {
+                const diffTime = Math.abs(returnDate - departDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                document.getElementById('DurationDays').value = diffDays;
+            } else {
+                document.getElementById('DurationDays').value = '';
             }
+        }
 
-            // Calculate duration on page load
+        // Initialize duration calculation on page load
+        document.addEventListener('DOMContentLoaded', function() {
             calculateDuration();
-
-            departDateInput.addEventListener('change', calculateDuration);
-            returnDateInput.addEventListener('change', calculateDuration);
-
-            controllerSelect.addEventListener('change', function() {
-                if (this.value) {
-                    employeeSelect.value = '';
-                    employeeSelect.disabled = true;
-                } else {
-                    employeeSelect.disabled = false;
-                }
-            });
-
-            employeeSelect.addEventListener('change', function() {
-                if (this.value) {
-                    controllerSelect.value = '';
-                    controllerSelect.disabled = true;
-                } else {
-                    controllerSelect.disabled = false;
-                }
-            });
         });
     </script>
 }

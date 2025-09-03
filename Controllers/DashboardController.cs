@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using WebApplication1.Services;
 using WebApplication1.ViewModels; // Ensure this is included for the new ViewModels
 using Microsoft.Extensions.Configuration; // Required if you inject IConfiguration
+using Microsoft.Extensions.DependencyInjection; // Required for IServiceProvider
 
 namespace WebApplication1.Controllers
 {
@@ -105,11 +106,19 @@ namespace WebApplication1.Controllers
 
         public async Task SendWeeklyReport()
         {
-            DataTable soonExpiringTable = _db.GetSoonExpiringLicensesTable();
-            int expiredCount = _db.GetExpiredLicensesCount();
-            int soonExpiringCount = _db.GetSoonExpiringLicensesCount();
-            byte[] pdfBytes = _licenseExpiryNotificationService.GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
-            await _licenseExpiryNotificationService.SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
+            try
+            {
+                DataTable soonExpiringTable = _db.GetSoonExpiringLicensesTable();
+                int expiredCount = _db.GetExpiredLicensesCount();
+                int soonExpiringCount = _db.GetSoonExpiringLicensesCount();
+                byte[] pdfBytes = _licenseExpiryNotificationService.GenerateWeeklyReportPDF(soonExpiringTable, expiredCount, soonExpiringCount);
+                await _licenseExpiryNotificationService.SendWeeklyReportEmailWithPdfAndTable(pdfBytes, "yazeedbassam@hotmail.com", soonExpiringTable);
+            }
+            catch (Exception ex)
+            {
+                // Log error or handle gracefully
+                throw;
+            }
         }
 
         [HttpPost]

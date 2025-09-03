@@ -656,11 +656,11 @@ namespace WebApplication1.Controllers
 
     public class AdvancedObservationIndexViewModel
     {
-        public DataTable ControllerObservations { get; set; }
-        public DataTable AISObservations { get; set; }
-        public DataTable CNSObservations { get; set; }
-        public DataTable AFTNObservations { get; set; }
-        public DataTable ATFMObservations { get; set; }
-        public DataTable OpsStaffObservations { get; set; }
+        public DataTable ControllerObservations { get; set; } = new DataTable();
+        public DataTable AISObservations { get; set; } = new DataTable();
+        public DataTable CNSObservations { get; set; } = new DataTable();
+        public DataTable AFTNObservations { get; set; } = new DataTable();
+        public DataTable ATFMObservations { get; set; } = new DataTable();
+        public DataTable OpsStaffObservations { get; set; } = new DataTable();
     }
 } 

@@ -132,7 +132,10 @@
                 <div class="mt-4 d-flex justify-content-between align-items-center">
                     <!-- Delete Button on the left -->
                     <div>
-                        <button type="button" id="deleteProjectBtn" class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>Delete Course</button>
+                        @if (Html.HasAdvancedPermission("PROJECT_DELETE") || Html.IsAdvancedAdmin())
+                        {
+                            <button type="button" id="deleteProjectBtn" class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>Delete Course</button>
+                        }
                     </div>
 
                     <!-- Save and Cancel buttons on the right -->

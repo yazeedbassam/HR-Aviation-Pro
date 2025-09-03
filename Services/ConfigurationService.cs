@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Identity;
 using System.Data;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
@@ -43,16 +44,22 @@ namespace WebApplication1.Services
 
     public class ConfigurationService : IConfigurationService
     {
-        private readonly SqlServerDb _db;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<ConfigurationService> _logger;
         private readonly IMemoryCache _cache;
         private const string CACHE_KEY_PREFIX = "Configuration_";
 
-        public ConfigurationService(SqlServerDb db, ILogger<ConfigurationService> logger, IMemoryCache cache)
+        public ConfigurationService(IConfiguration configuration, ILogger<ConfigurationService> logger, IMemoryCache cache)
         {
-            _db = db;
+            _configuration = configuration;
             _logger = logger;
             _cache = cache;
+        }
+
+        private SqlServerDb GetDb()
+        {
+            var passwordHasher = new PasswordHasher<ControllerUser>();
+            return new SqlServerDb(_configuration, passwordHasher, null);
         }
 
         #region Category Operations
@@ -73,7 +80,7 @@ namespace WebApplication1.Services
                 WHERE IsActive = 1 
                 ORDER BY DisplayOrder, DisplayName";
 
-            var dt = _db.ExecuteQuery(sql);
+            var dt = GetDb().ExecuteQuery(sql);
             var categories = new List<ConfigurationCategory>();
 
             foreach (DataRow row in dt.Rows)
@@ -122,7 +129,7 @@ namespace WebApplication1.Services
                     new SqlParameter("@DisplayOrder", category.DisplayOrder)
                 };
 
-                _db.ExecuteNonQuery(sql, parameters);
+                GetDb().ExecuteNonQuery(sql, parameters);
                 ClearCache();
                 return true;
             }
@@ -152,7 +159,7 @@ namespace WebApplication1.Services
                     new SqlParameter("@DisplayOrder", category.DisplayOrder)
                 };
 
-                _db.ExecuteNonQuery(sql, parameters);
+                GetDb().ExecuteNonQuery(sql, parameters);
                 ClearCache();
                 return true;
             }
@@ -168,7 +175,7 @@ namespace WebApplication1.Services
             try
             {
                 const string sql = "UPDATE ConfigurationCategories SET IsActive = 0, ModifiedDate = GETDATE() WHERE CategoryId = @CategoryId";
-                _db.ExecuteNonQuery(sql, new SqlParameter("@CategoryId", categoryId));
+                GetDb().ExecuteNonQuery(sql, new SqlParameter("@CategoryId", categoryId));
                 ClearCache();
                 return true;
             }
@@ -202,7 +209,7 @@ namespace WebApplication1.Services
                 AND c.IsActive = 1
                 ORDER BY v.DisplayOrder, v.ValueText";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@CategoryName", categoryName));
+            var dt = GetDb().ExecuteQuery(sql, new SqlParameter("@CategoryName", categoryName));
             var values = new List<ConfigurationValue>();
 
             foreach (DataRow row in dt.Rows)
@@ -235,7 +242,7 @@ namespace WebApplication1.Services
                 WHERE CategoryId = @CategoryId AND IsActive = 1
                 ORDER BY DisplayOrder, ValueText";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@CategoryId", categoryId));
+            var dt = GetDb().ExecuteQuery(sql, new SqlParameter("@CategoryId", categoryId));
             var values = new List<ConfigurationValue>();
 
             foreach (DataRow row in dt.Rows)
@@ -266,7 +273,7 @@ namespace WebApplication1.Services
                 FROM ConfigurationValues 
                 WHERE ValueId = @ValueId";
 
-            var dt = _db.ExecuteQuery(sql, new SqlParameter("@ValueId", valueId));
+            var dt = GetDb().ExecuteQuery(sql, new SqlParameter("@ValueId", valueId));
             
             if (dt.Rows.Count == 0) return null;
 
@@ -293,11 +300,14 @@ namespace WebApplication1.Services
                 _logger.LogInformation("AddValue called with: CategoryId={CategoryId}, ValueKey={ValueKey}, IsActive={IsActive}", 
                     value.CategoryId, value.ValueKey, value.IsActive);
                 
-                const string sql = @"
+                var db = GetDb();
+                
+                // 1. إضافة القيمة في ConfigurationValues
+                const string configSql = @"
                     INSERT INTO ConfigurationValues (CategoryId, ValueKey, ValueText, DisplayOrder, IsActive, CreatedBy)
                     VALUES (@CategoryId, @ValueKey, @ValueText, @DisplayOrder, @IsActive, @CreatedBy)";
 
-                var parameters = new[]
+                var configParams = new[]
                 {
                     new SqlParameter("@CategoryId", value.CategoryId),
                     new SqlParameter("@ValueKey", value.ValueKey),
@@ -310,11 +320,52 @@ namespace WebApplication1.Services
                 _logger.LogInformation("Executing SQL with parameters: CategoryId={CategoryId}, ValueKey={ValueKey}, IsActive={IsActive}", 
                     value.CategoryId, value.ValueKey, value.IsActive);
 
-                _db.ExecuteNonQuery(sql, parameters);
+                var configResult = db.ExecuteNonQuery(configSql, configParams);
                 _logger.LogInformation("SQL executed successfully");
                 
+                // 2. إذا كانت الفئة هي "Roles"، أضف أيضاً في جدول Roles
+                var category = GetCategoryById(value.CategoryId);
+                if (category != null && category.CategoryName.Equals("Roles", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var rolesSql = @"INSERT INTO Roles (RoleName, Description) VALUES (@RoleName, @Description)";
+                        var rolesParams = new[]
+                        {
+                            new SqlParameter("@RoleName", value.ValueKey),
+                            new SqlParameter("@Description", value.ValueText)
+                        };
+                        
+                        var rolesResult = db.ExecuteNonQuery(rolesSql, rolesParams);
+                        _logger.LogInformation("Role added to both ConfigurationValues and Roles tables: {RoleName}", value.ValueKey);
+                    }
+                    catch (Exception rolesEx)
+                    {
+                        _logger.LogWarning(rolesEx, "Failed to add role to Roles table, but added to ConfigurationValues: {RoleName}", value.ValueKey);
+                    }
+                }
+                
+                // 3. إذا كانت الفئة هي "CertificateTypes"، أضف أيضاً في جدول DocumentTypes
+                if (category != null && category.CategoryName.Equals("CertificateTypes", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var documentTypesSql = @"INSERT INTO DocumentTypes (TypeName) VALUES (@TypeName)";
+                        var documentTypesParams = new[]
+                        {
+                            new SqlParameter("@TypeName", value.ValueText)
+                        };
+                        var documentTypesResult = db.ExecuteNonQuery(documentTypesSql, documentTypesParams);
+                        _logger.LogInformation("Certificate type added to both ConfigurationValues and DocumentTypes tables: {TypeName}", value.ValueText);
+                    }
+                    catch (Exception documentTypesEx)
+                    {
+                        _logger.LogWarning(documentTypesEx, "Failed to add certificate type to DocumentTypes table, but added to ConfigurationValues: {TypeName}", value.ValueText);
+                    }
+                }
+                
                 ClearCache();
-                return true;
+                return configResult > 0;
             }
             catch (Exception ex)
             {
@@ -327,7 +378,29 @@ namespace WebApplication1.Services
         {
             try
             {
-                const string sql = @"
+                var db = GetDb();
+                
+                // 1. Get the value details before updating to check if it's a role
+                var valueQuery = "SELECT CategoryId, ValueKey FROM ConfigurationValues WHERE ValueId = @ValueId";
+                var valueData = db.ExecuteQuery(valueQuery, new SqlParameter("@ValueId", value.ValueId));
+                
+                if (valueData.Rows.Count == 0)
+                {
+                    _logger.LogWarning("Configuration value not found for update: {ValueId}", value.ValueId);
+                    return false;
+                }
+                
+                var row = valueData.Rows[0];
+                var categoryId = row["CategoryId"];
+                var oldValueKey = row["ValueKey"]?.ToString();
+                
+                // 2. Get category name to check if it's "Roles"
+                var categoryQuery = "SELECT CategoryName FROM ConfigurationCategories WHERE CategoryId = @CategoryId";
+                var categoryData = db.ExecuteQuery(categoryQuery, new SqlParameter("@CategoryId", categoryId));
+                var categoryName = categoryData.Rows.Count > 0 ? categoryData.Rows[0]["CategoryName"]?.ToString() : "";
+                
+                // 3. Update ConfigurationValues
+                const string configSql = @"
                     UPDATE ConfigurationValues 
                     SET ValueText = @ValueText, DisplayOrder = @DisplayOrder, 
                         IsActive = @IsActive, ModifiedBy = @ModifiedBy, ModifiedDate = GETDATE()
@@ -342,9 +415,57 @@ namespace WebApplication1.Services
                     new SqlParameter("@ModifiedBy", value.ModifiedBy ?? (object)DBNull.Value)
                 };
 
-                _db.ExecuteNonQuery(sql, parameters);
+                var configResult = db.ExecuteNonQuery(configSql, parameters);
+                
+                // 4. If it's a role, also update Roles table
+                if (categoryName != null && categoryName.Equals("Roles", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(oldValueKey))
+                {
+                    try
+                    {
+                        var rolesSql = @"
+                            UPDATE Roles 
+                            SET RoleName = @NewRoleName, Description = @NewDescription 
+                            WHERE RoleName = @OldRoleName";
+                        var rolesParams = new[]
+                        {
+                            new SqlParameter("@NewRoleName", value.ValueKey),
+                            new SqlParameter("@NewDescription", value.ValueText),
+                            new SqlParameter("@OldRoleName", oldValueKey)
+                        };
+                        var rolesResult = db.ExecuteNonQuery(rolesSql, rolesParams);
+                        _logger.LogInformation("Role updated in both ConfigurationValues and Roles tables: {OldRoleName} -> {NewRoleName}", oldValueKey, value.ValueKey);
+                    }
+                    catch (Exception rolesEx)
+                    {
+                        _logger.LogWarning(rolesEx, "Failed to update role in Roles table, but updated in ConfigurationValues: {RoleName}", oldValueKey);
+                    }
+                }
+                
+                // 5. If it's a certificate type, also update DocumentTypes table
+                if (categoryName != null && categoryName.Equals("CertificateTypes", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(oldValueKey))
+                {
+                    try
+                    {
+                        var documentTypesSql = @"
+                            UPDATE DocumentTypes 
+                            SET TypeName = @NewTypeName 
+                            WHERE TypeName = @OldTypeName";
+                        var documentTypesParams = new[]
+                        {
+                            new SqlParameter("@NewTypeName", value.ValueText),
+                            new SqlParameter("@OldTypeName", oldValueKey)
+                        };
+                        var documentTypesResult = db.ExecuteNonQuery(documentTypesSql, documentTypesParams);
+                        _logger.LogInformation("Certificate type updated in both ConfigurationValues and DocumentTypes tables: {OldTypeName} -> {NewTypeName}", oldValueKey, value.ValueText);
+                    }
+                    catch (Exception documentTypesEx)
+                    {
+                        _logger.LogWarning(documentTypesEx, "Failed to update certificate type in DocumentTypes table, but updated in ConfigurationValues: {TypeName}", oldValueKey);
+                    }
+                }
+                
                 ClearCache();
-                return true;
+                return configResult > 0;
             }
             catch (Exception ex)
             {
@@ -357,10 +478,63 @@ namespace WebApplication1.Services
         {
             try
             {
-                const string sql = "UPDATE ConfigurationValues SET IsActive = 0, ModifiedDate = GETDATE() WHERE ValueId = @ValueId";
-                _db.ExecuteNonQuery(sql, new SqlParameter("@ValueId", valueId));
+                var db = GetDb();
+                
+                // 1. Get the value details before deleting to check if it's a role
+                var valueQuery = "SELECT CategoryId, ValueKey FROM ConfigurationValues WHERE ValueId = @ValueId";
+                var valueData = db.ExecuteQuery(valueQuery, new SqlParameter("@ValueId", valueId));
+                
+                if (valueData.Rows.Count == 0)
+                {
+                    _logger.LogWarning("Configuration value not found for deletion: {ValueId}", valueId);
+                    return false;
+                }
+                
+                var row = valueData.Rows[0];
+                var categoryId = row["CategoryId"];
+                var valueKey = row["ValueKey"]?.ToString();
+                
+                // 2. Get category name to check if it's "Roles"
+                var categoryQuery = "SELECT CategoryName FROM ConfigurationCategories WHERE CategoryId = @CategoryId";
+                var categoryData = db.ExecuteQuery(categoryQuery, new SqlParameter("@CategoryId", categoryId));
+                var categoryName = categoryData.Rows.Count > 0 ? categoryData.Rows[0]["CategoryName"]?.ToString() : "";
+                
+                // 3. Delete from ConfigurationValues (soft delete)
+                const string configSql = "UPDATE ConfigurationValues SET IsActive = 0, ModifiedDate = GETDATE() WHERE ValueId = @ValueId";
+                var configResult = db.ExecuteNonQuery(configSql, new SqlParameter("@ValueId", valueId));
+                
+                // 4. If it's a role, also delete from Roles table
+                if (categoryName != null && categoryName.Equals("Roles", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(valueKey))
+                {
+                    try
+                    {
+                        var rolesSql = "DELETE FROM Roles WHERE RoleName = @RoleName";
+                        var rolesResult = db.ExecuteNonQuery(rolesSql, new SqlParameter("@RoleName", valueKey));
+                        _logger.LogInformation("Role deleted from both ConfigurationValues and Roles tables: {RoleName}", valueKey);
+                    }
+                    catch (Exception rolesEx)
+                    {
+                        _logger.LogWarning(rolesEx, "Failed to delete role from Roles table, but deleted from ConfigurationValues: {RoleName}", valueKey);
+                    }
+                }
+                
+                // 5. If it's a certificate type, also delete from DocumentTypes table
+                if (categoryName != null && categoryName.Equals("CertificateTypes", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(valueKey))
+                {
+                    try
+                    {
+                        var documentTypesSql = "DELETE FROM DocumentTypes WHERE TypeName = @TypeName";
+                        var documentTypesResult = db.ExecuteNonQuery(documentTypesSql, new SqlParameter("@TypeName", valueKey));
+                        _logger.LogInformation("Certificate type deleted from both ConfigurationValues and DocumentTypes tables: {TypeName}", valueKey);
+                    }
+                    catch (Exception documentTypesEx)
+                    {
+                        _logger.LogWarning(documentTypesEx, "Failed to delete certificate type from DocumentTypes table, but deleted from ConfigurationValues: {TypeName}", valueKey);
+                    }
+                }
+                
                 ClearCache();
-                return true;
+                return configResult > 0;
             }
             catch (Exception ex)
             {
@@ -428,7 +602,7 @@ namespace WebApplication1.Services
 
             sql += " ORDER BY ChangedDate DESC";
 
-            var dt = _db.ExecuteQuery(sql, parameters.ToArray());
+            var dt = GetDb().ExecuteQuery(sql, parameters.ToArray());
             var logs = new List<ConfigurationLog>();
 
             foreach (DataRow row in dt.Rows)
@@ -465,7 +639,7 @@ namespace WebApplication1.Services
                     new SqlParameter("@ChangedBy", log.ChangedBy ?? (object)DBNull.Value)
                 };
 
-                _db.ExecuteNonQuery(sql, parameters);
+                GetDb().ExecuteNonQuery(sql, parameters);
                 return true;
             }
             catch (Exception ex)
@@ -489,7 +663,7 @@ namespace WebApplication1.Services
                     (SELECT COUNT(*) FROM ConfigurationValues WHERE IsActive = 1) as ActiveValues,
                     (SELECT COUNT(*) FROM ConfigurationLog WHERE ChangedDate >= DATEADD(day, -7, GETDATE())) as RecentChanges";
 
-            var dt = _db.ExecuteQuery(sql);
+            var dt = GetDb().ExecuteQuery(sql);
             var row = dt.Rows[0];
 
             var statistics = new ConfigurationStatisticsViewModel

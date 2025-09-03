@@ -1,0 +1,653 @@
+@model WebApplication1.Services.UserPermissionDetails
+@{
+    ViewData["Title"] = $"إدارة صلاحيات المستخدم - {Model.FullName}";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-person-gear"></i>
+                            إدارة صلاحيات المستخدم : @Model.FullName
+                        </h4>
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-warning btn-sm me-2" onclick="clearUserCacheDynamically(@Model.UserId)" title="مسح الكاش الديناميكي">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                مسح الكاش
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-arrow-left"></i>
+                                العودة للقائمة
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <!-- User Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">معلومات المستخدم</h5>
+                                    <p><strong>اسم المستخدم:</strong> @Model.Username</p>
+                                    <p><strong>الاسم الكامل:</strong> @Model.FullName</p>
+                                    <p><strong>الدور:</strong> 
+                                        <span class="badge bg-@(Model.RoleName == "Admin" ? "danger" : Model.RoleName == "Manager" ? "warning" : "info")">
+                                            @Model.RoleName
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">إحصائيات الصلاحيات</h5>
+                                    @{
+                                        var activeMenuPermissions = Model.MenuPermissions.Count(p => p.IsVisible);
+                                        var totalMenuPermissions = Model.MenuPermissions.Count;
+                                        var activeOperationPermissions = Model.OperationPermissions.Count(p => p.IsAllowed);
+                                        var totalOperationPermissions = Model.OperationPermissions.Count;
+
+                                    }
+                                    <p><strong>صلاحيات القائمة:</strong> 
+                                        <span class="badge bg-@(activeMenuPermissions > 0 ? "success" : "secondary")">
+                                            @activeMenuPermissions من @totalMenuPermissions
+                                        </span>
+                                        @if (activeMenuPermissions > 0)
+                                        {
+                                            <small class="text-muted">(مفعلة)</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">(غير مفعلة)</small>
+                                        }
+                                    </p>
+                                    <p><strong>صلاحيات العمليات:</strong> 
+                                        <span class="badge bg-@(activeOperationPermissions > 0 ? "success" : "secondary")">
+                                            @activeOperationPermissions من @totalOperationPermissions
+                                        </span>
+                                        @if (activeOperationPermissions > 0)
+                                        {
+                                            <small class="text-muted">(مفعلة)</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">(غير مفعلة)</small>
+                                        }
+                                    </p>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" onclick="clearUserCacheDynamically(@Model.UserId)" title="مسح الكاش الديناميكي - تحديث timestamps في قاعدة البيانات ومسح الكاش في الذاكرة">
+                                    <i class="bi bi-lightning"></i>
+                                    مسح الكاش الديناميكي
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="debugUserPermissions(@Model.UserId)" title="تحليل الصلاحيات للمستخدم">
+                                    <i class="bi bi-bug"></i>
+                                    تحليل الصلاحيات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="permissionTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu" type="button" role="tab">
+                                <i class="bi bi-list"></i>
+                                صلاحيات القائمة الجانبية
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="operations-tab" data-bs-toggle="tab" data-bs-target="#operations" type="button" role="tab">
+                                <i class="bi bi-gear"></i>
+                                صلاحيات العمليات
+                            </button>
+                        </li>
+
+                    </ul>
+
+                    <div class="tab-content" id="permissionTabsContent">
+                        <!-- Menu Permissions Tab -->
+                        <div class="tab-pane fade show active" id="menu" role="tabpanel">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-list"></i>
+                                        صلاحيات القائمة الجانبية
+                                    </h5>
+                                    <div class="mt-2">
+                                        @{
+                                            var activeMenus = Model.MenuPermissions.Count(p => p.IsVisible);
+                                            var totalMenus = Model.MenuPermissions.Count;
+                                        }
+                                        <span class="badge bg-info me-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            إجمالي الصلاحيات: @totalMenus
+                                        </span>
+                                        <span class="badge bg-@(activeMenus > 0 ? "success" : "warning") me-2">
+                                            <i class="bi bi-check-circle"></i>
+                                            مفعلة: @activeMenus
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i>
+                                            غير مفعلة: @(totalMenus - activeMenus)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        @{
+                                            var menuItems = new Dictionary<string, string>
+                                            {
+                                                { "PROFILE", "الملف الشخصي" },
+                                                { "NOTIFICATIONS", "الإشعارات" },
+                                                { "DASHBOARD", "لوحة التحكم" },
+                                                { "EMPLOYEES", "الموظفين" },
+                                                { "CONTROLLERS", "المراقبين" },
+                                                { "LICENSES", "الرخص" },
+                                                { "CERTIFICATES", "الشهادات" },
+                                                { "OBSERVATIONS", "الملاحظات" },
+                                                { "CONFIGURATION", "الإعدادات" },
+                                                { "PERMISSIONS", "الصلاحيات" },
+                                                { "ORGANIZATION_VIEW", "الهيكل التنظيمي" },
+                                                { "PROJECT_VIEW", "التدريب والتطوير" }
+                                            };
+                                        }
+                                        
+                                        @foreach (var menuItem in menuItems)
+                                        {
+                                            var isVisible = Model.MenuPermissions.FirstOrDefault(m => m.MenuKey == menuItem.Key)?.IsVisible ?? false;
+                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                <div class="card @(isVisible ? "border-success" : "border-secondary") h-100">
+                                                    <div class="card-body p-3">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input menu-permission" 
+                                                                   type="checkbox" 
+                                                                   id="menu_@menuItem.Key" 
+                                                                   data-menu-key="@menuItem.Key"
+                                                                   @(isVisible ? "checked" : "")>
+                                                            <label class="form-check-label d-flex align-items-center" for="menu_@menuItem.Key">
+                                                                @if (isVisible)
+                                                                {
+                                                                    <i class="bi bi-check-circle-fill text-success me-2" title="صلاحية مفعلة"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-x-circle text-muted me-2" title="صلاحية غير مفعلة"></i>
+                                                                }
+                                                                <span class="fw-bold">@menuItem.Value</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary" onclick="saveMenuPermissions()">
+                                            <i class="bi bi-save"></i>
+                                            حفظ صلاحيات القائمة
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Operations Permissions Tab -->
+                        <div class="tab-pane fade" id="operations" role="tabpanel">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-gear"></i>
+                                        صلاحيات العمليات
+                                    </h5>
+                                    <div class="mt-2">
+                                        @{
+                                            var activeOps = Model.OperationPermissions.Count(p => p.IsAllowed);
+                                            var totalOps = Model.OperationPermissions.Count;
+                                        }
+                                        <span class="badge bg-info me-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            إجمالي الصلاحيات: @totalOps
+                                        </span>
+                                        <span class="badge bg-@(activeOps > 0 ? "success" : "warning") me-2">
+                                            <i class="bi bi-check-circle"></i>
+                                            مفعلة: @activeOps
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i>
+                                            غير مفعلة: @(totalOps - activeOps)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>ملاحظة:</strong> هذا الجدول يعرض جميع الصلاحيات المحتملة (55 صلاحية). الصفوف الخضراء تمثل الصلاحيات المفعلة، والصفوف البيضاء تمثل الصلاحيات غير المفعلة.
+                                    </div>
+                                    
+                                    <!-- مفتاح الألوان -->
+                                    <div class="alert alert-light border">
+                                        <h6 class="mb-2"><i class="bi bi-palette-fill"></i> مفتاح الألوان:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small>
+                                                    <i class="bi bi-people-fill text-primary me-1"></i> إدارة الموظفين<br>
+                                                    <i class="bi bi-person-badge-fill text-info me-1"></i> إدارة المراقبين<br>
+                                                    <i class="bi bi-award-fill text-warning me-1"></i> شهادات المراقبين<br>
+                                                    <i class="bi bi-mortarboard-fill text-success me-1"></i> شهادات الموظفين
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small>
+                                                    <i class="bi bi-eye-fill text-secondary me-1"></i> إدارة الملاحظات<br>
+                                                    <i class="bi bi-file-earmark-check-fill text-danger me-1"></i> رخص المراقبين<br>
+                                                    <i class="bi bi-file-earmark-text-fill text-dark me-1"></i> رخص الموظفين
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th width="25%">النوع</th>
+                                                    <th width="20%">العملية</th>
+                                                    <th width="20%">النطاق</th>
+                                                    <th width="35%">الحالة</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    var entityTypes = new[] { "Employee", "Controller", "ControllerCertificate", "EmployeeCertificate", "ControllerObservation", "EmployeeObservation", "ControllerLicense", "EmployeeLicense", "Project", "Country", "Airport", "DepartmentOverview" };
+                                                    var operationTypes = new[] { "View", "Add", "Edit", "Delete", "Export" };
+                                                }
+                                                
+                                                @foreach (var entityType in entityTypes)
+                                                {
+                                                    @foreach (var operationType in operationTypes)
+                                                    {
+                                                        var permission = Model.OperationPermissions.FirstOrDefault(p => 
+                                                            p.EntityType == entityType && p.OperationType == operationType);
+                                                        var isAllowed = permission?.IsAllowed ?? false;
+                                                        var scope = permission?.Scope ?? "All";
+                                                        
+                                                        <tr class="@(isAllowed ? "table-success" : "")">
+                                                            <td>
+                                                                <strong class="@GetEntityTypeColor(entityType)">
+                                                                    <i class="@GetEntityTypeIcon(entityType) me-1"></i>
+                                                                    @GetEntityTypeName(entityType)
+                                                                </strong>
+                                                                @if (isAllowed)
+                                                                {
+                                                                    <i class="bi bi-check-circle-fill text-success ms-1" title="صلاحية مفعلة"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-x-circle text-muted ms-1" title="صلاحية غير مفعلة"></i>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-@(isAllowed ? "success" : "secondary")">
+                                                                    @GetOperationTypeName(operationType)
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <select class="form-select form-select-sm operation-scope" 
+                                                                        data-entity-type="@entityType" 
+                                                                        data-operation-type="@operationType">
+                                                                    <option value="All" selected="@(scope == "All")">الكل</option>
+                                                                    <option value="Department" selected="@(scope == "Department")">القسم</option>
+                                                                    <option value="Own" selected="@(scope == "Own")">الخاص</option>
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="form-check form-switch me-3">
+                                                                        <input class="form-check-input operation-permission" 
+                                                                               type="checkbox" 
+                                                                               data-entity-type="@entityType" 
+                                                                               data-operation-type="@operationType"
+                                                                               @(isAllowed ? "checked" : "")>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        @if (isAllowed)
+                                                                        {
+                                                                            <span class="badge bg-success fs-6">
+                                                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                                                مفعل
+                                                                            </span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge bg-secondary fs-6">
+                                                                                <i class="bi bi-x-circle me-1"></i>
+                                                                                غير مفعل
+                                                                            </span>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary" onclick="saveOperationPermissions()">
+                                            <i class="bi bi-save"></i>
+                                            حفظ صلاحيات العمليات
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const userId = @Model.UserId;
+
+        function saveMenuPermissions() {
+            const menuPermissions = {};
+            $('.menu-permission').each(function() {
+                const menuKey = $(this).data('menu-key');
+                const isVisible = $(this).is(':checked');
+                menuPermissions[menuKey] = isVisible;
+            });
+
+            // Show loading indicator
+            const saveButton = $('button[onclick="saveMenuPermissions()"]');
+            const originalText = saveButton.html();
+            saveButton.html('<i class="bi bi-hourglass-split"></i> جاري الحفظ...').prop('disabled', true);
+
+            $.ajax({
+                url: '@Url.Action("UpdateMenuPermissions")',
+                type: 'POST',
+                data: {
+                    userId: userId,
+                    menuPermissions: menuPermissions
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        // Reload the page after successful save to reflect changes
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('error', response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error saving menu permissions:', error);
+                    showAlert('error', 'حدث خطأ أثناء حفظ صلاحيات القائمة: ' + error);
+                },
+                complete: function() {
+                    // Restore button state
+                    saveButton.html(originalText).prop('disabled', false);
+                }
+            });
+        }
+
+        function saveOperationPermissions() {
+            const operationPermissions = [];
+            
+            console.log('=== DEBUGGING OPERATION PERMISSIONS ===');
+            console.log('Total .operation-permission elements found:', $('.operation-permission').length);
+            
+            $('.operation-permission').each(function(index) {
+                const entityType = $(this).data('entity-type');
+                const operationType = $(this).data('operation-type');
+                const isAllowed = $(this).is(':checked');
+                const scope = $(this).closest('tr').find('.operation-scope').val();
+                
+                console.log(`Operation Element ${index + 1}:`, {
+                    entityType,
+                    operationType,
+                    isAllowed,
+                    scope,
+                    element: this
+                });
+                
+                operationPermissions.push({
+                    EntityType: entityType,
+                    OperationType: operationType,
+                    IsAllowed: isAllowed,
+                    Scope: scope,
+                    ScopeId: null
+                });
+            });
+
+            console.log('Sending operation permissions:', {
+                userId: userId,
+                operationPermissions: operationPermissions
+            });
+
+            // Show loading indicator
+            const saveButton = $('button[onclick="saveOperationPermissions()"]');
+            const originalText = saveButton.html();
+            saveButton.html('<i class="bi bi-hourglass-split"></i> جاري الحفظ...').prop('disabled', true);
+
+            $.ajax({
+                url: '@Url.Action("UpdateOperationPermissions")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    userId: userId,
+                    operationPermissions: operationPermissions
+                }),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        // Reload the page after successful save to reflect changes
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('error', response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error saving operation permissions:', error);
+                    showAlert('error', 'حدث خطأ أثناء حفظ صلاحيات العمليات: ' + error);
+                },
+                complete: function() {
+                    // Restore button state
+                    saveButton.html(originalText).prop('disabled', false);
+                }
+            });
+        }
+
+
+
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+            
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="${icon}"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('.card-body').prepend(alertHtml);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
+    </script>
+}
+
+@functions {
+    string GetEntityTypeName(string entityType)
+    {
+        return entityType switch
+        {
+            "Employee" => "إدارة الموظفين",
+            "Controller" => "إدارة المراقبين",
+            "ControllerCertificate" => "شهادات المراقبين",
+            "EmployeeCertificate" => "شهادات الموظفين",
+            "ControllerObservation" => "ملاحظات المراقبين",
+            "EmployeeObservation" => "ملاحظات الموظفين",
+            "ControllerLicense" => "رخص المراقبين",
+            "EmployeeLicense" => "رخص الموظفين",
+            "Project" => "التدريب والتطوير",
+            "Country" => "إدارة الدول",
+            "Airport" => "إدارة المطارات",
+            "DepartmentOverview" => "نظرة عامة على القسم",
+            _ => entityType
+        };
+    }
+
+    string GetEntityTypeColor(string entityType)
+    {
+        return entityType switch
+        {
+            "Employee" => "text-primary",
+            "Controller" => "text-info",
+            "ControllerCertificate" => "text-warning",
+            "EmployeeCertificate" => "text-success",
+            "ControllerObservation" => "text-info",
+            "EmployeeObservation" => "text-primary",
+            "ControllerLicense" => "text-danger",
+            "EmployeeLicense" => "text-dark",
+            "Project" => "text-success",
+            "Country" => "text-warning",
+            "Airport" => "text-info",
+            "DepartmentOverview" => "text-primary",
+            _ => "text-muted"
+        };
+    }
+
+    string GetEntityTypeIcon(string entityType)
+    {
+        return entityType switch
+        {
+            "Employee" => "bi bi-people-fill",
+            "Controller" => "bi bi-person-badge-fill",
+            "ControllerCertificate" => "bi bi-award-fill",
+            "EmployeeCertificate" => "bi bi-mortarboard-fill",
+            "ControllerObservation" => "bi bi-eye-fill",
+            "EmployeeObservation" => "bi bi-eye-fill",
+            "ControllerLicense" => "bi bi-file-earmark-check-fill",
+            "EmployeeLicense" => "bi bi-file-earmark-text-fill",
+            "Project" => "bi bi-calendar-event-fill",
+            "Country" => "bi bi-globe",
+            "Airport" => "bi bi-airplane",
+            "DepartmentOverview" => "bi bi-people-fill",
+            _ => "bi bi-gear-fill"
+        };
+    }
+
+    string GetOperationTypeName(string operationType)
+    {
+        return operationType switch
+        {
+            "View" => "عرض",
+            "Add" => "إضافة",
+            "Edit" => "تعديل",
+            "Delete" => "حذف",
+            "Export" => "تصدير",
+            _ => operationType
+        };
+    }
+
+
+}
+
+<script>
+function clearUserCacheDynamically(userId) {
+    if (confirm('🔥 هل أنت متأكد من مسح الكاش الديناميكي؟ هذا سيقوم بتحديث timestamps في قاعدة البيانات ومسح الكاش في الذاكرة.')) {
+        $.ajax({
+            url: '@Url.Action("ClearUserCacheDynamically")',
+            type: 'POST',
+            data: { userId: userId },
+            success: function(response) {
+                if (response.success) {
+                    alert('🔥 تم مسح الكاش الديناميكي بنجاح!\n\nتم تحديث timestamps في قاعدة البيانات ومسح الكاش في الذاكرة.\n\nيرجى إعادة تحميل الصفحة لرؤية التغييرات.');
+                    location.reload();
+                } else {
+                    alert('خطأ: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('حدث خطأ أثناء مسح الكاش الديناميكي');
+            }
+        });
+    }
+}
+
+function debugUserPermissions(userId) {
+    $.ajax({
+        url: '@Url.Action("DebugUserMenuPermissions")',
+        type: 'GET',
+        data: { userId: userId },
+        success: function(response) {
+            if (response.success) {
+                var data = response.data;
+                var message = 'تحليل صلاحيات القائمة للمستخدم: ' + data.UserName + '\n\n';
+                message += 'إجمالي صلاحيات القائمة: ' + data.TotalMenuPermissions + '\n';
+                message += 'الصلاحيات المفعلة: ' + data.VisibleMenuPermissions + '\n\n';
+                message += 'تفاصيل الصلاحيات:\n';
+                
+                data.MenuPermissions.forEach(function(perm) {
+                    message += '• ' + perm.MenuName + ' (' + perm.MenuKey + '): ' + (perm.IsVisible ? 'مفعل ✓' : 'غير مفعل ✗') + '\n';
+                });
+                
+                alert(message);
+            } else {
+                alert('خطأ: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('حدث خطأ أثناء تحليل الصلاحيات');
+        }
+    });
+}
+</script>

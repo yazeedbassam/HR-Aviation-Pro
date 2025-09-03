@@ -7,6 +7,8 @@ using System.Data;
 using System.Linq;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
+using WebApplication1.Attributes;
+using WebApplication1.Services;
 using Microsoft.Data.SqlClient; // Required for SQL Server namespace
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -60,11 +62,11 @@ namespace WebApplication1.Controllers
             if (!string.IsNullOrEmpty(airportId))
                 airports = airports.Where(a => a.AirportId.ToString().Contains(airportId)).ToList();
             if (!string.IsNullOrEmpty(airportName))
-                airports = airports.Where(a => a.AirportName.ToLower().Contains(airportName.ToLower())).ToList();
+                airports = airports.Where(a => !string.IsNullOrEmpty(a.AirportName) && a.AirportName.ToLower().Contains(airportName.ToLower())).ToList();
             if (!string.IsNullOrEmpty(countryName))
-                airports = airports.Where(a => a.CountryName.ToLower().Contains(countryName.ToLower())).ToList();
+                airports = airports.Where(a => !string.IsNullOrEmpty(a.CountryName) && a.CountryName.ToLower().Contains(countryName.ToLower())).ToList();
             if (!string.IsNullOrEmpty(icaoCode))
-                airports = airports.Where(a => a.IcaoCode.ToLower().Contains(icaoCode.ToLower())).ToList();
+                airports = airports.Where(a => !string.IsNullOrEmpty(a.IcaoCode) && a.IcaoCode.ToLower().Contains(icaoCode.ToLower())).ToList();
 
             return airports;
         }
@@ -79,8 +81,8 @@ namespace WebApplication1.Controllers
             var airports = dtAirports.Rows.Cast<DataRow>()
                 .Select(r => new Dictionary<string, string>
                 {
-                    {"id", r["airportid"].ToString()},
-                    {"name", $"{r["airportname"]} ({r["icao_code"]})"}
+                    {"id", r["airportid"]?.ToString() ?? ""},
+                    {"name", $"{r["airportname"]?.ToString() ?? ""} ({r["icao_code"]?.ToString() ?? ""})"}
                 })
                 .ToList();
 
@@ -102,6 +104,12 @@ namespace WebApplication1.Controllers
         // GET: /Airport
         public IActionResult Index(string airportId, string airportName, string countryName, string icaoCode)
         {
+            // Check permission
+            if (!HttpContext.HasAdvancedPermission("AIRPORT_VIEW") && !HttpContext.IsAdvancedAdmin())
+            {
+                return Forbid();
+            }
+
             var airports = GetAirports(airportId, airportName, countryName, icaoCode);
             ViewBag.SuccessMessage = TempData["SuccessMessage"];
             ViewBag.ErrorMessage = TempData["ErrorMessage"];

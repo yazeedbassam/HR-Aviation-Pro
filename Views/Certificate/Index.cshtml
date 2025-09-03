@@ -42,14 +42,28 @@
 
 <div class="container-fluid">
     <div class="card custom-card bg-white px-3 py-4">
+        <!-- Header with Title and Global Buttons -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-            <div class="main-header"><i class="fa-solid fa-certificate me-2"></i>@ViewData["Title"]</div>
+            <div class="main-header">
+                <i class="fa-solid fa-certificate me-2"></i>
+                @ViewData["Title"]
+            </div>
             <div>
-                @if (Html.HasAdvancedPermission("CERTIFICATES_ADD") || Html.IsAdvancedAdmin())
+                @if (Html.HasAdvancedPermission("CONTROLLERCERTIFICATE_ADD") || Html.IsAdvancedAdmin())
                 {
-                    <a asp-action="Create" class="btn btn-success btn-sm me-2"><i class="fa-solid fa-plus"></i> Add New</a>
+                    <a href="@Url.Action("Create", "Certificate", new { tab = "controllers" })" class="btn btn-success btn-sm me-2" id="add-controller-certificate">
+                        <i class="fa-solid fa-plus"></i> Add New
+                    </a>
                 }
-                <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Home</a>
+                @if (Html.HasAdvancedPermission("EMPLOYEECERTIFICATE_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a href="@Url.Action("Create", "Certificate", new { tab = "employees" })" class="btn btn-success btn-sm me-2" id="add-employee-certificate" style="display: none;">
+                        <i class="fa-solid fa-plus"></i> Add Employee Certificate
+                    </a>
+                }
+                <a href="/" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
             </div>
         </div>
 
@@ -62,39 +76,23 @@
             <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
         }
 
+        <!-- Tabs Navigation -->
         <ul class="nav nav-tabs" id="certificateTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="controllers-cert-tab" data-bs-toggle="tab" data-bs-target="#controllers-cert-pane" type="button" role="tab">Controllers</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ais-cert-tab" data-bs-toggle="tab" data-bs-target="#ais-cert-pane" type="button" role="tab">AIS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="cns-cert-tab" data-bs-toggle="tab" data-bs-target="#cns-cert-pane" type="button" role="tab">CNS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="aftn-cert-tab" data-bs-toggle="tab" data-bs-target="#aftn-cert-pane" type="button" role="tab">AFTN</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="opsstaff-cert-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-cert-pane" type="button" role="tab">Ops Staff & Admin</button>
+                <button class="nav-link" id="employees-cert-tab" data-bs-toggle="tab" data-bs-target="#employees-cert-pane" type="button" role="tab">Employees & Operation Staff</button>
             </li>
         </ul>
 
+        <!-- Tabs Content -->
         <div class="tab-content pt-2" id="certificateTabContent">
             <div class="tab-pane fade show active" id="controllers-cert-pane" role="tabpanel">
                 @await Html.PartialAsync("_ControllerCertificatesPartial", Model.ControllerCertificates)
             </div>
-            <div class="tab-pane fade" id="ais-cert-pane" role="tabpanel">
-                @await Html.PartialAsync("_AISCertificatesPartial", Model.AISCertificates)
-            </div>
-            <div class="tab-pane fade" id="cns-cert-pane" role="tabpanel">
-                @await Html.PartialAsync("_CNSCertificatesPartial", Model.CNSCertificates)
-            </div>
-            <div class="tab-pane fade" id="aftn-cert-pane" role="tabpanel">
-                @await Html.PartialAsync("_AFTNCertificatesPartial", Model.AFTNCertificates)
-            </div>
-            <div class="tab-pane fade" id="opsstaff-cert-pane" role="tabpanel">
-                @await Html.PartialAsync("_OpsStaffCertificatesPartial", Model.OpsStaffCertificates)
+            <div class="tab-pane fade" id="employees-cert-pane" role="tabpanel">
+                @await Html.PartialAsync("_EmployeeCertificatesPartial", Model.EmployeesAndOpsStaffCertificates)
             </div>
         </div>
     </div>
@@ -105,19 +103,20 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="certificateDetailsModalLabel">Document Details</h5>
+                <h5 class="modal-title" id="certificateDetailsModalLabel">Certificate Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <ul class="list-unstyled">
-                    <li><strong class="detail-label">Person:</strong> <span id="modalPersonName"></span></li>
-                    <li><strong class="detail-label">Person Type:</strong> <span id="modalPersonType"></span></li>
+                <ul class="details-list">
+                    <li><span class="detail-label">Person:</span> <span id="modalPersonName"></span></li>
+                    <li><span class="detail-label">Job/Department:</span> <span id="modalPersonJob"></span></li>
                     <hr />
-                    <li><strong class="detail-label">Type:</strong> <span id="modalTypeName"></span></li>
-                    <li><strong class="detail-label">Title:</strong> <span id="modalTitle"></span></li>
-                    <li><strong class="detail-label">Issue Date:</strong> <span id="modalIssueDate"></span></li>
-                    <li><strong class="detail-label">Expiry Date:</strong> <span id="modalExpiryDate"></span></li>
-                    <li><strong class="detail-label">Status:</strong> <span id="modalStatus"></span></li>
+                    <li><span class="detail-label">Type:</span> <span id="modalType"></span></li>
+                    <li><span class="detail-label">Title:</span> <span id="modalTitle"></span></li>
+                    <li><span class="detail-label">Issue Date:</span> <span id="modalIssueDate"></span></li>
+                    <li><span class="detail-label">Expiry Date:</span> <span id="modalExpiryDate"></span></li>
+                    <li><span class="detail-label">Status:</span> <span id="modalStatus"></span></li>
+                    <li><span class="detail-label">Notes:</span> <span id="modalNotes"></span></li>
                 </ul>
             </div>
         </div>
@@ -133,20 +132,11 @@
                 case 'Controller':
                     tableId = '#controllerCertsTable';
                     break;
-                case 'AIS':
-                    tableId = '#aisCertificatesTable';
-                    break;
-                case 'CNS':
-                    tableId = '#cnsCertificatesTable';
-                    break;
-                case 'AFTN':
-                    tableId = '#aftnCertificatesTable';
-                    break;
-                case 'OpsStaff':
-                    tableId = '#opsstaffCertificatesTable';
+                case 'Employees':
+                    tableId = '#employeesCertsTable';
                     break;
                 default:
-                    tableId = '#employeeCertsTable';
+                    tableId = '#employeesCertsTable';
             }
             
             const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
@@ -171,17 +161,45 @@
             document.body.removeChild(a);
         }
 
+        // Tab switching logic for buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const controllersTab = document.getElementById('controllers-cert-tab');
+            const employeesTab = document.getElementById('employees-cert-tab');
+            const addControllerCertificate = document.getElementById('add-controller-certificate');
+            const addEmployeeCertificate = document.getElementById('add-employee-certificate');
+
+            function updateButtons(activeTab) {
+                if (activeTab === 'controllers') {
+                    addControllerCertificate.style.display = 'inline-block';
+                    addEmployeeCertificate.style.display = 'none';
+                } else {
+                    addControllerCertificate.style.display = 'none';
+                    addEmployeeCertificate.style.display = 'inline-block';
+                }
+            }
+
+            // Listen for tab changes
+            controllersTab.addEventListener('click', () => updateButtons('controllers'));
+            employeesTab.addEventListener('click', () => updateButtons('employees'));
+
+            // Set initial state
+            updateButtons('controllers');
+        });
+
+        // Modal logic
         const certificateDetailsModal = document.getElementById('certificateDetailsModal');
         if (certificateDetailsModal) {
             certificateDetailsModal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
-                document.getElementById('modalPersonName').textContent = button.getAttribute('data-person-name');
-                document.getElementById('modalPersonType').textContent = button.getAttribute('data-person-type');
-                document.getElementById('modalTypeName').textContent = button.getAttribute('data-type-name');
-                document.getElementById('modalTitle').textContent = button.getAttribute('data-title');
-                document.getElementById('modalIssueDate').textContent = button.getAttribute('data-issue-date');
-                document.getElementById('modalExpiryDate').textContent = button.getAttribute('data-expiry-date');
-                document.getElementById('modalStatus').textContent = button.getAttribute('data-status');
+
+                document.getElementById('modalType').textContent = button.getAttribute('data-type') || "-";
+                document.getElementById('modalPersonName').textContent = button.getAttribute('data-personname') || "-";
+                document.getElementById('modalPersonJob').textContent = button.getAttribute('data-personjob') || "-";
+                document.getElementById('modalTitle').textContent = button.getAttribute('data-title') || "-";
+                document.getElementById('modalIssueDate').textContent = button.getAttribute('data-issuedate') || "-";
+                document.getElementById('modalExpiryDate').textContent = button.getAttribute('data-expirydate') || "-";
+                document.getElementById('modalStatus').textContent = button.getAttribute('data-status') || "-";
+                document.getElementById('modalNotes').textContent = button.getAttribute('data-notes') || "-";
             });
         }
     </script>

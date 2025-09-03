@@ -25,12 +25,16 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         // Renamed constructor from OracleDb to SqlServerDb
         public SqlServerDb(IConfiguration configuration)
         {
-            // Get connection string and replace environment variables
+            // Get connection string from appsettings.json and replace environment variables
             var connectionString = configuration.GetConnectionString("SqlServerDbConnection") 
                                 ?? throw new ArgumentNullException("Connection string 'SqlServerDbConnection' not found.");
             
             // Replace environment variables in connection string
-            _connectionString = ReplaceEnvironmentVariables(connectionString);
+            _connectionString = ReplaceEnvironmentVariables(connectionString, configuration);
+            
+            // Initialize with default values for controllers that don't need logging or password hashing
+            _passwordHasher = new PasswordHasher<ControllerUser>();
+            _logger = null; // Will be null for controllers that don't need logging
             
             // Log connection string (without sensitive data)
             var connectionStringForLogging = _connectionString;
@@ -43,14 +47,14 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             }
         }
 
-        private string ReplaceEnvironmentVariables(string connectionString)
+        private string ReplaceEnvironmentVariables(string connectionString, IConfiguration configuration)
         {
             return connectionString
-                .Replace("${DB_SERVER}", Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost\\SQLEXPRESS")
-                .Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME") ?? "HR-Aviation")
-                .Replace("${DB_USER}", Environment.GetEnvironmentVariable("DB_USER") ?? "")
-                .Replace("${DB_PASSWORD}", Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "")
-                .Replace("${DB_PORT}", Environment.GetEnvironmentVariable("DB_PORT") ?? "1433");
+                .Replace("${DB_SERVER}", configuration["DB_SERVER"] ?? "localhost\\SQLEXPRESS")
+                .Replace("${DB_NAME}", configuration["DB_NAME"] ?? "HR-Aviation")
+                .Replace("${DB_USER}", configuration["DB_USER"] ?? "")
+                .Replace("${DB_PASSWORD}", configuration["DB_PASSWORD"] ?? "")
+                .Replace("${DB_PORT}", configuration["DB_PORT"] ?? "1433");
         }
 
         // Constructor with dependencies
@@ -58,7 +62,7 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
         {
             var connectionString = configuration.GetConnectionString("SqlServerDbConnection")
                                 ?? throw new ArgumentNullException("Connection string 'SqlServerDbConnection' not found.");
-            _connectionString = ReplaceEnvironmentVariables(connectionString);
+            _connectionString = ReplaceEnvironmentVariables(connectionString, configuration); // Replace environment variables
             _passwordHasher = passwordHasher;
             _logger = logger;
         }
@@ -69,12 +73,12 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             try
             {
                 var connection = new SqlConnection(_connectionString);
-                Console.WriteLine("MySQL connection created successfully");
+                Console.WriteLine("SQL Server connection created successfully");
                 return connection;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating MySQL connection: {ex.Message}");
+                Console.WriteLine($"Error creating SQL Server connection: {ex.Message}");
                 throw;
             }
         }
@@ -127,7 +131,7 @@ namespace WebApplication1.DataAccess // Assuming this namespace remains the same
             catch (SqlException ex) // Catch SqlException instead of SqlException
             {
                 // Log MySQL error
-                Console.WriteLine($"MySQL Error: {ex.Message}");
+                Console.WriteLine($"SQL Server Error: {ex.Message}");
                 throw; // Re-throw the exception
             }
             // No finally needed as 'using' handles disposal/closing
@@ -273,6 +277,26 @@ WHERE controllerid = @controllerid"; // Changed : to @
             return result == DBNull.Value ? 0 : Convert.ToInt32(result);
         }
 
+        // GetCertificateCountByController: Count certificates for a controller
+        public int GetCertificateCountByController(int controllerId)
+        {
+            var result = ExecuteScalar(
+                "SELECT COUNT(*) FROM certificates WHERE controllerid = @controllerId",
+                new SqlParameter("@controllerId", controllerId)
+            );
+            return result == DBNull.Value ? 0 : Convert.ToInt32(result);
+        }
+
+        // GetObservationCountByController: Count observations for a controller
+        public int GetObservationCountByController(int controllerId)
+        {
+            var result = ExecuteScalar(
+                "SELECT COUNT(*) FROM observations WHERE controllerid = @controllerId",
+                new SqlParameter("@controllerId", controllerId)
+            );
+            return result == DBNull.Value ? 0 : Convert.ToInt32(result);
+        }
+
         // DeleteController: Parameter syntax change (@ instead of :), Transaction handling with SqlTransaction
         public void DeleteController(int controllerId)
         {
@@ -281,17 +305,27 @@ WHERE controllerid = @controllerid"; // Changed : to @
             using var tx = conn.BeginTransaction(); // Uses SqlTransaction
             try
             {
-                // Delete licenses first
-                using var cmd1 = new SqlCommand(
-                    "DELETE FROM licenses WHERE controllerid = @controllerId", conn, tx); // Use SqlCommand, @, pass tx
-                cmd1.Parameters.Add(new SqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
-                cmd1.ExecuteNonQuery();
+                // Check for related data before deletion
+                var licenseCount = GetLicenseCountByController(controllerId);
+                var certificateCount = GetCertificateCountByController(controllerId);
+                var observationCount = GetObservationCountByController(controllerId);
+                
+                if (licenseCount > 0 || certificateCount > 0 || observationCount > 0)
+                {
+                    var errorMessage = "Cannot delete controller because they have related data:";
+                    if (licenseCount > 0) errorMessage += $" {licenseCount} license(s),";
+                    if (certificateCount > 0) errorMessage += $" {certificateCount} certificate(s),";
+                    if (observationCount > 0) errorMessage += $" {observationCount} observation(s),";
+                    errorMessage = errorMessage.TrimEnd(',') + ". Please delete related data first.";
+                    
+                    throw new InvalidOperationException(errorMessage);
+                }
 
-                // Then delete controller
-                using var cmd2 = new SqlCommand(
-                    "DELETE FROM controllers WHERE controllerid = @controllerId", conn, tx); // Use SqlCommand, @, pass tx
-                cmd2.Parameters.Add(new SqlParameter("@controllerId", controllerId)); // Use SqlParameter and @
-                cmd2.ExecuteNonQuery();
+                // Delete controller (no related data exists)
+                using var cmd = new SqlCommand(
+                    "DELETE FROM controllers WHERE controllerid = @controllerId", conn, tx);
+                cmd.Parameters.Add(new SqlParameter("@controllerId", controllerId));
+                cmd.ExecuteNonQuery();
 
                 tx.Commit();
             }
@@ -368,8 +402,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
             );
         }
 
-        // Password Hasher remains the same (ASP.NET Core Identity)
-        private readonly IPasswordHasher<ControllerUser> _hasher = new PasswordHasher<ControllerUser>();
+        // Password Hasher is injected via constructor
 
         // CreateUser: Parameter syntax change (@ instead of :), Sequence replacement (assuming IDENTITY column for userid)
         public int CreateUser(string username, string passwordHash, string roleName)
@@ -396,14 +429,28 @@ WHERE controllerid = @controllerid"; // Changed : to @
                         object result = cmd.ExecuteScalar(); // ??????? ExecuteScalar ?????? ??? ???? ????? (??? UserId)
                         if (result != null && result != DBNull.Value)
                         {
-                            return Convert.ToInt32(result);
+                            int userId = Convert.ToInt32(result);
+                            
+                            // Auto-assign permissions for new user
+                            try
+                            {
+                                AutoAssignPermissionsForNewUser(userId, roleName);
+                                _logger?.LogInformation("Auto-assigned permissions for new user {UserId} with role {RoleName}", userId, roleName);
+                            }
+                            catch (Exception permEx)
+                            {
+                                _logger?.LogWarning(permEx, "Failed to auto-assign permissions for user {UserId} with role {RoleName}", userId, roleName);
+                                // Don't fail user creation if permission assignment fails
+                            }
+                            
+                            return userId;
                         }
                     }
                 }
             }
             catch (SqlException ex)
             {
-                _logger.LogError(ex, "Error creating user in Users table: {SQL}", sql);
+                _logger?.LogError(ex, "Error creating user in Users table: {SQL}", sql);
                 throw; // ????? ??? ????????? ?????? ???????? ?? ????? ????
             }
             return -1; // ?? ???? ????? ?? ??? ????? ????
@@ -417,7 +464,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
             var user = GetUserByUsername(username);
             if (user == null) return false;
             var (id, uname, pwHash, rl) = user.Value;
-            var result = _hasher.VerifyHashedPassword(null, pwHash, password);
+            var result = _passwordHasher.VerifyHashedPassword(null, pwHash, password);
             if (result == PasswordVerificationResult.Success)
             {
                 userId = id;
@@ -647,7 +694,16 @@ WHERE certificateid = @certificateId"; // Changed : to @
         //        }
         public DataRow GetControllerByUsername(string username)
         {
-            const string sql = "SELECT * FROM controllers WHERE username = @username";
+            const string sql = @"
+                SELECT 
+                    controllerid, fullname, username, airportid, photopath, licensepath,
+                    job_title, education_level, date_of_birth, marital_status, phone_number,
+                    email, address, hire_date, employment_status, current_department,
+                    transfer_date, emergency_contact, LicenseNumber, NeedLicense, IsActive,
+                    CurrentSalary, AnnualIncreasePercentage, SalaryAfterAnnualIncrease,
+                    BankAccountNumber, BankName, TaxId, InsuranceNumber
+                FROM controllers 
+                WHERE username = @username";
             var dt = ExecuteQuery(sql, new SqlParameter("@username", username));
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
@@ -751,8 +807,98 @@ WHERE certificateid = @certificateId"; // Changed : to @
         // GetSoonExpiringLicensesCount: SYSDATE -> GETDATE(), SYSDATE + 30 -> DATEADD
         public int GetSoonExpiringLicensesCount()
         {
-            object result = ExecuteScalar("SELECT COUNT(*) FROM licenses WHERE expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE())");
-            return result == DBNull.Value ? 0 : Convert.ToInt32(result);
+            // Count expiring licenses
+            object expiringResult = ExecuteScalar("SELECT COUNT(*) FROM licenses WHERE expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE())");
+            int expiringCount = expiringResult == DBNull.Value ? 0 : Convert.ToInt32(expiringResult);
+            
+            // Count people needing licenses
+            int needingCount = GetTotalNeedingLicensesCount();
+            
+            return expiringCount + needingCount;
+        }
+
+        // GetEmployeesNeedingLicenses: Get employees who need licenses but don't have any
+        public DataTable GetEmployeesNeedingLicenses()
+        {
+            var dt = ExecuteQuery(@"
+                SELECT 
+                    e.EmployeeID,
+                    e.FullName,
+                    e.PhoneNumber,
+                    e.Email,
+                    e.Department,
+                    e.JobTitle,
+                    e.HireDate,
+                    e.OrganizationalStructure,
+                    'Employee' AS UserType,
+                    'Needs License' AS Status
+                FROM Employees e
+                WHERE e.NeedLicense = 1 
+                AND e.IsActive = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM Licenses l 
+                    WHERE l.EmployeeID = e.EmployeeID 
+                    AND l.ExpiryDate > GETDATE()
+                )
+                ORDER BY e.FullName
+            ");
+            return dt;
+        }
+
+        // GetControllersNeedingLicenses: Get controllers who need licenses but don't have any
+        public DataTable GetControllersNeedingLicenses()
+        {
+            var dt = ExecuteQuery(@"
+                SELECT 
+                    c.ControllerID,
+                    c.FullName,
+                    c.Phone_Number AS PhoneNumber,
+                    c.Email,
+                    c.Current_Department AS Department,
+                    c.Job_Title AS JobTitle,
+                    c.Hire_Date AS HireDate,
+                    'Controller' AS UserType,
+                    'Needs License' AS Status
+                FROM Controllers c
+                WHERE c.IsActive = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM Licenses l 
+                    WHERE l.ControllerID = c.ControllerID 
+                    AND l.ExpiryDate > GETDATE()
+                )
+                ORDER BY c.FullName
+            ");
+            return dt;
+        }
+
+        // GetTotalNeedingLicensesCount: Get total count of people needing licenses
+        public int GetTotalNeedingLicensesCount()
+        {
+            var employeeCount = ExecuteScalar(@"
+                SELECT COUNT(*) FROM Employees e
+                WHERE e.NeedLicense = 1 
+                AND e.IsActive = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM Licenses l 
+                    WHERE l.EmployeeID = e.EmployeeID 
+                    AND l.ExpiryDate > GETDATE()
+                )
+            ");
+
+            var controllerCount = ExecuteScalar(@"
+                SELECT COUNT(*) FROM Controllers c
+                WHERE c.IsActive = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM Licenses l 
+                    WHERE l.ControllerID = c.ControllerID 
+                    AND l.ExpiryDate > GETDATE()
+                )
+            ");
+
+            int empCount = employeeCount == DBNull.Value ? 0 : Convert.ToInt32(employeeCount);
+            int ctrlCount = controllerCount == DBNull.Value ? 0 : Convert.ToInt32(controllerCount);
+
+            return empCount + ctrlCount;
         }
 
         // GetCertificatesStats: SQL is standard
@@ -1270,10 +1416,74 @@ AND (
             {
                 connection.Open();
                 using (var cmd = new SqlCommand(@"
-SELECT c.fullname, l.licensetype, l.expirydate, c.phone_number, c.email
+-- Get controllers with expiring licenses
+SELECT 
+    c.fullname, 
+    l.licensetype, 
+    l.expirydate, 
+    c.phone_number, 
+    c.email,
+    'Controller' AS UserType,
+    'Expiring Soon' AS Status
 FROM licenses l
 JOIN controllers c ON l.controllerid = c.controllerid
-WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETDATE() and DATEADD
+WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE())
+
+UNION ALL
+
+-- Get employees with expiring licenses
+SELECT 
+    e.fullname, 
+    l.licensetype, 
+    l.expirydate, 
+    e.phonenumber AS phone_number, 
+    e.email,
+    'Employee' AS UserType,
+    'Expiring Soon' AS Status
+FROM licenses l
+JOIN employees e ON l.employeeid = e.employeeid
+WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE())
+
+UNION ALL
+
+-- Get employees needing licenses
+SELECT 
+    e.fullname, 
+    'No License' AS licensetype, 
+    NULL AS expirydate, 
+    e.phonenumber AS phone_number, 
+    e.email,
+    'Employee' AS UserType,
+    'Needs License' AS Status
+FROM employees e
+WHERE e.NeedLicense = 1 
+AND e.IsActive = 1
+AND NOT EXISTS (
+    SELECT 1 FROM licenses l 
+    WHERE l.employeeid = e.employeeid 
+    AND l.expirydate > GETDATE()
+)
+
+UNION ALL
+
+-- Get controllers needing licenses
+SELECT 
+    c.fullname, 
+    'No License' AS licensetype, 
+    NULL AS expirydate, 
+    c.phone_number, 
+    c.email,
+    'Controller' AS UserType,
+    'Needs License' AS Status
+FROM controllers c
+WHERE c.IsActive = 1
+AND NOT EXISTS (
+    SELECT 1 FROM licenses l 
+    WHERE l.controllerid = c.controllerid 
+    AND l.expirydate > GETDATE()
+)
+
+ORDER BY fullname
 ", connection)) // Use SqlCommand
                 using (var adapter = new SqlDataAdapter(cmd)) // Use SqlDataAdapter
                 {
@@ -1320,14 +1530,13 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             var employees = new List<Employee>();
 
             string sql = @"
-        SELECT e.*, u.Username, e.Gender 
+        SELECT e.*, e.Username, e.Gender 
         FROM Employees e
-        LEFT JOIN Users u ON e.UserID = u.UserID
         WHERE 1=1 ";
 
             var parameters = new List<SqlParameter>();
 
-            // ???? ???? WHERE ???? ????????
+            // إضافة شروط WHERE حسب المعاملات
             if (!string.IsNullOrEmpty(fullName))
             {
                 sql += " AND LOWER(e.FullName) LIKE @fullName";
@@ -1370,7 +1579,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             }
             if (!string.IsNullOrEmpty(Gender))
             {
-                sql += " AND LOWER(e.Location) LIKE @Gender";
+                sql += " AND LOWER(e.Gender) LIKE @Gender";
                 parameters.Add(new SqlParameter("@Gender", $"%{Gender.ToLower()}%"));
             }
             sql += " ORDER BY e.FullName";
@@ -1383,6 +1592,51 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             }
             return employees;
         }
+
+        /// <summary>
+        /// الحصول على الموظفين الذين لديهم حسابات مستخدمين فقط
+        /// </summary>
+        public List<Employee> GetEmployeesWithUserAccounts()
+        {
+            var employees = new List<Employee>();
+
+            string sql = @"
+        SELECT e.*, e.Username, e.Gender 
+        FROM Employees e
+        WHERE e.UserID IS NOT NULL AND e.UserID > 0
+        ORDER BY e.FullName";
+
+            DataTable dt = ExecuteQuery(sql);
+
+            foreach (DataRow row in dt.Rows)
+            {
+                employees.Add(MapDataRowToEmployee(row));
+            }
+            return employees;
+        }
+
+        /// <summary>
+        /// الحصول على الموظفين الذين لا يملكون حسابات مستخدمين
+        /// </summary>
+        public List<Employee> GetEmployeesWithoutUserAccounts()
+        {
+            var employees = new List<Employee>();
+
+            string sql = @"
+        SELECT e.*, NULL as Username, e.Gender 
+        FROM Employees e
+        WHERE e.UserID IS NULL OR e.UserID = 0
+        ORDER BY e.FullName";
+
+            DataTable dt = ExecuteQuery(sql);
+
+            foreach (DataRow row in dt.Rows)
+            {
+                employees.Add(MapDataRowToEmployee(row));
+            }
+            return employees;
+        }
+
         /// <summary>
         /// ???? ???? ?????? ???? ???? ???????? ???? ????????.
         /// </summary>
@@ -1390,11 +1644,10 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         /// <returns>???? ?? ??? ???? ?? null ??? ?? ??? ?????? ????</returns>
         public Employee GetEmployeeById(int employeeId)
         {
-            // ??? ????????? ????? ??? ???? ?? ???? ?????????? ???? ??? ????????
+            // استخدام حقل Username من جدول Employees مباشرة
             string sql = @"
-        SELECT e.*, u.Username 
+        SELECT e.*, e.Username 
         FROM Employees e
-        LEFT JOIN Users u ON e.UserID = u.UserID
         WHERE e.EmployeeID = @EmployeeID";
 
             var parameters = new[] { new SqlParameter("@EmployeeID", employeeId) };
@@ -1403,13 +1656,6 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             if (dt.Rows.Count > 0)
             {
                  DataRow row = dt.Rows[0];
-                //return new Employee
-                //{
-                //    EmployeeID = Convert.ToInt32(row["EmployeeId"]),
-                //    FullName = row["FullName"] != DBNull.Value ? row["FullName"].ToString() : string.Empty,
-                //    Department = row["Department"] != DBNull.Value ? row["Department"].ToString() : string.Empty,
-                //    // ??? ???? ?????? ??? ??????
-                //};
                 return MapDataRowToEmployee(dt.Rows[0]);
             }
             return null;
@@ -1425,7 +1671,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             var passwordHasher = new PasswordHasher<ControllerUser>();
             string hashedPassword = passwordHasher.HashPassword(null, model.Password);
 
-            // ?????? (?): ?????? ???? CreateUser ???????? ???? ?????? ??????
+            // ?????? (?): ?????? ???? CreateUser ???????? ???? ?????? ?????? ?????? ?????? ?????? ?????? ??????
             int newUserId = CreateUser(model.Username, hashedPassword, model.RoleName);
 
             if (newUserId <= 0)
@@ -1441,13 +1687,15 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             PhoneNumber, Email, HireDate, IsActive, Address, Location, EmergencyContactPhone, Gender,
             DateOfBirth, MaritalStatus, EducationLevel,
             CurrentSalary, AnnualIncreasePercentage, SalaryAfterAnnualIncrease,
-            BankAccountNumber, BankName, TaxId, InsuranceNumber
+            BankAccountNumber, BankName, TaxId, InsuranceNumber, PhotoPath, NeedLicense,
+            OrganizationalStructure, Division, Role, Username
         ) VALUES (
             @EmployeeOfficialID, @UserID, @FullName, @JobTitle, @Department, 
             @PhoneNumber, @Email, @HireDate, @IsActive, @Address, @Location, @EmergencyContactPhone, @Gender,
             @DateOfBirth, @MaritalStatus, @EducationLevel,
             @CurrentSalary, @AnnualIncreasePercentage, @SalaryAfterAnnualIncrease,
-            @BankAccountNumber, @BankName, @TaxId, @InsuranceNumber
+            @BankAccountNumber, @BankName, @TaxId, @InsuranceNumber, @PhotoPath, @NeedLicense,
+            @OrganizationalStructure, @Division, @Role, @Username
         )";
 
             var parameters = new[]
@@ -1477,6 +1725,10 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         new SqlParameter("@InsuranceNumber", (object)model.InsuranceNumber ?? DBNull.Value),
         new SqlParameter("@PhotoPath", (object)model.PhotoPath ?? DBNull.Value),
         new SqlParameter("@NeedLicense", model.NeedLicense),
+        new SqlParameter("@OrganizationalStructure", (object)model.OrganizationalStructure ?? DBNull.Value),
+        new SqlParameter("@Division", (object)model.Division ?? DBNull.Value),
+        new SqlParameter("@Role", (object)model.RoleName ?? DBNull.Value),
+        new SqlParameter("@Username", model.Username),
     };
 
             ExecuteNonQuery(sql, parameters);
@@ -1514,7 +1766,11 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
             TaxId = @TaxId,
             InsuranceNumber = @InsuranceNumber,
             PhotoPath = @PhotoPath,
-            NeedLicense = @NeedLicense
+            NeedLicense = @NeedLicense,
+            OrganizationalStructure = @OrganizationalStructure,
+            Division = @Division,
+            Role = @Role,
+            Username = @Username
         WHERE EmployeeID = @EmployeeID";
 
             var parameters = new[]
@@ -1541,17 +1797,152 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         new SqlParameter("@BankName", (object)employee.BankName ?? DBNull.Value),
         new SqlParameter("@TaxId", (object)employee.TaxId ?? DBNull.Value),
         new SqlParameter("@InsuranceNumber", (object)employee.InsuranceNumber ?? DBNull.Value),
+        new SqlParameter("@PhotoPath", (object)employee.PhotoPath ?? DBNull.Value),
+        new SqlParameter("@NeedLicense", employee.NeedLicense),
+        new SqlParameter("@OrganizationalStructure", (object)employee.OrganizationalStructure ?? DBNull.Value),
+        new SqlParameter("@Division", (object)employee.Division ?? DBNull.Value),
+        new SqlParameter("@Role", (object)employee.Role ?? DBNull.Value),
+        new SqlParameter("@Username", (object)employee.Username ?? DBNull.Value),
         new SqlParameter("@EmployeeID", employee.EmployeeID)
     };
             ExecuteNonQuery(sql, parameters);
         }
 
         /// <summary>
-        /// ???? ?????? ???? ?????? ?? ?????? ?? DataTable ??? ???? Employee.
-        /// ??? ???? ????? ????? ????? ???????.
+        /// Import employee from Excel file with all required data.
         /// </summary>
-        /// <param name="row">?? ???????? ?????? ??????</param>
-        /// <returns>???? ????</returns>
+        /// <param name="model">Employee import model containing all required data</param>
+        /// <returns>true if employee was imported successfully, false otherwise</returns>
+        public bool ImportEmployeeFromExcel(EmployeeImportModel model)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open(); // Open connection first
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                        // 1. Check if user exists in Users table
+                        var existingUser = GetUserByUsername(model.Username);
+                        
+                        // 2. Check if employee exists in Employees table
+                        var existingEmployee = GetEmployeeByUsername(model.Username);
+                        
+                        int userId;
+                        string passwordHash;
+                        
+                        if (existingUser != null && existingEmployee == null)
+                        {
+                            // User exists but employee was deleted - reuse existing user
+                            userId = existingUser.Value.userId;
+                            passwordHash = _passwordHasher.HashPassword(null, model.CustomPassword ?? "123");
+                            _logger?.LogInformation("Reusing existing user {Username} for employee import", model.Username);
+                        }
+                        else if (existingUser == null)
+                        {
+                            // Create new user
+                            passwordHash = _passwordHasher.HashPassword(null, model.CustomPassword ?? "123");
+                            userId = CreateUser(model.Username, passwordHash, model.Role);
+                            if (userId == 0)
+                            {
+                                transaction.Rollback();
+                                return false;
+                            }
+                            _logger?.LogInformation("Created new user {Username} for employee import", model.Username);
+                        }
+                        else
+                        {
+                            // Both user and employee exist - skip
+                            _logger?.LogWarning("User {Username} already exists as employee, skipping import", model.Username);
+                            transaction.Rollback();
+                            return false;
+                        }
+
+                        // 3. Create employee record
+                        var employeeSql = @"
+                            INSERT INTO Employees (
+                                EmployeeOfficialID, UserID, FullName, JobTitle, Department, 
+                                PhoneNumber, Email, HireDate, IsActive, Address, Location, EmergencyContactPhone, Gender,
+                                DateOfBirth, MaritalStatus, EducationLevel,
+                                CurrentSalary, AnnualIncreasePercentage, SalaryAfterAnnualIncrease,
+                                BankAccountNumber, BankName, TaxId, InsuranceNumber, PhotoPath, NeedLicense,
+                                OrganizationalStructure, Division, Role, Username
+                            ) VALUES (
+                                @EmployeeOfficialID, @UserID, @FullName, @JobTitle, @Department, 
+                                @PhoneNumber, @Email, @HireDate, @IsActive, @Address, @Location, @EmergencyContactPhone, @Gender,
+                                @DateOfBirth, @MaritalStatus, @EducationLevel,
+                                @CurrentSalary, @AnnualIncreasePercentage, @SalaryAfterAnnualIncrease,
+                                @BankAccountNumber, @BankName, @TaxId, @InsuranceNumber, @PhotoPath, @NeedLicense,
+                                @OrganizationalStructure, @Division, @Role, @Username
+                            )";
+
+                        var employeeParams = new[]
+                        {
+                            new SqlParameter("@EmployeeOfficialID", (object)model.EmployeeOfficialID ?? DBNull.Value),
+                            new SqlParameter("@UserID", userId),
+                            new SqlParameter("@FullName", model.FullName),
+                            new SqlParameter("@JobTitle", (object)model.JobTitle ?? DBNull.Value),
+                            new SqlParameter("@Department", (object)model.Department ?? DBNull.Value),
+                            new SqlParameter("@PhoneNumber", (object)model.PhoneNumber ?? DBNull.Value),
+                            new SqlParameter("@Email", (object)model.Email ?? DBNull.Value),
+                            new SqlParameter("@HireDate", (object)model.HireDate ?? DBNull.Value),
+                            new SqlParameter("@IsActive", model.IsActive),
+                            new SqlParameter("@Address", (object)model.Address ?? DBNull.Value),
+                            new SqlParameter("@Location", (object)model.Location ?? DBNull.Value),
+                            new SqlParameter("@EmergencyContactPhone", (object)model.EmergencyContactPhone ?? DBNull.Value),
+                            new SqlParameter("@Gender", (object)model.Gender ?? DBNull.Value),
+                            new SqlParameter("@DateOfBirth", (object)model.DateOfBirth ?? DBNull.Value),
+                            new SqlParameter("@MaritalStatus", (object)model.MaritalStatus ?? DBNull.Value),
+                            new SqlParameter("@EducationLevel", (object)model.EducationLevel ?? DBNull.Value),
+                            new SqlParameter("@CurrentSalary", (object)model.CurrentSalary ?? DBNull.Value),
+                            new SqlParameter("@AnnualIncreasePercentage", (object)model.AnnualIncreasePercentage ?? DBNull.Value),
+                            new SqlParameter("@SalaryAfterAnnualIncrease", (object)model.CurrentSalary ?? DBNull.Value), // Default to current salary
+                            new SqlParameter("@BankAccountNumber", (object)model.BankAccountNumber ?? DBNull.Value),
+                            new SqlParameter("@BankName", (object)model.BankName ?? DBNull.Value),
+                            new SqlParameter("@TaxId", (object)model.TaxId ?? DBNull.Value),
+                            new SqlParameter("@InsuranceNumber", (object)model.InsuranceNumber ?? DBNull.Value),
+                            new SqlParameter("@PhotoPath", (object)null ?? DBNull.Value), // No photo for imported employees
+                            new SqlParameter("@NeedLicense", model.NeedLicense),
+                            new SqlParameter("@OrganizationalStructure", (object)model.OrganizationalStructure ?? DBNull.Value),
+                            new SqlParameter("@Division", (object)model.Division ?? DBNull.Value),
+                            new SqlParameter("@Role", model.Role),
+                            new SqlParameter("@Username", model.Username)
+                        };
+
+                        using (var cmd = new SqlCommand(employeeSql, connection, transaction))
+                        {
+                            cmd.Parameters.AddRange(employeeParams);
+                            cmd.ExecuteNonQuery();
+                        }
+                        _logger?.LogInformation("Created employee record for imported employee {Username}", model.Username);
+
+                        // 4. Auto-assign permissions
+                        AutoAssignPermissionsForNewUser(userId, model.Role);
+
+                        transaction.Commit();
+                        _logger?.LogInformation("Successfully imported employee {Username} from Excel", model.Username);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        _logger?.LogError(ex, "Error importing employee {Username} from Excel", model.Username);
+                        return false;
+                    }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in ImportEmployeeFromExcel for {Username}", model.Username);
+                return false;
+            }
+        }
+
+        // Helper method to map data row to Employee model
+        // This method is commented out as it's not currently used
         //private Employee MapDataRowToEmployee(DataRow row)
         //{
         //    return new Employee
@@ -1584,16 +1975,16 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
 
             object result = ExecuteScalar(sql, parameters);
 
-            // ??? ????? ????? ???????? ?? ???? (??? ?? ???? 1)? ???? ???? ?? ??????? ?????
+            // Check if result exists (if not null, then 1 exists) and return true if found
             return result != null;
         }
         /// <summary>
-        /// ???? ???? ?? ????????? ??????? ?? ???? Roles
+        /// Get all roles from the Roles table
         /// </summary>
         public List<Role> GetAllRoles()
         {
             var roles = new List<Role>();
-            // ???? ?? ?? ??? ?????? ??????? ????
+            // Get all roles from the Roles table
             string sql = "SELECT RoleName FROM dbo.Roles ORDER BY RoleName";
 
             DataTable dt = ExecuteQuery(sql);
@@ -1608,7 +1999,7 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         // DeleteEmployee: Parameter syntax change (@ instead of :)
         public void DeleteEmployee(int employeeId)
         {
-            // ?????? ???? ??? ????? ???????? (UserID) ??????? ??????? ??? ????
+            // Get the user ID (UserID) from the employee record before deletion
             string getUserIdSql = "SELECT UserID FROM Employees WHERE EmployeeID = @EmployeeID";
             var getUserIdParams = new[] { new SqlParameter("@EmployeeID", employeeId) };
             DataTable dt = ExecuteQuery(getUserIdSql, getUserIdParams);
@@ -1619,12 +2010,12 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
                 userId = Convert.ToInt32(dt.Rows[0]["UserID"]);
             }
 
-            // ??????? ???? ??? ?????? ?? ???? ????????
+            // Delete the employee record from the Employees table
             string deleteEmployeeSql = "DELETE FROM Employees WHERE EmployeeID = @EmployeeID";
             var deleteEmployeeParams = new[] { new SqlParameter("@EmployeeID", employeeId) };
             ExecuteNonQuery(deleteEmployeeSql, deleteEmployeeParams);
 
-            // ??????? ??? ??? ???? ?????? ?????? ????? ?? ???? ??????????
+            // Delete the user record from the Users table if it exists
             if (userId.HasValue)
             {
                 string deleteUserSql = "DELETE FROM Users WHERE UserID = @UserID";
@@ -1634,11 +2025,8 @@ WHERE l.expirydate BETWEEN GETDATE() AND DATEADD(day, 30, GETDATE()) -- Use GETD
         }
 
 
-        /// <summary>
 
-        /// <summary>
-        /// ???? ?? ????? ???????? ?????????? ???????
-        /// </summary>
+
         public List<License> GetControllerLicenses()
         {
             var licenses = new List<License>();
@@ -2359,11 +2747,21 @@ WHERE l.LicenseId = @LicenseId";
         SELECT o.*, c.FullName AS ControllerName, NULL AS EmployeeName
         FROM dbo.Observations o
         JOIN dbo.Controllers c ON o.ControllerId = c.ControllerId
-        WHERE o.EmployeeId IS NULL OR o.EmployeeId = 0";
+        WHERE o.EmployeeId IS NULL OR o.EmployeeId = 0
+        ORDER BY o.DepartDate DESC";
             DataTable dt = ExecuteQuery(sql);
             foreach (DataRow row in dt.Rows)
             {
-                list.Add(MapDataRowToObservation(row));
+                var observation = MapDataRowToObservation(row);
+                
+                // Calculate total previous trips for this controller
+                if (observation.ControllerId.HasValue)
+                {
+                    int totalPreviousTrips = GetTotalObservationsForPerson(observation.ControllerId, null, observation.ObservationId);
+                    observation.TotalPreviousTrips = totalPreviousTrips;
+                }
+                
+                list.Add(observation);
             }
             return list;
         }
@@ -2507,10 +2905,15 @@ WHERE l.LicenseId = @LicenseId";
             };
         }
 
+        /// <summary>
+        /// Gets the next observation number for a person (Controller or Employee)
+        /// This represents the total number of trips/observations for that person
+        /// </summary>
         public int GetNextObservationNumberForPerson(int? controllerId, int? employeeId)
         {
             string sql;
             SqlParameter parameter;
+            
             if (controllerId.HasValue)
             {
                 sql = "SELECT COUNT(*) FROM dbo.Observations WHERE ControllerId = @Id";
@@ -2531,6 +2934,80 @@ WHERE l.LicenseId = @LicenseId";
                     connection.Open();
                     var result = command.ExecuteScalar();
                     return (result != null && result != DBNull.Value) ? Convert.ToInt32(result) + 1 : 1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the total number of observations/trips for a person (excluding current observation)
+        /// </summary>
+        public int GetTotalObservationsForPerson(int? controllerId, int? employeeId, int? excludeObservationId = null)
+        {
+            string sql;
+            List<SqlParameter> parameters = new List<SqlParameter>();
+            
+            if (controllerId.HasValue)
+            {
+                sql = "SELECT COUNT(*) FROM dbo.Observations WHERE ControllerId = @Id";
+                if (excludeObservationId.HasValue)
+                {
+                    sql += " AND ObservationId != @ExcludeId";
+                    parameters.Add(new SqlParameter("@ExcludeId", excludeObservationId.Value));
+                }
+                parameters.Add(new SqlParameter("@Id", controllerId.Value));
+            }
+            else if (employeeId.HasValue)
+            {
+                sql = "SELECT COUNT(*) FROM dbo.Observations WHERE EmployeeId = @Id";
+                if (excludeObservationId.HasValue)
+                {
+                    sql += " AND ObservationId != @ExcludeId";
+                    parameters.Add(new SqlParameter("@ExcludeId", excludeObservationId.Value));
+                }
+                parameters.Add(new SqlParameter("@Id", employeeId.Value));
+            }
+            else return 0;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+                    connection.Open();
+                    var result = command.ExecuteScalar();
+                    return (result != null && result != DBNull.Value) ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the total number of observations/trips for a person (including current observation)
+        /// </summary>
+        public int GetTotalObservationsForPersonIncludingCurrent(int? controllerId, int? employeeId)
+        {
+            string sql;
+            SqlParameter parameter;
+            
+            if (controllerId.HasValue)
+            {
+                sql = "SELECT COUNT(*) FROM dbo.Observations WHERE ControllerId = @Id";
+                parameter = new SqlParameter("@Id", controllerId.Value);
+            }
+            else if (employeeId.HasValue)
+            {
+                sql = "SELECT COUNT(*) FROM dbo.Observations WHERE EmployeeId = @Id";
+                parameter = new SqlParameter("@Id", employeeId.Value);
+            }
+            else return 0;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.Add(parameter);
+                    connection.Open();
+                    var result = command.ExecuteScalar();
+                    return (result != null && result != DBNull.Value) ? Convert.ToInt32(result) : 0;
                 }
             }
         }
@@ -3023,9 +3500,9 @@ WHERE l.LicenseId = @LicenseId";
         public Employee GetEmployeeByUsername(string username)
         {
             string sql = @"
-                SELECT e.*, u.Username 
+                SELECT e.*, u.Username
                 FROM Employees e
-                JOIN Users u ON e.UserID = u.UserID
+                LEFT JOIN Users u ON e.UserID = u.UserId
                 WHERE u.Username = @Username";
             var dt = ExecuteQuery(sql, new SqlParameter("@Username", username));
             return dt.Rows.Count > 0 ? MapDataRowToEmployee(dt.Rows[0]) : null;
@@ -3151,15 +3628,24 @@ WHERE l.LicenseId = @LicenseId";
                 vm.JobTitle = controllerData["job_title"]?.ToString();
                 vm.PhotoPath = controllerData["photopath"]?.ToString();
                 vm.Email = controllerData["email"]?.ToString();
-                vm.PhoneNumber = controllerData["Phone_Number"]?.ToString();
-                vm.DateOfBirth = controllerData["DATE_OF_BIRTH"] as DateTime?;
-                vm.MaritalStatus = controllerData["MARITAL_STATUS"]?.ToString();
+                vm.PhoneNumber = controllerData["phone_number"]?.ToString();
+                vm.DateOfBirth = controllerData["date_of_birth"] as DateTime?;
+                vm.MaritalStatus = controllerData["marital_status"]?.ToString();
                 vm.Address = controllerData["address"]?.ToString();
-                vm.HireDate = controllerData["HIRE_DATE"] as DateTime?;
-                vm.CurrentDepartment = controllerData["CURRENT_DEPARTMENT"]?.ToString();
-                vm.EmploymentStatus = controllerData["Employment_Status"]?.ToString();
-                vm.EducationLevel = controllerData["Education_Level"]?.ToString();
-                vm.EmergencyContact = controllerData["Emergency_Contact"]?.ToString();
+                vm.HireDate = controllerData["hire_date"] as DateTime?;
+                vm.CurrentDepartment = controllerData["current_department"]?.ToString();
+                vm.EmploymentStatus = controllerData["employment_status"]?.ToString();
+                vm.EducationLevel = controllerData["education_level"]?.ToString();
+                vm.EmergencyContact = controllerData["emergency_contact"]?.ToString();
+
+                // Financial Information for Controllers
+                vm.CurrentSalary = controllerData.Table.Columns.Contains("CurrentSalary") && controllerData["CurrentSalary"] != DBNull.Value ? Convert.ToDecimal(controllerData["CurrentSalary"]) : (decimal?)null;
+                vm.AnnualIncreasePercentage = controllerData.Table.Columns.Contains("AnnualIncreasePercentage") && controllerData["AnnualIncreasePercentage"] != DBNull.Value ? Convert.ToDecimal(controllerData["AnnualIncreasePercentage"]) : (decimal?)null;
+                vm.SalaryAfterAnnualIncrease = controllerData.Table.Columns.Contains("SalaryAfterAnnualIncrease") && controllerData["SalaryAfterAnnualIncrease"] != DBNull.Value ? Convert.ToDecimal(controllerData["SalaryAfterAnnualIncrease"]) : (decimal?)null;
+                vm.BankAccountNumber = controllerData.Table.Columns.Contains("BankAccountNumber") && controllerData["BankAccountNumber"] != DBNull.Value ? controllerData["BankAccountNumber"].ToString() : null;
+                vm.BankName = controllerData.Table.Columns.Contains("BankName") && controllerData["BankName"] != DBNull.Value ? controllerData["BankName"].ToString() : null;
+                vm.TaxId = controllerData.Table.Columns.Contains("TaxId") && controllerData["TaxId"] != DBNull.Value ? controllerData["TaxId"].ToString() : null;
+                vm.InsuranceNumber = controllerData.Table.Columns.Contains("InsuranceNumber") && controllerData["InsuranceNumber"] != DBNull.Value ? controllerData["InsuranceNumber"].ToString() : null;
 
                 vm.Licenses = GetLicensesByController(username);
                 vm.Certificates = GetCertificatesByController(username);
@@ -3187,6 +3673,15 @@ WHERE l.LicenseId = @LicenseId";
                     vm.EmergencyContact = employeeData.EmergencyContactPhone;
                     vm.Gender = employeeData.Gender;
                     vm.Location = employeeData.Location;
+
+                    // Financial Information for Employees
+                    vm.CurrentSalary = employeeData.CurrentSalary;
+                    vm.AnnualIncreasePercentage = employeeData.AnnualIncreasePercentage;
+                    vm.SalaryAfterAnnualIncrease = employeeData.SalaryAfterAnnualIncrease;
+                    vm.BankAccountNumber = employeeData.BankAccountNumber;
+                    vm.BankName = employeeData.BankName;
+                    vm.TaxId = employeeData.TaxId;
+                    vm.InsuranceNumber = employeeData.InsuranceNumber;
 
                     vm.Licenses = GetLicensesByEmployeeId(employeeId.Value);
                     vm.Certificates = GetCertificatesByEmployeeId(employeeId.Value);
@@ -3236,7 +3731,8 @@ WHERE l.LicenseId = @LicenseId";
                 PhotoPath = row.Table.Columns.Contains("PhotoPath") && row["PhotoPath"] != DBNull.Value ? row["PhotoPath"].ToString() : string.Empty,
                 NeedLicense = row.Table.Columns.Contains("NeedLicense") && row["NeedLicense"] != DBNull.Value ? Convert.ToBoolean(row["NeedLicense"]) : true,
                 OrganizationalStructure = row.Table.Columns.Contains("OrganizationalStructure") && row["OrganizationalStructure"] != DBNull.Value ? row["OrganizationalStructure"].ToString() : string.Empty,
-                Division = row.Table.Columns.Contains("Division") && row["Division"] != DBNull.Value ? row["Division"].ToString() : string.Empty
+                Division = row.Table.Columns.Contains("Division") && row["Division"] != DBNull.Value ? row["Division"].ToString() : string.Empty,
+                Role = row.Table.Columns.Contains("Role") && row["Role"] != DBNull.Value ? row["Role"].ToString() : string.Empty
             };
         }
 
@@ -3319,6 +3815,11 @@ WHERE l.LicenseId = @LicenseId";
         /// <param name="newPassword">The new plaintext password to be hashed and stored.</param>
         public void UpdateUserPassword(string username, string newPassword)
         {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(newPassword))
+            {
+                throw new ArgumentException("Username and new password cannot be null or empty.");
+            }
+
             // Use the correct ASP.NET Core Identity hasher to create a valid hash.
             var hashedPassword = _passwordHasher.HashPassword(null, newPassword);
 
@@ -3334,21 +3835,27 @@ WHERE l.LicenseId = @LicenseId";
                 {
                     cmdUsers.Parameters.AddWithValue("@PasswordHash", hashedPassword);
                     cmdUsers.Parameters.AddWithValue("@Username", username);
-                    cmdUsers.ExecuteNonQuery();
+                    var rowsAffected = cmdUsers.ExecuteNonQuery();
+                    
+                    if (rowsAffected == 0)
+                    {
+                        throw new InvalidOperationException($"User '{username}' not found in Users table.");
+                    }
                 }
 
                 // 2. Also update the Controllers table to keep passwords in sync.
                 const string sqlControllers = "UPDATE Controllers SET Password = @Password WHERE Username = @Username";
                 using (var cmdControllers = new SqlCommand(sqlControllers, conn, tx))
                 {
-                    // This assumes the 'Password' column in the Controllers table is large enough (e.g., nvarchar(255))
-                    // to store the full hash generated by ASP.NET Core Identity.
                     cmdControllers.Parameters.AddWithValue("@Password", hashedPassword);
                     cmdControllers.Parameters.AddWithValue("@Username", username);
                     cmdControllers.ExecuteNonQuery();
                 }
 
-                tx.Commit(); // Commit both changes if successful
+                // 3. Note: Employees table doesn't have a Password field, so we only update Users and Controllers tables
+                // The password is managed centrally through the Users table
+
+                tx.Commit(); // Commit all changes if successful
             }
             catch (Exception)
             {
@@ -3373,8 +3880,8 @@ WHERE l.LicenseId = @LicenseId";
         WHERE ControllerId = @ControllerId";
 
             ExecuteNonQuery(sql,
-                new SqlParameter("@FullName", user.FullName),
-                new SqlParameter("@Email", user.Email),
+                new SqlParameter("@FullName", user.FullName ?? string.Empty),
+                new SqlParameter("@Email", user.Email ?? string.Empty),
                 new SqlParameter("@PhoneNumber", (object)user.PhoneNumber ?? DBNull.Value),
                 new SqlParameter("@DateOfBirth", (object)user.DateOfBirth ?? DBNull.Value),
                 new SqlParameter("@MaritalStatus", (object)user.MaritalStatus ?? DBNull.Value),
@@ -3395,14 +3902,32 @@ WHERE l.LicenseId = @LicenseId";
         WHERE EmployeeID = @EmployeeID";
 
             ExecuteNonQuery(sql,
-                new SqlParameter("@FullName", employee.FullName),
-                new SqlParameter("@Email", employee.Email),
-                new SqlParameter("@PhoneNumber", employee.PhoneNumber),
-                new SqlParameter("@Address", employee.Address),
-                new SqlParameter("@EmergencyContactPhone", employee.EmergencyContactPhone),
-                new SqlParameter("@Gender", employee.Gender),
-                new SqlParameter("@Location", employee.Location),
+                new SqlParameter("@FullName", employee.FullName ?? string.Empty),
+                new SqlParameter("@Email", employee.Email ?? string.Empty),
+                new SqlParameter("@PhoneNumber", employee.PhoneNumber ?? string.Empty),
+                new SqlParameter("@Address", employee.Address ?? string.Empty),
+                new SqlParameter("@EmergencyContactPhone", employee.EmergencyContactPhone ?? string.Empty),
+                new SqlParameter("@Gender", employee.Gender ?? string.Empty),
+                new SqlParameter("@Location", employee.Location ?? string.Empty),
                 new SqlParameter("@EmployeeID", employee.EmployeeID)
+            );
+        }
+
+        public void UpdateControllerPhoto(string username, string photoPath)
+        {
+            const string sql = "UPDATE Controllers SET PhotoPath = @PhotoPath WHERE Username = @Username";
+            ExecuteNonQuery(sql,
+                new SqlParameter("@PhotoPath", photoPath),
+                new SqlParameter("@Username", username)
+            );
+        }
+
+        public void UpdateEmployeePhoto(string username, string photoPath)
+        {
+            const string sql = "UPDATE Employees SET PhotoPath = @PhotoPath WHERE Username = @Username";
+            ExecuteNonQuery(sql,
+                new SqlParameter("@PhotoPath", photoPath),
+                new SqlParameter("@Username", username)
             );
         }
 
@@ -3645,8 +4170,11 @@ WHERE l.LicenseId = @LicenseId";
         public List<Employee> GetAllEmployees()
         {
             var list = new List<Employee>();
-            // Assuming you have a helper method 'MapDataRowToEmployee'
-            const string sql = "SELECT * FROM Employees ORDER BY FullName";
+            // استخدام حقل Username من جدول Employees مباشرة
+            const string sql = @"
+                SELECT e.*, e.Username 
+                FROM Employees e
+                ORDER BY e.FullName";
             var dt = ExecuteQuery(sql);
 
             foreach (DataRow row in dt.Rows)
@@ -3684,7 +4212,7 @@ WHERE l.LicenseId = @LicenseId";
             const string sql = @"
                 SELECT e.*, u.Username 
                 FROM Employees e
-                LEFT JOIN Users u ON e.UserID = u.UserID
+                INNER JOIN Users u ON e.UserID = u.UserID
                 WHERE e.EmployeeID = @EmployeeID";
             var dt = ExecuteQuery(sql, new SqlParameter("@EmployeeID", employeeId));
 
@@ -3695,7 +4223,547 @@ WHERE l.LicenseId = @LicenseId";
             return null;
         }
 
+        /// <summary>
+        /// Get all employee certificates (AIS, CNS, AFTN, Ops Staff & Admin) combined
+        /// </summary>
+        public List<CertificateViewModel> GetAllEmployeeCertificates()
+        {
+            var certificates = new List<CertificateViewModel>();
+            const string sql = @"
+        SELECT 
+            ce.CertificateId, 
+            t.TypeName,
+            ce.CertificateTitle AS Title,
+            ce.IssueDate, ce.ExpiryDate, ce.Status, ce.FilePath, ce.Notes,
+            e.EmployeeID,
+            e.FullName AS EmployeeName,
+            e.Department AS EmployeeDepartment
+        FROM 
+            Certificates ce
+        JOIN 
+            Employees e ON ce.EmployeeId = e.EmployeeID
+        LEFT JOIN
+            DocumentTypes t ON ce.TypeId = t.TypeId
+        WHERE
+            ce.ControllerId IS NULL
+        ORDER BY 
+            e.Department, e.FullName, ce.IssueDate DESC;
+    ";
+            DataTable dt = ExecuteQuery(sql);
+            foreach (DataRow row in dt.Rows)
+            {
+                certificates.Add(new CertificateViewModel
+                {
+                    CertificateId = Convert.ToInt32(row["CertificateId"]),
+                    TypeName = row["TypeName"]?.ToString(),
+                    Title = row["Title"]?.ToString(),
+                    IssueDate = Convert.ToDateTime(row["IssueDate"]),
+                    ExpiryDate = Convert.ToDateTime(row["ExpiryDate"]),
+                    Status = row["Status"]?.ToString(),
+                    FilePath = row["FilePath"]?.ToString(),
+                    Notes = row["Notes"]?.ToString(),
+                    EmployeeId = Convert.ToInt32(row["EmployeeID"]),
+                    EmployeeName = row["EmployeeName"]?.ToString(),
+                    EmployeeDepartment = row["EmployeeDepartment"]?.ToString()
+                });
+            }
+            return certificates;
+        }
 
+        /// <summary>
+        /// Get all employee observations (AIS, CNS, AFTN, ATFM, Ops Staff & Admin) combined
+        /// </summary>
+        public List<Observation> GetAllEmployeeObservations()
+        {
+            var observations = new List<Observation>();
+            const string sql = @"
+        SELECT 
+            o.ObservationId,
+            o.ObservationNo,
+            o.FlightNo,
+            o.TravelCountry,
+            o.Duration_Days,
+            o.DepartDate,
+            o.ReturnDate,
+            o.LicenseNumber,
+            o.FilePath,
+            o.Notes,
+            e.EmployeeID,
+            e.FullName AS EmployeeName,
+            e.Department AS EmployeeDepartment
+        FROM 
+            Observations o
+        JOIN 
+            Employees e ON o.EmployeeId = e.EmployeeID
+        WHERE
+            o.ControllerId IS NULL
+        ORDER BY 
+            e.FullName, o.DepartDate DESC;
+    ";
+            DataTable dt = ExecuteQuery(sql);
+            foreach (DataRow row in dt.Rows)
+            {
+                var observation = new Observation
+                {
+                    ObservationId = Convert.ToInt32(row["ObservationId"]),
+                    ObservationNo = row["ObservationNo"] != DBNull.Value ? Convert.ToInt32(row["ObservationNo"]) : null,
+                    FlightNo = row["FlightNo"]?.ToString(),
+                    TravelCountry = row["TravelCountry"]?.ToString(),
+                    DurationDays = row["Duration_Days"] != DBNull.Value ? Convert.ToInt32(row["Duration_Days"]) : null,
+                    DepartDate = row["DepartDate"] != DBNull.Value ? Convert.ToDateTime(row["DepartDate"]) : null,
+                    ReturnDate = row["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(row["ReturnDate"]) : null,
+                    LicenseNumber = row["LicenseNumber"]?.ToString(),
+                    FilePath = row["FilePath"]?.ToString(),
+                    Notes = row["Notes"]?.ToString(),
+                    EmployeeId = Convert.ToInt32(row["EmployeeID"]),
+                    EmployeeName = row["EmployeeName"]?.ToString(),
+                    EmployeeDepartment = row["EmployeeDepartment"]?.ToString()
+                };
+
+                // Calculate total previous trips for this employee
+                if (observation.EmployeeId.HasValue)
+                {
+                    int totalPreviousTrips = GetTotalObservationsForPerson(null, observation.EmployeeId, observation.ObservationId);
+                    observation.TotalPreviousTrips = totalPreviousTrips;
+                }
+
+                observations.Add(observation);
+            }
+            return observations;
+        }
+
+        /// <summary>
+        /// Removes default role-based permissions for a specific user to ensure they only get explicitly assigned permissions
+        /// </summary>
+        /// <param name="userId">The user ID</param>
+        /// <param name="roleName">The role name (e.g., "Controller")</param>
+        public void RemoveDefaultRolePermissionsForUser(int userId, string roleName)
+        {
+            try
+            {
+                // Remove any UserDepartmentPermissions that were automatically assigned based on role
+                // This ensures Controller users only get explicitly assigned permissions
+                string sql = @"
+                    DELETE FROM UserDepartmentPermissions 
+                    WHERE UserId = @UserId 
+                    AND PermissionId IN (
+                        SELECT p.PermissionId 
+                        FROM Permissions p
+                        JOIN RolePermissions rp ON p.PermissionId = rp.PermissionId
+                        JOIN ConfigurationValues cv ON rp.RoleId = cv.ValueId
+                        JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId
+                        WHERE cc.CategoryName = 'Roles' 
+                        AND cv.ValueText = @RoleName
+                        AND rp.IsActive = 1
+                    )";
+
+                var parameters = new[]
+                {
+                    new SqlParameter("@UserId", userId),
+                    new SqlParameter("@RoleName", roleName)
+                };
+
+                ExecuteNonQuery(sql, parameters);
+                
+                _logger?.LogInformation("Removed default role permissions for user {UserId} with role {RoleName}", userId, roleName);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error removing default role permissions for user {UserId} with role {RoleName}", userId, roleName);
+                // Don't throw exception to avoid breaking user creation
+            }
+        }
+
+        // Auto-assign permissions for new users (تخطي إنشاء الصلاحيات مؤقتاً)
+        public void AutoAssignPermissionsForNewUser(int userId, string roleName)
+        {
+            try
+            {
+                // تخطي إنشاء الصلاحيات مؤقتاً لتجنب مشاكل هيكل الجدول
+                // سيتم إنشاء الصلاحيات لاحقاً من خلال النظام
+                
+                _logger?.LogInformation("Skipped auto-assigning permissions for new user {UserId} with role {RoleName} (temporarily disabled)", userId, roleName);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in AutoAssignPermissionsForNewUser for user {UserId} with role {RoleName}", userId, roleName);
+            }
+        }
+
+        // Import controller from Excel
+        public bool ImportControllerFromExcel(ControllerImportModel model)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            // 1. Check if user exists in Users table
+                            var existingUser = GetUserByUsername(model.Username);
+                            
+                            // 2. Check if controller exists in controllers table
+                            var existingController = GetControllerByUsername(model.Username);
+                            
+                            int userId;
+                            
+                            string passwordHash;
+                            
+                            if (existingUser != null && existingController == null)
+                            {
+                                // User exists but controller was deleted - reuse existing user
+                                userId = existingUser.Value.userId;
+                                passwordHash = _passwordHasher.HashPassword(null, model.CustomPassword ?? "123");
+                                _logger?.LogInformation("Reusing existing user {Username} for controller import", model.Username);
+                            }
+                            else if (existingUser == null)
+                            {
+                                // Create new user
+                                passwordHash = _passwordHasher.HashPassword(null, model.CustomPassword ?? "123");
+                                userId = CreateUser(model.Username, passwordHash, "Controller");
+                            if (userId == 0)
+                            {
+                                    transaction.Rollback();
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                // Both user and controller exist - skip
+                                _logger?.LogWarning("Controller {Username} already exists in both tables", model.Username);
+                                transaction.Rollback();
+                                return false;
+                            }
+
+                            // 2. Get or create airport based on ICAO
+                            var airportId = GetOrCreateAirportByICAO(model.ICAO, model.Division, model.OrganizationalStructure);
+
+                            // 3. Create controller record
+                            string sql = @"
+                                INSERT INTO Controllers (
+                                    userid, fullname, username, password, job_title, airportid, 
+                                    email, phone_number, education_level, date_of_birth, 
+                                    marital_status, address, hire_date, employment_status, 
+                                    current_department, NeedLicense, IsActive, photopath, 
+                                    licensepath
+                                ) VALUES (
+                                    @UserID, @FullName, @Username, @Password, @JobTitle, @AirportId,
+                                    @Email, @PhoneNumber, @EducationLevel, @DateOfBirth,
+                                    @MaritalStatus, @Address, @HireDate, @EmploymentStatus,
+                                    @CurrentDepartment, @NeedLicense, @IsActive, @PhotoPath,
+                                    @LicensePath
+                                )";
+
+                var parameters = new[]
+                {
+                                new SqlParameter("@UserID", userId),
+                                new SqlParameter("@FullName", model.FullName),
+                                new SqlParameter("@Username", model.Username),
+                                new SqlParameter("@Password", passwordHash), // Add password parameter
+                                new SqlParameter("@JobTitle", model.JobTitle),
+                                new SqlParameter("@AirportId", airportId),
+                                new SqlParameter("@Email", (object)model.Email ?? DBNull.Value),
+                                new SqlParameter("@PhoneNumber", (object)model.PhoneNumber ?? DBNull.Value),
+                                new SqlParameter("@EducationLevel", (object)model.EducationLevel ?? DBNull.Value),
+                                new SqlParameter("@DateOfBirth", (object)model.DateOfBirth ?? DBNull.Value),
+                                new SqlParameter("@MaritalStatus", (object)model.MaritalStatus ?? DBNull.Value),
+                                new SqlParameter("@Address", (object)model.Address ?? DBNull.Value),
+                                new SqlParameter("@HireDate", (object)model.HireDate ?? DBNull.Value),
+                                new SqlParameter("@EmploymentStatus", (object)model.EmploymentStatus ?? DBNull.Value),
+                                new SqlParameter("@CurrentDepartment", (object)model.CurrentDepartment ?? DBNull.Value),
+                                new SqlParameter("@NeedLicense", model.NeedLicense),
+                                new SqlParameter("@IsActive", model.IsActive),
+                                new SqlParameter("@PhotoPath", DBNull.Value), // Default photo path
+                                new SqlParameter("@LicensePath", DBNull.Value) // Default license path
+                };
+
+                ExecuteNonQuery(sql, parameters);
+                
+                            // 4. Get the controller ID that was just created
+                            var controllerId = ExecuteScalar("SELECT SCOPE_IDENTITY()", null);
+                            if (controllerId != null && controllerId != DBNull.Value)
+                            {
+                                // 5. Create a default license for the controller
+                                string licenseSql = @"
+                                    INSERT INTO Licenses (
+                                        controllerid, licensetype, licensenumber, issuedate, expirydate, 
+                                        status, filepath, notes, created_at, updated_at
+                                    ) VALUES (
+                                        @ControllerId, @LicenseType, @LicenseNumber, @IssueDate, @ExpiryDate,
+                                        @Status, @FilePath, @Notes, GETDATE(), GETDATE()
+                                    )";
+                                
+                                var licenseParams = new[]
+                                {
+                                    new SqlParameter("@ControllerId", Convert.ToInt32(controllerId)),
+                                    new SqlParameter("@LicenseType", "ATC License"),
+                                    new SqlParameter("@LicenseNumber", $"AUTO-{DateTime.Now:yyyyMMdd}-{userId}"),
+                                    new SqlParameter("@IssueDate", DateTime.Now),
+                                    new SqlParameter("@ExpiryDate", DateTime.Now.AddDays(30)), // License expires in 30 days to show in notifications
+                                    new SqlParameter("@Status", "Active"),
+                                    new SqlParameter("@FilePath", DBNull.Value),
+                                    new SqlParameter("@Notes", "Auto-generated license for imported controller")
+                                };
+                                
+                                ExecuteNonQuery(licenseSql, licenseParams);
+                                _logger?.LogInformation("Created default license for imported controller {Username}", model.Username);
+                                
+                                // 6. Trigger notification service to update notifications immediately
+                                try
+                                {
+                                    // Clear old notifications first
+                                    ExecuteNonQuery("DELETE FROM notifications");
+                                    
+                                    // Get licenses expiring soon and create notifications
+                                    var licenseNotificationsSql = @"
+                                        INSERT INTO notifications (userid, controllerid, message, licensetype, licenseexpirydate, created_at, is_read)
+                                        SELECT 
+                                            c.userid,
+                                            c.controllerid,
+                                            'Dear ' + c.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                                            l.licensetype,
+                                            l.expirydate,
+                                            GETDATE(),
+                                            0
+                                        FROM licenses l
+                                        INNER JOIN controllers c ON l.controllerid = c.controllerid
+                                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())
+                                        
+                                        UNION ALL
+                                        
+                                        SELECT 
+                                            e.userid,
+                                            NULL,
+                                            'Dear ' + e.fullname + ', Your ' + l.licensetype + ' will expire on ' + CONVERT(varchar, l.expirydate, 23) + '. Please update your license before expiry.',
+                                            l.licensetype,
+                                            l.expirydate,
+                                            GETDATE(),
+                                            0
+                                        FROM licenses l
+                                        INNER JOIN employees e ON l.employeeid = e.employeeid
+                                        WHERE l.expirydate <= DATEADD(day, 90, GETDATE())";
+                                    
+                                    ExecuteNonQuery(licenseNotificationsSql);
+                                    _logger?.LogInformation("Updated notifications for imported controller {Username}", model.Username);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger?.LogWarning(ex, "Failed to update notifications for imported controller {Username}", model.Username);
+                                }
+                            }
+                            
+                            // 7. Auto-assign permissions
+                            AutoAssignPermissionsForNewUser(userId, "Controller");
+
+                            transaction.Commit();
+                            return true;
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error importing controller {Username} from Excel", model.Username);
+                return false;
+            }
+        }
+
+        // Get or create airport by ICAO code
+        private int GetOrCreateAirportByICAO(string icao, string division, string organizationalStructure)
+        {
+            try
+            {
+                // First try to find existing airport
+                string findSql = "SELECT AirportId FROM Airports WHERE ICAO_Code = @ICAO";
+                var findParams = new[] { new SqlParameter("@ICAO", icao) };
+                
+                var result = ExecuteScalar(findSql, findParams);
+                if (result != null && result != DBNull.Value)
+                {
+                    return Convert.ToInt32(result);
+                }
+
+                // Create new airport if not found (without Division and OrganizationalStructure columns)
+                string createSql = @"
+                    INSERT INTO Airports (AirportName, ICAO_Code, CountryId)
+                    VALUES (@AirportName, @ICAO_Code, @CountryId);
+                    SELECT SCOPE_IDENTITY();";
+
+                // Get first available country ID from existing data
+                var countryId = ExecuteScalar("SELECT TOP 1 CountryId FROM Countries", null);
+                if (countryId == null || countryId == DBNull.Value)
+                {
+                    countryId = 1; // Fallback to 1 if no countries exist
+                }
+
+                var createParams = new[]
+                {
+                    new SqlParameter("@AirportName", $"Airport {icao}"),
+                    new SqlParameter("@ICAO_Code", icao),
+                    new SqlParameter("@CountryId", countryId)
+                };
+
+                var newAirportId = ExecuteScalar(createSql, createParams);
+                return Convert.ToInt32(newAirportId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting or creating airport for ICAO {ICAO}", icao);
+                // Return a default airport ID or throw
+                return 1; // Assuming airport ID 1 exists
+            }
+        }
+
+        /// <summary>
+        /// استيراد المراقبين من ملف Excel
+        /// </summary>
+        public ControllerImportResult ImportControllersFromExcel(List<ControllerImportModel> controllers)
+        {
+            var result = new ControllerImportResult
+            {
+                TotalRows = controllers.Count,
+                SuccessCount = 0,
+                ErrorCount = 0,
+                ValidControllers = new List<ControllerImportModel>(),
+                InvalidControllers = new List<ControllerImportModel>()
+            };
+
+            // التحقق من صحة البيانات
+            foreach (var controller in controllers)
+            {
+                controller.Validate();
+                if (controller.IsValid)
+                {
+                    result.ValidControllers.Add(controller);
+                }
+                else
+                {
+                    result.InvalidControllers.Add(controller);
+                    result.ErrorCount++;
+                }
+            }
+
+            // إذا لم تكن هناك بيانات صحيحة، إرجاع النتيجة
+            if (!result.ValidControllers.Any())
+            {
+                result.Success = false;
+                result.Message = "لا توجد بيانات صحيحة للاستيراد";
+                return result;
+            }
+
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    using (var tx = conn.BeginTransaction())
+                    {
+                        try
+                        {
+                            foreach (var controller in result.ValidControllers)
+                            {
+                                // 1. إنشاء حساب المستخدم
+                                var userPassword = controller.GetPassword();
+                                var hashedPassword = _passwordHasher.HashPassword(null, userPassword);
+                                if (string.IsNullOrEmpty(hashedPassword))
+                                {
+                                    hashedPassword = "123"; // Default password if hashing fails
+                                }
+                                
+                                // Ensure hashedPassword is never null and has a valid value
+                                if (string.IsNullOrEmpty(hashedPassword))
+                                {
+                                    hashedPassword = "123";
+                                }
+                                
+                                string createUserSql = @"
+                                    INSERT INTO Users (Username, PasswordHash, RoleName, IsActive)
+                                    VALUES (@Username, @PasswordHash, @RoleName, @IsActive);
+                                    SELECT SCOPE_IDENTITY();";
+
+                                using (var cmd = new SqlCommand(createUserSql, conn, tx))
+                                {
+                                    cmd.Parameters.AddWithValue("@Username", controller.Username);
+                                    cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
+                                    cmd.Parameters.AddWithValue("@RoleName", "Controller");
+                                    cmd.Parameters.AddWithValue("@IsActive", 1);
+
+                                    var userId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                                    // 2. إنشاء المراقب
+                                    string createControllerSql = @"
+                                        INSERT INTO Controllers (
+                                            userid, fullname, username, password, job_title, airportid, 
+                                            email, phone_number, education_level, date_of_birth, 
+                                            marital_status, address, hire_date, employment_status, 
+                                            current_department, NeedLicense, IsActive, photopath
+                                        ) VALUES (
+                                            @UserID, @FullName, @Username, @Password, @JobTitle, @AirportId,
+                                            @Email, @PhoneNumber, @EducationLevel, @DateOfBirth,
+                                            @MaritalStatus, @Address, @HireDate, @EmploymentStatus,
+                                            @CurrentDepartment, @NeedLicense, @IsActive, @PhotoPath
+                                        )";
+
+                                    using (var cmdController = new SqlCommand(createControllerSql, conn, tx))
+                                    {
+                                        cmdController.Parameters.AddWithValue("@UserID", userId);
+                                        cmdController.Parameters.AddWithValue("@FullName", controller.FullName);
+                                        cmdController.Parameters.AddWithValue("@Username", controller.Username);
+                                        cmdController.Parameters.AddWithValue("@Password", hashedPassword ?? "123"); // Default password if null
+                                        cmdController.Parameters.AddWithValue("@JobTitle", controller.JobTitle);
+                                        cmdController.Parameters.AddWithValue("@AirportId", GetOrCreateAirportByICAO(controller.ICAO, controller.Division, controller.OrganizationalStructure));
+                                        cmdController.Parameters.AddWithValue("@Email", (object)controller.Email ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@PhoneNumber", (object)controller.PhoneNumber ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@EducationLevel", (object)controller.EducationLevel ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@DateOfBirth", (object)controller.DateOfBirth ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@MaritalStatus", (object)controller.MaritalStatus ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@Address", (object)controller.Address ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@HireDate", (object)controller.HireDate ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@EmploymentStatus", (object)controller.EmploymentStatus ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@CurrentDepartment", (object)controller.CurrentDepartment ?? DBNull.Value);
+                                        cmdController.Parameters.AddWithValue("@NeedLicense", controller.NeedLicense);
+                                        cmdController.Parameters.AddWithValue("@IsActive", controller.IsActive);
+                                        cmdController.Parameters.AddWithValue("@PhotoPath", DBNull.Value); // صورة افتراضية
+
+                                        cmdController.ExecuteNonQuery();
+                                    }
+
+                                    // 3. إنشاء الصلاحيات الأساسية للمراقبين الجدد (تخطي إنشاء الصلاحيات مؤقتاً)
+                                    // سيتم إنشاء الصلاحيات لاحقاً من خلال النظام
+
+                                    result.SuccessCount++;
+                                }
+                            }
+
+                            tx.Commit();
+                            result.Success = true;
+                            result.Message = $"تم استيراد {result.SuccessCount} مراقب بنجاح";
+                        }
+                        catch (Exception ex)
+                        {
+                            tx.Rollback();
+                            throw;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"خطأ في الاستيراد: {ex.Message}";
+                _logger?.LogError(ex, "خطأ في استيراد المراقبين من Excel");
+            }
+
+            return result;
+        }
 
     } // End of class SqlServerDb
 } // End of namespace

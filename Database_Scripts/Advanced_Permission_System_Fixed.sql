@@ -1,323 +1,298 @@
--- =====================================================
--- ADVANCED PERMISSION SYSTEM - FIXED VERSION
--- =====================================================
--- This script creates the advanced permission system with corrected column names
--- Run this script to set up the complete permission system
+-- Advanced Permission System - Fixed Version
+-- This script creates the advanced permission system without data insertion errors
 
 USE [HR-Aviation]
 GO
 
--- =====================================================
--- STEP 1: CREATE STORED PROCEDURES
--- =====================================================
-
--- Create or update the CheckUserPermission stored procedure
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CheckUserPermission]') AND type in (N'P', N'PC'))
-    DROP PROCEDURE [dbo].[CheckUserPermission]
+-- Create UserMenuPermissions table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserMenuPermissions]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[UserMenuPermissions](
+        [UserMenuPermissionId] [int] IDENTITY(1,1) NOT NULL,
+        [UserId] [int] NOT NULL,
+        [MenuKey] [nvarchar](50) NOT NULL,
+        [IsVisible] [bit] NOT NULL DEFAULT 1,
+        [IsActive] [bit] NOT NULL DEFAULT 1,
+        [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
+        [UpdatedAt] [datetime] NULL,
+        CONSTRAINT [PK_UserMenuPermissions] PRIMARY KEY CLUSTERED ([UserMenuPermissionId] ASC),
+        CONSTRAINT [FK_UserMenuPermissions_Users] FOREIGN KEY([UserId]) REFERENCES [dbo].[users] ([userid])
+    )
+    PRINT 'UserMenuPermissions table created successfully'
+END
+ELSE
+    PRINT 'UserMenuPermissions table already exists'
 GO
 
-CREATE PROCEDURE [dbo].[CheckUserPermission]
+-- Create UserOrganizationalPermissions table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserOrganizationalPermissions]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[UserOrganizationalPermissions](
+        [UserOrganizationalPermissionId] [int] IDENTITY(1,1) NOT NULL,
+        [UserId] [int] NOT NULL,
+        [PermissionType] [nvarchar](50) NOT NULL,
+        [EntityId] [int] NOT NULL,
+        [EntityName] [nvarchar](100) NOT NULL,
+        [CanView] [bit] NOT NULL DEFAULT 1,
+        [CanEdit] [bit] NOT NULL DEFAULT 0,
+        [CanDelete] [bit] NOT NULL DEFAULT 0,
+        [CanCreate] [bit] NOT NULL DEFAULT 0,
+        [IsActive] [bit] NOT NULL DEFAULT 1,
+        [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
+        [UpdatedAt] [datetime] NULL,
+        CONSTRAINT [PK_UserOrganizationalPermissions] PRIMARY KEY CLUSTERED ([UserOrganizationalPermissionId] ASC),
+        CONSTRAINT [FK_UserOrganizationalPermissions_Users] FOREIGN KEY([UserId]) REFERENCES [dbo].[users] ([userid])
+    )
+    PRINT 'UserOrganizationalPermissions table created successfully'
+END
+ELSE
+    PRINT 'UserOrganizationalPermissions table already exists'
+GO
+
+-- Create UserOperationPermissions table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserOperationPermissions]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[UserOperationPermissions](
+        [UserOperationPermissionId] [int] IDENTITY(1,1) NOT NULL,
+        [UserId] [int] NOT NULL,
+        [PermissionId] [int] NOT NULL,
+        [EntityType] [nvarchar](50) NOT NULL,
+        [OperationType] [nvarchar](50) NOT NULL,
+        [IsAllowed] [bit] NOT NULL DEFAULT 1,
+        [Scope] [nvarchar](50) NOT NULL DEFAULT 'All',
+        [ScopeId] [int] NULL,
+        [IsActive] [bit] NOT NULL DEFAULT 1,
+        [CreatedAt] [datetime] NOT NULL DEFAULT GETDATE(),
+        [UpdatedAt] [datetime] NULL,
+        CONSTRAINT [PK_UserOperationPermissions] PRIMARY KEY CLUSTERED ([UserOperationPermissionId] ASC),
+        CONSTRAINT [FK_UserOperationPermissions_Users] FOREIGN KEY([UserId]) REFERENCES [dbo].[users] ([userid]),
+        CONSTRAINT [FK_UserOperationPermissions_Permissions] FOREIGN KEY([PermissionId]) REFERENCES [dbo].[Permissions] ([PermissionId])
+    )
+    PRINT 'UserOperationPermissions table created successfully'
+END
+ELSE
+    PRINT 'UserOperationPermissions table already exists'
+GO
+
+-- Add new permissions to Permissions table
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'DASHBOARD_VIEW', 'View Dashboard', 'Can view the main dashboard', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'DASHBOARD_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'EMPLOYEES_VIEW', 'View Employees', 'Can view employees section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'EMPLOYEES_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CONTROLLERS_VIEW', 'View Controllers', 'Can view controllers section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CONTROLLERS_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'LICENSES_VIEW', 'View Licenses', 'Can view licenses section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'LICENSES_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CERTIFICATES_VIEW', 'View Certificates', 'Can view certificates section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CERTIFICATES_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'OBSERVATIONS_VIEW', 'View Observations', 'Can view observations section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'OBSERVATIONS_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CONFIGURATION_VIEW', 'View Configuration', 'Can view configuration section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CONFIGURATION_VIEW')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'PERMISSIONS_VIEW', 'View Permissions', 'Can view permissions section', 'Menu', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'PERMISSIONS_VIEW')
+
+-- Operation permissions
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'EMPLOYEES_CREATE', 'Create Employee', 'Can create new employees', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'EMPLOYEES_CREATE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'EMPLOYEES_EDIT', 'Edit Employee', 'Can edit existing employees', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'EMPLOYEES_EDIT')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'EMPLOYEES_DELETE', 'Delete Employee', 'Can delete employees', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'EMPLOYEES_DELETE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CONTROLLERS_CREATE', 'Create Controller', 'Can create new controllers', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CONTROLLERS_CREATE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CONTROLLERS_EDIT', 'Edit Controller', 'Can edit existing controllers', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CONTROLLERS_EDIT')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CONTROLLERS_DELETE', 'Delete Controller', 'Can delete controllers', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CONTROLLERS_DELETE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'LICENSES_CREATE', 'Create License', 'Can create new licenses', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'LICENSES_CREATE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'LICENSES_EDIT', 'Edit License', 'Can edit existing licenses', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'LICENSES_EDIT')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'LICENSES_DELETE', 'Delete License', 'Can delete licenses', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'LICENSES_DELETE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CERTIFICATES_CREATE', 'Create Certificate', 'Can create new certificates', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CERTIFICATES_CREATE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CERTIFICATES_EDIT', 'Edit Certificate', 'Can edit existing certificates', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CERTIFICATES_EDIT')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'CERTIFICATES_DELETE', 'Delete Certificate', 'Can delete certificates', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'CERTIFICATES_DELETE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'OBSERVATIONS_CREATE', 'Create Observation', 'Can create new observations', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'OBSERVATIONS_CREATE')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'OBSERVATIONS_EDIT', 'Edit Observation', 'Can edit existing observations', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'OBSERVATIONS_EDIT')
+
+INSERT INTO [dbo].[Permissions] ([PermissionKey], [PermissionName], [Description], [Category], [IsActive])
+SELECT 'OBSERVATIONS_DELETE', 'Delete Observation', 'Can delete observations', 'Operation', 1
+WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [PermissionKey] = 'OBSERVATIONS_DELETE')
+
+PRINT 'New permissions added successfully'
+GO
+
+-- Create stored procedure for checking menu permissions
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CanUserViewMenu]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[CanUserViewMenu]
+GO
+
+CREATE PROCEDURE [dbo].[CanUserViewMenu]
     @UserId INT,
-    @PermissionKey NVARCHAR(50),
-    @DepartmentId INT = NULL
+    @MenuKey NVARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
     
-    DECLARE @HasPermission BIT = 0;
-    DECLARE @UserRole NVARCHAR(50);
+    DECLARE @CanView BIT = 0;
     
-    -- Get user role
-    SELECT @UserRole = rolename FROM users WHERE userid = @UserId;
-    
-    -- Check if user is Admin (Admin has all permissions)
-    IF @UserRole = 'Admin'
+    -- Check if user has direct menu permission
+    IF EXISTS (
+        SELECT 1 FROM UserMenuPermissions ump
+        WHERE ump.UserId = @UserId 
+        AND ump.MenuKey = @MenuKey 
+        AND ump.IsActive = 1 
+        AND ump.IsVisible = 1
+    )
     BEGIN
-        SET @HasPermission = 1;
+        SET @CanView = 1;
     END
     ELSE
     BEGIN
-        -- Check role-based permissions
-        IF EXISTS (
-            SELECT 1 
-            FROM RolePermissions rp
-            JOIN Permissions p ON rp.PermissionId = p.PermissionId
-            JOIN users u ON u.rolename = (
-                SELECT cv.ValueText 
-                FROM ConfigurationValues cv 
-                JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-                WHERE cc.CategoryName = 'Roles' AND cv.ValueId = rp.RoleId
-            )
-            WHERE u.userid = @UserId 
-              AND p.PermissionKey = @PermissionKey
-              AND rp.IsActive = 1
-              AND p.IsActive = 1
-        )
+        -- Check if user has role-based permission
+        DECLARE @UserRole NVARCHAR(50);
+        SELECT @UserRole = rolename FROM users WHERE userid = @UserId;
+        
+        IF @UserRole = 'Admin'
         BEGIN
-            SET @HasPermission = 1;
+            SET @CanView = 1;
         END
         ELSE
         BEGIN
-            -- Check department-based permissions
-            IF @DepartmentId IS NOT NULL
+            -- Check role permissions
+            IF EXISTS (
+                SELECT 1 FROM RolePermissions rp
+                INNER JOIN Permissions p ON rp.PermissionId = p.PermissionId
+                INNER JOIN Roles r ON rp.RoleId = r.RoleId
+                INNER JOIN users u ON u.rolename = r.RoleName
+                WHERE u.userid = @UserId 
+                AND p.PermissionKey = @MenuKey + '_VIEW'
+                AND rp.IsActive = 1
+            )
             BEGIN
-                IF EXISTS (
-                    SELECT 1 
-                    FROM UserDepartmentPermissions udp
-                    JOIN Permissions p ON udp.PermissionId = p.PermissionId
-                    WHERE udp.UserId = @UserId 
-                      AND udp.DepartmentId = @DepartmentId
-                      AND p.PermissionKey = @PermissionKey
-                      AND udp.IsActive = 1
-                      AND p.IsActive = 1
-                      AND udp.CanView = 1
-                )
-                BEGIN
-                    SET @HasPermission = 1;
-                END
+                SET @CanView = 1;
             END
         END
     END
     
-    SELECT @HasPermission AS HasPermission;
+    SELECT @CanView AS CanView;
 END
 GO
 
--- Create or update the GetUserPermissions stored procedure
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetUserPermissions]') AND type in (N'P', N'PC'))
-    DROP PROCEDURE [dbo].[GetUserPermissions]
+-- Create stored procedure for checking operation permissions
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CanUserPerformOperation]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[CanUserPerformOperation]
 GO
 
-CREATE PROCEDURE [dbo].[GetUserPermissions]
-    @UserId INT
+CREATE PROCEDURE [dbo].[CanUserPerformOperation]
+    @UserId INT,
+    @EntityType NVARCHAR(50),
+    @OperationType NVARCHAR(50),
+    @Scope NVARCHAR(50) = 'All',
+    @ScopeId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Get role-based permissions
-    SELECT DISTINCT
-        p.PermissionId,
-        p.PermissionName,
-        p.PermissionKey,
-        p.PermissionDescription,
-        p.IsActive,
-        p.CreatedAt,
-        p.UpdatedAt,
-        'Role' AS PermissionType,
-        NULL AS DepartmentId,
-        NULL AS DepartmentName,
-        NULL AS CanView,
-        NULL AS CanEdit,
-        NULL AS CanDelete
-    FROM RolePermissions rp
-    JOIN Permissions p ON rp.PermissionId = p.PermissionId
-    JOIN users u ON u.rolename = (
-        SELECT cv.ValueText 
-        FROM ConfigurationValues cv 
-        JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-        WHERE cc.CategoryName = 'Roles' AND cv.ValueId = rp.RoleId
+    DECLARE @CanPerform BIT = 0;
+    
+    -- Check if user has direct operation permission
+    IF EXISTS (
+        SELECT 1 FROM UserOperationPermissions uop
+        WHERE uop.UserId = @UserId 
+        AND uop.EntityType = @EntityType
+        AND uop.OperationType = @OperationType
+        AND uop.IsActive = 1 
+        AND uop.IsAllowed = 1
+        AND (uop.Scope = 'All' OR (uop.Scope = @Scope AND uop.ScopeId = @ScopeId))
     )
-    WHERE u.userid = @UserId 
-      AND rp.IsActive = 1
-      AND p.IsActive = 1
+    BEGIN
+        SET @CanPerform = 1;
+    END
+    ELSE
+    BEGIN
+        -- Check if user has role-based permission
+        DECLARE @UserRole NVARCHAR(50);
+        SELECT @UserRole = rolename FROM users WHERE userid = @UserId;
+        
+        IF @UserRole = 'Admin'
+        BEGIN
+            SET @CanPerform = 1;
+        END
+        ELSE
+        BEGIN
+            -- Check role permissions
+            IF EXISTS (
+                SELECT 1 FROM RolePermissions rp
+                INNER JOIN Permissions p ON rp.PermissionId = p.PermissionId
+                INNER JOIN Roles r ON rp.RoleId = r.RoleId
+                INNER JOIN users u ON u.rolename = r.RoleName
+                WHERE u.userid = @UserId 
+                AND p.PermissionKey = @EntityType + '_' + @OperationType
+                AND rp.IsActive = 1
+            )
+            BEGIN
+                SET @CanPerform = 1;
+            END
+        END
+    END
     
-    UNION ALL
-    
-    -- Get department-based permissions
-    SELECT DISTINCT
-        p.PermissionId,
-        p.PermissionName,
-        p.PermissionKey,
-        p.PermissionDescription,
-        p.IsActive,
-        p.CreatedAt,
-        p.UpdatedAt,
-        'Department' AS PermissionType,
-        udp.DepartmentId,
-        dept.ValueText AS DepartmentName,
-        udp.CanView,
-        udp.CanEdit,
-        udp.CanDelete
-    FROM UserDepartmentPermissions udp
-    JOIN Permissions p ON udp.PermissionId = p.PermissionId
-    JOIN ConfigurationValues dept ON udp.DepartmentId = dept.ValueId
-    JOIN ConfigurationCategories cc ON dept.CategoryId = cc.CategoryId
-    WHERE udp.UserId = @UserId 
-      AND udp.IsActive = 1
-      AND p.IsActive = 1
-      AND (cc.CategoryName = 'Divisions' OR cc.CategoryName = 'Departments')
-    
-    ORDER BY p.PermissionName;
+    SELECT @CanPerform AS CanPerform;
 END
 GO
 
--- Create or update the GetUserDepartmentPermissions stored procedure
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetUserDepartmentPermissions]') AND type in (N'P', N'PC'))
-    DROP PROCEDURE [dbo].[GetUserDepartmentPermissions]
+PRINT 'Advanced Permission System created successfully!'
+PRINT 'New tables created: UserMenuPermissions, UserOrganizationalPermissions, UserOperationPermissions'
+PRINT 'New permissions added for detailed operations and menu visibility'
+PRINT 'Stored procedures created for permission checking'
+PRINT 'No data insertion errors - tables are ready for use!'
 GO
-
-CREATE PROCEDURE [dbo].[GetUserDepartmentPermissions]
-    @UserId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT DISTINCT udp.DepartmentId
-    FROM UserDepartmentPermissions udp
-    WHERE udp.UserId = @UserId 
-      AND udp.IsActive = 1
-      AND udp.CanView = 1;
-END
-GO
-
--- =====================================================
--- STEP 2: CREATE VIEW
--- =====================================================
-
--- Create or update the vw_UserPermissionsSummary view
-IF EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N'[dbo].[vw_UserPermissionsSummary]'))
-    DROP VIEW [dbo].[vw_UserPermissionsSummary]
-GO
-
-CREATE VIEW [dbo].[vw_UserPermissionsSummary]
-AS
-SELECT 
-    u.userid AS UserId,
-    u.username AS UserName,
-    u.rolename AS UserFullName,
-    u.rolename AS UserRole,
-    (SELECT COUNT(DISTINCT p.PermissionId) 
-     FROM RolePermissions rp
-     JOIN Permissions p ON rp.PermissionId = p.PermissionId
-     JOIN users u2 ON u2.rolename = (
-         SELECT cv.ValueText 
-         FROM ConfigurationValues cv 
-         JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-         WHERE cc.CategoryName = 'Roles' AND cv.ValueId = rp.RoleId
-     )
-     WHERE u2.userid = u.userid 
-       AND rp.IsActive = 1
-       AND p.IsActive = 1) +
-    (SELECT COUNT(DISTINCT p.PermissionId) 
-     FROM UserDepartmentPermissions udp
-     JOIN Permissions p ON udp.PermissionId = p.PermissionId
-     WHERE udp.UserId = u.userid 
-       AND udp.IsActive = 1
-       AND p.IsActive = 1
-       AND udp.CanView = 1) AS TotalPermissions,
-    (SELECT COUNT(DISTINCT udp.DepartmentId) 
-     FROM UserDepartmentPermissions udp
-     WHERE udp.UserId = u.userid 
-       AND udp.IsActive = 1
-       AND udp.CanView = 1) AS AccessibleDepartments,
-    (SELECT COUNT(DISTINCT p.PermissionId) 
-     FROM RolePermissions rp
-     JOIN Permissions p ON rp.PermissionId = p.PermissionId
-     JOIN users u2 ON u2.rolename = (
-         SELECT cv.ValueText 
-         FROM ConfigurationValues cv 
-         JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-         WHERE cc.CategoryName = 'Roles' AND cv.ValueId = rp.RoleId
-     )
-     WHERE u2.userid = u.userid 
-       AND rp.IsActive = 1
-       AND p.IsActive = 1) +
-    (SELECT COUNT(DISTINCT p.PermissionId) 
-     FROM UserDepartmentPermissions udp
-     JOIN Permissions p ON udp.PermissionId = p.PermissionId
-     WHERE udp.UserId = u.userid 
-       AND udp.IsActive = 1
-       AND p.IsActive = 1
-       AND udp.CanView = 1) AS ActivePermissions
-FROM users u;
-GO
-
--- =====================================================
--- STEP 3: INSERT DEFAULT PERMISSIONS
--- =====================================================
-
--- Insert default permissions if they don't exist
-IF NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionKey = 'DASHBOARD_VIEW')
-BEGIN
-    INSERT INTO Permissions (PermissionName, PermissionKey, PermissionDescription, CategoryName, IsActive, CreatedAt)
-    VALUES 
-    ('Dashboard View', 'DASHBOARD_VIEW', 'Can view dashboard', 'Dashboard', 1, GETDATE()),
-    ('Organization View', 'ORGANIZATION_VIEW', 'Can view organization structure', 'Organization', 1, GETDATE()),
-    ('Structure View', 'STRUCTURE_VIEW', 'Can view structure', 'Organization', 1, GETDATE()),
-    ('Divisions View', 'DIVISIONS_VIEW', 'Can view divisions', 'Organization', 1, GETDATE()),
-    ('Staff View', 'STAFF_VIEW', 'Can view staff', 'Staff', 1, GETDATE()),
-    ('Controllers View', 'CONTROLLERS_VIEW', 'Can view controllers', 'Staff', 1, GETDATE()),
-    ('AIS View', 'AIS_VIEW', 'Can view AIS staff', 'Staff', 1, GETDATE()),
-    ('CNS View', 'CNS_VIEW', 'Can view CNS staff', 'Staff', 1, GETDATE()),
-    ('AFTN View', 'AFTN_VIEW', 'Can view AFTN staff', 'Staff', 1, GETDATE()),
-    ('Ops Staff View', 'OPS_STAFF_VIEW', 'Can view operations staff', 'Staff', 1, GETDATE()),
-    ('Licenses View', 'LICENSES_VIEW', 'Can view licenses', 'Documents', 1, GETDATE()),
-    ('Certificates View', 'CERTIFICATES_VIEW', 'Can view certificates', 'Documents', 1, GETDATE()),
-    ('Observations View', 'OBSERVATIONS_VIEW', 'Can view observations', 'Activities', 1, GETDATE()),
-    ('Courses View', 'COURSES_VIEW', 'Can view courses', 'Activities', 1, GETDATE()),
-    ('System Settings View', 'SYSTEM_SETTINGS_VIEW', 'Can view system settings', 'System', 1, GETDATE()),
-    ('Configuration Management', 'CONFIGURATION_MANAGEMENT', 'Can manage configuration', 'System', 1, GETDATE()),
-    ('Roles Management', 'ROLES_MANAGEMENT', 'Can manage roles', 'System', 1, GETDATE()),
-    ('Notifications View', 'NOTIFICATIONS_VIEW', 'Can view notifications', 'System', 1, GETDATE()),
-    ('Users View All', 'USERS_VIEW_ALL', 'Can view all users data', 'System', 1, GETDATE()),
-    ('Observations Create', 'OBSERVATIONS_CREATE', 'Can create observations', 'Activities', 1, GETDATE()),
-    ('Observations Edit', 'OBSERVATIONS_EDIT', 'Can edit observations', 'Activities', 1, GETDATE()),
-    ('Observations Delete', 'OBSERVATIONS_DELETE', 'Can delete observations', 'Activities', 1, GETDATE()),
-    ('Observations Export', 'OBSERVATIONS_EXPORT', 'Can export observations', 'Activities', 1, GETDATE());
-END
-
--- =====================================================
--- STEP 4: GRANT PERMISSIONS TO ROLES
--- =====================================================
-
--- Grant permissions to Admin role
-DECLARE @AdminRoleId INT;
-SELECT @AdminRoleId = cv.ValueId 
-FROM ConfigurationValues cv 
-JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-WHERE cc.CategoryName = 'Roles' AND cv.ValueText = 'Admin';
-
-IF @AdminRoleId IS NOT NULL
-BEGIN
-    -- Insert all permissions for Admin role
-    INSERT INTO RolePermissions (RoleId, PermissionId, IsActive, CreatedAt)
-    SELECT @AdminRoleId, PermissionId, 1, GETDATE()
-    FROM Permissions
-    WHERE IsActive = 1
-    AND PermissionId NOT IN (
-        SELECT PermissionId 
-        FROM RolePermissions 
-        WHERE RoleId = @AdminRoleId
-    );
-END
-
--- Grant permissions to Controller role
-DECLARE @ControllerRoleId INT;
-SELECT @ControllerRoleId = cv.ValueId 
-FROM ConfigurationValues cv 
-JOIN ConfigurationCategories cc ON cv.CategoryId = cc.CategoryId 
-WHERE cc.CategoryName = 'Roles' AND cv.ValueText = 'Controller';
-
-IF @ControllerRoleId IS NOT NULL
-BEGIN
-    -- Insert basic permissions for Controller role
-    INSERT INTO RolePermissions (RoleId, PermissionId, IsActive, CreatedAt)
-    SELECT @ControllerRoleId, PermissionId, 1, GETDATE()
-    FROM Permissions
-    WHERE IsActive = 1
-    AND PermissionKey IN (
-        'DASHBOARD_VIEW',
-        'NOTIFICATIONS_VIEW',
-        'OBSERVATIONS_VIEW',
-        'OBSERVATIONS_CREATE',
-        'OBSERVATIONS_EDIT'
-    )
-    AND PermissionId NOT IN (
-        SELECT PermissionId 
-        FROM RolePermissions 
-        WHERE RoleId = @ControllerRoleId
-    );
-END
-
-PRINT 'Advanced Permission System setup completed successfully!';
-GO 

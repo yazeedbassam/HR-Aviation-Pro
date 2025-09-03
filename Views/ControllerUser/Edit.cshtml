@@ -206,7 +206,43 @@
                 </div>
             </div>
 
-            <!-- SECTION 4: Financial Information -->
+            <!-- SECTION 4: Attachments -->
+            <div class="section-title mt-2">
+                <i class="fa-solid fa-paperclip"></i>
+                Attachments
+            </div>
+            <div class="section-divider"></div>
+            <div class="row g-3">
+                <div class="col-lg-6 col-md-6 form-group">
+                    <label class="form-label">Profile Photo</label>
+                    <div class="photo-upload-container">
+                        <img id="photoPreview" src="@(string.IsNullOrEmpty(Model.PhotoPath) ? "/images/default-avatar.png" : Model.PhotoPath)" alt="Controller Photo" class="photo-preview" />
+                        <div class="mt-2">
+                            <input type="file" id="photoFile" name="PhotoFile" accept="image/*" class="form-control" />
+                            <small class="text-muted">Upload a new photo (JPG, PNG, GIF)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6 form-group">
+                    <label class="form-label">License Document</label>
+                    <div class="license-upload-container">
+                        @if (!string.IsNullOrEmpty(Model.LicensePath))
+                        {
+                            <div class="mb-2">
+                                <a href="@Model.LicensePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa-solid fa-file-pdf"></i> View Current License
+                                </a>
+                            </div>
+                        }
+                        <div class="mt-2">
+                            <input type="file" id="licenseFile" name="LicenseFile" accept=".pdf,.doc,.docx" class="form-control" />
+                            <small class="text-muted">Upload a new license document (PDF, DOC, DOCX)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: Financial Information -->
             <div class="section-title">
                 <i class="fa-solid fa-money-bill-wave"></i>
                 Financial Information
@@ -262,7 +298,30 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
+    <style>
+        .photo-upload-container, .license-upload-container {
+            text-align: center;
+            padding: 15px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .photo-upload-container:hover, .license-upload-container:hover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+    </style>
+            <script>
         document.addEventListener('DOMContentLoaded', function () {
             const countrySelect = document.getElementById('CountrySelect');
             const airportSelect = document.getElementById('AirportSelect');
@@ -271,7 +330,7 @@
             const selectedCountryId = '@(ViewBag.SelectedCountryId ?? "0")';
             const originalAirportId = '@Model.AirportId';
 
-            // 2. تعامل مع حدث تغيير الدولة (كما كان)
+            // 2. تعامل مع حدث تغيير الدولة
             countrySelect.addEventListener('change', function () {
                 const countryId = this.value;
                 airportSelect.innerHTML = '<option value="">-- Loading Divisions --</option>';
@@ -292,14 +351,13 @@
                             });
 
                             // 3. أعد تحديد المطار الأصلي بعد تعبئة القائمة الجديدة
-                            // هذا يضمن عدم فقدان الاختيار بعد تحديث القائمة
                             if (countryId === selectedCountryId) {
-                                 airportSelect.value = originalAirportId;
+                                airportSelect.value = originalAirportId;
                             }
                         })
                         .catch(error => {
-                            console.error('Error fetching airports:', error);
-                            airportSelect.innerHTML = '<option value="">-- Error Loading --</option>';
+                            console.error('Error loading airports:', error);
+                            airportSelect.innerHTML = '<option value="">-- Error loading divisions --</option>';
                         });
                 } else {
                     airportSelect.innerHTML = '<option value="">-- Select Country First --</option>';
@@ -313,26 +371,68 @@
                 countrySelect.dispatchEvent(new Event('change'));
             }
 
+            // Photo preview functionality
+            const photoFile = document.getElementById('photoFile');
+            const photoPreview = document.getElementById('photoPreview');
+            
+            if (photoFile && photoPreview) {
+                photoFile.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                photoPreview.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        } else {
+                            alert('Please select a valid image file (JPG, PNG, GIF)');
+                            this.value = '';
+                        }
+                    }
+                });
+            }
+
             // Calculate salary after annual increase
             function calculateSalaryAfterIncrease() {
                 var currentSalary = parseFloat(document.getElementById('CurrentSalary').value) || 0;
                 var annualIncrease = parseFloat(document.getElementById('AnnualIncreasePercentage').value) || 0;
                 
+                console.log('Calculating salary:', { currentSalary, annualIncrease }); // Debug log
+                
                 if (currentSalary > 0 && annualIncrease >= 0) {
                     var increaseAmount = currentSalary * (annualIncrease / 100);
                     var newSalary = currentSalary + increaseAmount;
                     document.getElementById('SalaryAfterAnnualIncrease').value = newSalary.toFixed(2);
+                    console.log('New salary calculated:', newSalary); // Debug log
+                } else if (currentSalary > 0) {
+                    // If only salary exists, show current salary
+                    document.getElementById('SalaryAfterAnnualIncrease').value = currentSalary.toFixed(2);
+                    console.log('Only salary exists, showing current salary'); // Debug log
                 } else {
                     document.getElementById('SalaryAfterAnnualIncrease').value = '';
+                    console.log('No valid values for calculation'); // Debug log
                 }
             }
 
             // Bind events to salary calculation
-            document.getElementById('CurrentSalary').addEventListener('input', calculateSalaryAfterIncrease);
-            document.getElementById('AnnualIncreasePercentage').addEventListener('input', calculateSalaryAfterIncrease);
+            var currentSalaryInput = document.getElementById('CurrentSalary');
+            var annualIncreaseInput = document.getElementById('AnnualIncreasePercentage');
+            
+            if (currentSalaryInput) {
+                currentSalaryInput.addEventListener('input', calculateSalaryAfterIncrease);
+                currentSalaryInput.addEventListener('change', calculateSalaryAfterIncrease);
+            }
+            
+            if (annualIncreaseInput) {
+                annualIncreaseInput.addEventListener('input', calculateSalaryAfterIncrease);
+                annualIncreaseInput.addEventListener('change', calculateSalaryAfterIncrease);
+            }
 
-            // Calculate on page load
-            calculateSalaryAfterIncrease();
+            // Calculate on page load with delay to ensure DOM is ready
+            setTimeout(function() {
+                calculateSalaryAfterIncrease();
+            }, 100);
         });
-    </script>
+        </script>
 }

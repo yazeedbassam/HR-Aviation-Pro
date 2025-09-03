@@ -7,7 +7,8 @@ using OfficeOpenXml.Style;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Data.SqlClient;
+using System.Data;
+using Microsoft.Data.SqlClient;
 using System.Drawing;
 using System.IO; // <-- إضافة مهمة لاستخدام Path و File
 using WebApplication1.DataAccess;
@@ -17,7 +18,7 @@ using Color = System.Drawing.Color;
 
 namespace WebApplication1.Controllers;
 
-[Authorize(Policy = "RequireAdmin")] // فقط الأدمن يستطيع الوصول لهذا الكنترولر
+[Authorize] // التحقق من الصلاحيات سيتم في كل action
 public class EmployeesController : Controller
 {
     private readonly SqlServerDb _db;
@@ -31,9 +32,37 @@ public class EmployeesController : Controller
         _configurationService = configurationService;
     }
 
-    // GET: /Employees
-    public IActionResult Index()
+    private int GetCurrentUserId()
     {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return userId;
+        }
+        return 0;
+    }
+
+    // GET: /Employees
+    public async Task<IActionResult> Index()
+    {
+        // التحقق من صلاحية عرض الموظفين
+        var userId = GetCurrentUserId();
+        if (userId == 0)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        // التحقق من صلاحية عرض الموظفين
+        var permissionService = HttpContext.RequestServices.GetService<IAdvancedPermissionManagerService>();
+        if (permissionService != null)
+        {
+            var canViewEmployees = await permissionService.CanPerformOperationAsync(userId, "Employee", "View");
+            if (!canViewEmployees)
+            {
+                return RedirectToAction("AccessDenied", "Account", new { returnUrl = "/Employees" });
+            }
+        }
+
         // نستدعي الدالة الجديدة بـ 8 قيم null لتتوافق مع تعريفها الجديد
         var employees = _db.GetEmployees(null, null, null, null, null, null, null, null, null);
 
@@ -96,6 +125,231 @@ public class EmployeesController : Controller
     // هذه الدالة وظيفتها استقبال البيانات بعد الضغط على زر "Create Employee"
     // في ملف EmployeesController.cs
 
+
+
+    // =============================================================
+    // IMPORT FROM EXCEL - POST
+    // =============================================================
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return Json(new { success = false, message = "Please select an Excel file to import." });
+            }
+
+            if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Please select a valid Excel file (.xlsx)." });
+            }
+
+            var importedCount = 0;
+            var errors = new List<string>();
+
+            using (var stream = new MemoryStream())
+            {
+                await file.CopyToAsync(stream);
+                stream.Position = 0;
+
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                    if (worksheet == null)
+                    {
+                        return Json(new { success = false, message = "No worksheet found in the Excel file." });
+                    }
+
+                    var rowCount = worksheet.Dimension?.Rows ?? 0;
+                    if (rowCount < 2) // Header + at least one data row
+                    {
+                        return Json(new { success = false, message = "Excel file must contain at least one data row." });
+                    }
+
+                    // Process each row (skip header)
+                    for (int row = 2; row <= rowCount; row++)
+                    {
+                        try
+                        {
+                            var model = new EmployeeImportModel
+                            {
+                                FullName = worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                                Username = worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                                CustomPassword = worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                                EmployeeOfficialID = worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                                JobTitle = worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                                Department = worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
+                                Location = worksheet.Cells[row, 7].Value?.ToString()?.Trim(),
+                                PhoneNumber = worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                                Email = worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                                Address = worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
+                                EmergencyContactPhone = worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
+                                Gender = worksheet.Cells[row, 12].Value?.ToString()?.Trim(),
+                                DateOfBirth = ParseDate(worksheet.Cells[row, 13].Value?.ToString()),
+                                MaritalStatus = worksheet.Cells[row, 14].Value?.ToString()?.Trim(),
+                                EducationLevel = worksheet.Cells[row, 15].Value?.ToString()?.Trim(),
+                                HireDate = ParseDate(worksheet.Cells[row, 16].Value?.ToString()),
+                                CurrentSalary = ParseDecimal(worksheet.Cells[row, 17].Value?.ToString()),
+                                AnnualIncreasePercentage = ParseDecimal(worksheet.Cells[row, 18].Value?.ToString()),
+                                BankAccountNumber = worksheet.Cells[row, 19].Value?.ToString()?.Trim(),
+                                BankName = worksheet.Cells[row, 20].Value?.ToString()?.Trim(),
+                                TaxId = worksheet.Cells[row, 21].Value?.ToString()?.Trim(),
+                                InsuranceNumber = worksheet.Cells[row, 22].Value?.ToString()?.Trim(),
+                                OrganizationalStructure = worksheet.Cells[row, 23].Value?.ToString()?.Trim(),
+                                Division = worksheet.Cells[row, 24].Value?.ToString()?.Trim(),
+                                Role = worksheet.Cells[row, 25].Value?.ToString()?.Trim() ?? "Employee",
+                                NeedLicense = ParseBool(worksheet.Cells[row, 26].Value?.ToString()) ?? true,
+                                IsActive = ParseBool(worksheet.Cells[row, 27].Value?.ToString()) ?? true
+                            };
+
+                            // Validate required fields
+                            if (string.IsNullOrEmpty(model.FullName) || string.IsNullOrEmpty(model.Username))
+                            {
+                                errors.Add($"Row {row}: Full Name and Username are required.");
+                                continue;
+                            }
+
+                            // Import employee
+                            if (_db.ImportEmployeeFromExcel(model))
+                            {
+                                importedCount++;
+                            }
+                            else
+                            {
+                                errors.Add($"Row {row}: Failed to import {model.FullName} ({model.Username}).");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add($"Row {row}: Error processing row - {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            if (importedCount > 0)
+            {
+                return Json(new { success = true, message = $"Successfully imported {importedCount} employee(s). {errors.Count} error(s) occurred." });
+            }
+
+            if (errors.Any())
+            {
+                return Json(new { success = false, message = $"Import completed with {errors.Count} error(s). Check the logs for details." });
+            }
+
+            return Json(new { success = false, message = "No employees were imported." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Error during import: {ex.Message}" });
+        }
+    }
+
+    // =============================================================
+    // DOWNLOAD EXCEL TEMPLATE
+    // =============================================================
+    [HttpGet]
+    public IActionResult DownloadTemplate()
+    {
+        try
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Employee Template");
+                
+                // Headers
+                var headers = new string[]
+                {
+                    "Full Name*", "Username*", "Custom Password", "Employee Official ID", "Job Title", 
+                    "Department", "Location", "Phone Number", "Email", "Address", "Emergency Contact Phone",
+                    "Gender", "Date of Birth", "Marital Status", "Education Level", "Hire Date",
+                    "Current Salary", "Annual Increase %", "Bank Account Number", "Bank Name",
+                    "Tax ID", "Insurance Number", "Organizational Structure", "Division", "Role", "Need License", "Is Active"
+                };
+                
+                // Add headers
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headers[i];
+                    worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                    worksheet.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+                }
+                
+                // Add sample data
+                worksheet.Cells[2, 1].Value = "سارة أحمد";
+                worksheet.Cells[2, 2].Value = "sara.ahmed";
+                worksheet.Cells[2, 3].Value = "123";
+                worksheet.Cells[2, 4].Value = "EMP001";
+                worksheet.Cells[2, 5].Value = "Software Engineer";
+                worksheet.Cells[2, 6].Value = "IT";
+                worksheet.Cells[2, 7].Value = "Amman";
+                worksheet.Cells[2, 8].Value = "+962-79-123-4567";
+                worksheet.Cells[2, 9].Value = "john.doe@company.com";
+                worksheet.Cells[2, 10].Value = "Amman, Jordan";
+                worksheet.Cells[2, 11].Value = "+962-79-987-6543";
+                worksheet.Cells[2, 12].Value = "Male";
+                worksheet.Cells[2, 13].Value = "1990-05-15";
+                worksheet.Cells[2, 14].Value = "Single";
+                worksheet.Cells[2, 15].Value = "Bachelor's Degree";
+                worksheet.Cells[2, 16].Value = "2023-01-01";
+                worksheet.Cells[2, 17].Value = "5000.00";
+                worksheet.Cells[2, 18].Value = "5.5";
+                worksheet.Cells[2, 19].Value = "123456789";
+                worksheet.Cells[2, 20].Value = "Bank of Jordan";
+                worksheet.Cells[2, 21].Value = "TAX123456";
+                worksheet.Cells[2, 22].Value = "INS789012";
+                worksheet.Cells[2, 23].Value = "Jordan";
+                worksheet.Cells[2, 24].Value = "Amman";
+                worksheet.Cells[2, 25].Value = "Employee";
+                worksheet.Cells[2, 26].Value = "Yes";
+                worksheet.Cells[2, 27].Value = "Yes";
+                
+                // Auto-fit columns
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                
+                var excelBytes = package.GetAsByteArray();
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employees_Import_Template.xlsx");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error and return to index
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    // =============================================================
+    // Helper methods for parsing Excel data
+    private DateTime? ParseDate(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return null;
+        if (DateTime.TryParse(value, out DateTime result)) return result;
+        return null;
+    }
+
+    private decimal? ParseDecimal(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return null;
+        if (decimal.TryParse(value, out decimal result)) return result;
+        return null;
+    }
+
+    private bool? ParseBool(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return null;
+        if (bool.TryParse(value, out bool result)) return result;
+        if (value.Equals("1", StringComparison.OrdinalIgnoreCase)) return true;
+        if (value.Equals("0", StringComparison.OrdinalIgnoreCase)) return false;
+        if (value.Equals("yes", StringComparison.OrdinalIgnoreCase)) return true;
+        if (value.Equals("no", StringComparison.OrdinalIgnoreCase)) return false;
+        return null;
+    }
+
     // =============================================================
     // الدالة الأولى: لعرض الفورم الفارغ للمستخدم (GET)
     // لاحظ: لا يوجد متغيرات (parameters) في هذه الدالة
@@ -106,9 +360,14 @@ public class EmployeesController : Controller
         this.LoadConfigurationDropdown(_configurationService, "JobTitles", "JobTitles");
         this.LoadConfigurationDropdown(_configurationService, "Departments", "Departments");
         this.LoadConfigurationDropdown(_configurationService, "Gender", "Gender");
-        ViewBag.Roles = new SelectList(_db.GetAllRoles(), "RoleName", "RoleName");
+        
+        // تحميل الأدوار من جدول Roles مع Description
+        LoadRoles();
 
-        // 2. نعرض الصفحة مع موديل فارغ
+        // 2. تحميل الدول من قاعدة البيانات
+        LoadCountries();
+
+        // 3. نعرض الصفحة مع موديل فارغ
         return View(new CreateEmployeeViewModel());
     }
 
@@ -130,6 +389,23 @@ public class EmployeesController : Controller
         //{
         //    ModelState.AddModelError("Email", "This email address is already in use.");
         //}
+
+        // التحقق من وجود الدور في جدول Roles
+        if (string.IsNullOrEmpty(model.RoleName))
+        {
+            ModelState.AddModelError("RoleName", "Role is required.");
+        }
+        else
+        {
+            // Check if role exists in Roles table
+            var roleExists = _db.ExecuteQuery("SELECT COUNT(*) FROM Roles WHERE RoleName = @RoleName", 
+                new SqlParameter("@RoleName", model.RoleName));
+            
+            if (Convert.ToInt32(roleExists.Rows[0][0]) == 0)
+            {
+                ModelState.AddModelError("RoleName", $"Role '{model.RoleName}' does not exist in the system.");
+            }
+        }
 
         if (ModelState.IsValid) // هذا الشرط سيتحقق الآن من الأخطاء التي أضفتها يدوياً
         {
@@ -179,7 +455,12 @@ public class EmployeesController : Controller
         this.LoadConfigurationDropdown(_configurationService, "JobTitles", "JobTitles");
         this.LoadConfigurationDropdown(_configurationService, "Departments", "Departments");
         this.LoadConfigurationDropdown(_configurationService, "Gender", "Gender");
-        ViewBag.Roles = new SelectList(_db.GetAllRoles(), "RoleName", "RoleName");
+        
+        // تحميل الأدوار من جدول Roles مع Description
+        LoadRoles();
+
+        // إعادة تحميل الدول
+        LoadCountries();
 
         return View(model);
     }
@@ -190,18 +471,32 @@ public class EmployeesController : Controller
         this.LoadConfigurationDropdown(_configurationService, "JobTitles", "JobTitles");
         this.LoadConfigurationDropdown(_configurationService, "Departments", "Departments");
         this.LoadConfigurationDropdown(_configurationService, "Gender", "Gender");
+        
+        // تحميل الأدوار من جدول Roles مع Description
+        LoadRoles();
+        
+        // تحميل الدول من قاعدة البيانات
+        LoadCountries();
+        
         var employee = _db.GetEmployeeById(id);
         if (employee == null)
         {
             return NotFound();
         }
+
+        // تحميل المطارات إذا كان هناك organizational structure محدد
+        if (!string.IsNullOrEmpty(employee.OrganizationalStructure))
+        {
+            LoadAirportsForCountry(employee.OrganizationalStructure);
+        }
+
         return View(employee);
     }
 
     // POST: /Employees/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Edit(int id, Employee employee, IFormFile? photoFile)
+    public IActionResult Edit(int id, Employee employee, IFormFile? photoFile, string? NewPassword, string? Role)
     {
         if (id != employee.EmployeeID)
         {
@@ -212,7 +507,6 @@ public class EmployeesController : Controller
         ModelState.Remove("EmployeeOfficialID");
         ModelState.Remove("Email");
 
-
         if (ModelState.IsValid)
         {
             try
@@ -222,6 +516,18 @@ public class EmployeesController : Controller
                 {
                     string photoPath = SaveUploadedFile(photoFile, "employees", "photos", $"employee_{employee.EmployeeID}_{DateTime.Now:yyyyMMddHHmmss}");
                     employee.PhotoPath = photoPath;
+                }
+
+                // تحديث كلمة المرور إذا تم توفيرها وغير فارغة
+                if (!string.IsNullOrEmpty(NewPassword) && NewPassword.Trim().Length > 0)
+                {
+                    _db.UpdateUserPassword(employee.Username, NewPassword);
+                }
+
+                // تحديث Role إذا تم توفيره
+                if (!string.IsNullOrEmpty(Role))
+                {
+                    employee.Role = Role;
                 }
 
                 _db.UpdateEmployee(employee);
@@ -251,12 +557,27 @@ public class EmployeesController : Controller
                     return RedirectToAction(nameof(Index));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // يمكنك معالجة الخطأ هنا
-                throw;
+                ModelState.AddModelError("", "An error occurred while updating the employee: " + ex.Message);
             }
         }
+
+        // في حالة الفشل، نعيد تحميل البيانات
+        this.LoadConfigurationDropdown(_configurationService, "JobTitles", "JobTitles");
+        this.LoadConfigurationDropdown(_configurationService, "Departments", "Departments");
+        this.LoadConfigurationDropdown(_configurationService, "Gender", "Gender");
+        
+        // تحميل الأدوار من جدول Roles مع Description
+        LoadRoles();
+        
+        LoadCountries();
+        
+        if (!string.IsNullOrEmpty(employee.OrganizationalStructure))
+        {
+            LoadAirportsForCountry(employee.OrganizationalStructure);
+        }
+
         return View(employee);
     }
 
@@ -599,7 +920,7 @@ public class EmployeesController : Controller
                     role = participant.Role
                 }).ToList(),
                 divisions = _db.GetDivisionsByProjectId(p.ProjectId),
-                files = GetProjectFiles(p.FolderPath)
+                files = GetProjectFiles(p.FolderPath ?? "")
             }).ToList();
 
             // إعداد البيانات للإرسال
@@ -718,7 +1039,7 @@ public class EmployeesController : Controller
             // إرجاع المسار النسبي للملف
             return $"/uploads/{folderCategory}/{userFolder}/{fileName}";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // في حالة حدوث خطأ، نعيد مسار فارغ
             return string.Empty;
@@ -734,6 +1055,78 @@ public class EmployeesController : Controller
         return View(viewModel);
     }
 
+    // دالة تحميل الدول من قاعدة البيانات
+    private void LoadCountries()
+    {
+        var dtC = _db.ExecuteQuery("SELECT countryid, countryname FROM countries ORDER BY countryname");
+        ViewBag.Countries = dtC.Rows.Cast<DataRow>()
+            .Select(r => new SelectListItem
+            {
+                Value = r["countryid"].ToString(),
+                Text = r["countryname"].ToString()
+            }).ToList();
+    }
 
+         // دالة تحميل المطارات لدولة معينة
+     private void LoadAirportsForCountry(string countryName)
+     {
+         // البحث عن الدولة بالاسم أولاً
+         var countryQuery = "SELECT countryid FROM countries WHERE countryname = @countryName";
+         var countryResult = _db.ExecuteQuery(countryQuery, new SqlParameter("@countryName", countryName));
+         
+         if (countryResult.Rows.Count > 0)
+         {
+             var countryId = countryResult.Rows[0]["countryid"].ToString();
+             
+             var dtA = _db.ExecuteQuery(
+                 "SELECT airportid, airportname, icao_code FROM airports WHERE countryid = @countryId ORDER BY airportname",
+                 new SqlParameter("@countryId", countryId));
+             
+             ViewBag.Airports = dtA.Rows.Cast<DataRow>()
+                 .Select(r => new SelectListItem
+                 {
+                     Value = r["airportid"].ToString(),
+                     Text = $"{r["airportname"]} ({r["icao_code"]})"
+                 }).ToList();
+         }
+         else
+         {
+             ViewBag.Airports = new List<SelectListItem>();
+         }
+     }
+
+    /// <summary>
+    /// تحميل الأدوار من جدول Roles مع Description
+    /// </summary>
+    private void LoadRoles()
+    {
+        // Get roles directly from Roles table to ensure consistency
+        try
+        {
+            var rolesQuery = "SELECT RoleName, Description FROM Roles WHERE RoleName IS NOT NULL ORDER BY RoleName";
+            var rolesData = _db.ExecuteQuery(rolesQuery);
+            
+            ViewBag.Roles = rolesData.Rows.Cast<DataRow>()
+                .Select(r => new SelectListItem(
+                    r["Description"]?.ToString() ?? r["RoleName"].ToString(),  // Display Text: Description if available, otherwise RoleName
+                    r["RoleName"].ToString()   // Value: RoleName for database operations
+                ))
+                .ToList();
+        }
+        catch
+        {
+            // Fallback to hardcoded values if database query fails
+            ViewBag.Roles = new List<SelectListItem>
+            {
+                new SelectListItem("مدير النظام", "Admin"),
+                new SelectListItem("مراقب", "Controller"),
+                new SelectListItem("موظف", "Employee"),
+                new SelectListItem("مشرف OJAI", "SuperVisor OJAI"),
+                new SelectListItem("مشرف OJAM", "SuperVisor OJAM"),
+                new SelectListItem("مشرف OJAQ", "SuperVisor OJAQ"),
+                new SelectListItem("مشرف TACC", "SuperVisor TACC")
+            };
+        }
+    }
 
 }

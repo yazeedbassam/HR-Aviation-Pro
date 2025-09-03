@@ -1,7 +1,8 @@
 ﻿@model WebApplication1.Models.CertificateViewModel
 
 @{
-    ViewData["Title"] = "Add New Document";
+    var pageTitle = ViewBag.ActiveTab == "controllers" ? "Add New Controller Certificate" : "Add New Employee Certificate";
+    ViewData["Title"] = pageTitle;
 }
 
 <style>
@@ -45,27 +46,40 @@
         <div class="card custom-card">
             <div class="card-header custom-card-header d-flex align-items-center">
                 <i class="fa-solid fa-file-circle-plus fa-lg me-2"></i>
-                <span>@ViewData["Title"]</span>
+                <span>@pageTitle</span>
             </div>
             <div class="card-body p-4">
                 <form asp-action="Create" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
+                    @if (ViewBag.ActiveTab == "controllers")
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Controller Certificate:</strong> You are adding a certificate for an Air Traffic Controller. The Employee selection has been hidden for clarity.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Employee Certificate:</strong> You are adding a certificate for an Employee or Operation Staff member. The Controller selection has been hidden for clarity.
+                        </div>
+                    }
+
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-6">
                             <h5 class="form-section-header">Select Person</h5>
-                            <div class="mb-3">
+                            <div class="mb-3" id="controller-section" style="display: @(ViewBag.ActiveTab == "employees" ? "none" : "block");">
                                 <label asp-for="ControllerId" class="form-label">Controller</label>
-                                <!-- CORRECTED: Using ViewBag.Controllers directly -->
                                 <select asp-for="ControllerId" asp-items="ViewBag.Controllers" class="form-select form-select-sm" id="controller-select">
                                     <option value="">-- Select ATC --</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-3" id="employee-section" style="display: @(ViewBag.ActiveTab == "controllers" ? "none" : "block");">
                                 <label asp-for="EmployeeId" class="form-label">Employee</label>
-                                <!-- CORRECTED: Using ViewBag.Employees directly -->
                                 <select asp-for="EmployeeId" asp-items="ViewBag.Employees" class="form-select form-select-sm" id="employee-select">
                                     <option value="">-- Select Employee --</option>
                                 </select>
@@ -74,7 +88,6 @@
                             <h5 class="form-section-header">Document Details</h5>
                             <div class="mb-3">
                                 <label asp-for="TypeId" class="form-label">Type</label>
-                                <!-- CORRECTED: Using ViewBag.CertificateTypes directly -->
                                 <select asp-for="TypeId" asp-items="ViewBag.CertificateTypes" class="form-select form-select-sm">
                                     <option value="">-- Select Type --</option>
                                 </select>
@@ -141,23 +154,26 @@
             const controllerSelect = document.getElementById('controller-select');
             const employeeSelect = document.getElementById('employee-select');
 
-            controllerSelect.addEventListener('change', function() {
-                if (this.value) {
-                    employeeSelect.value = '';
-                    employeeSelect.disabled = true;
-                } else {
-                    employeeSelect.disabled = false;
-                }
-            });
+            // Only enable mutual exclusion if both sections are visible
+            if (controllerSelect && employeeSelect) {
+                controllerSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        employeeSelect.value = '';
+                        employeeSelect.disabled = true;
+                    } else {
+                        employeeSelect.disabled = false;
+                    }
+                });
 
-            employeeSelect.addEventListener('change', function() {
-                if (this.value) {
-                    controllerSelect.value = '';
-                    controllerSelect.disabled = true;
-                } else {
-                    controllerSelect.disabled = false;
-                }
-            });
+                employeeSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        controllerSelect.value = '';
+                        controllerSelect.disabled = true;
+                    } else {
+                        controllerSelect.disabled = false;
+                    }
+                });
+            }
         });
     </script>
 }

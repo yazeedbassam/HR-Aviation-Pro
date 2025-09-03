@@ -63,10 +63,16 @@
                 Licenses & Permissions
             </div>
             <div>
-                @if (Html.HasAdvancedPermission("LICENSES_ADD") || Html.IsAdvancedAdmin())
+                @if (Html.HasAdvancedPermission("CONTROLLERLICENSE_ADD") || Html.IsAdvancedAdmin())
                 {
-                    <a href="@Url.Action("Create", "License")" class="btn btn-success btn-sm me-2">
+                    <a href="@Url.Action("Create", "License", new { tab = "controllers" })" class="btn btn-success btn-sm me-2" id="add-controller-license">
                         <i class="fa-solid fa-plus"></i> Add New License
+                    </a>
+                }
+                @if (Html.HasAdvancedPermission("EMPLOYEELICENSE_ADD") || Html.IsAdvancedAdmin())
+                {
+                    <a href="@Url.Action("Create", "License", new { tab = "employees" })" class="btn btn-success btn-sm me-2" id="add-employee-license" style="display: none;">
+                        <i class="fa-solid fa-plus"></i> Add Employee License
                     </a>
                 }
                 <a href="/" class="btn btn-secondary btn-sm">
@@ -91,16 +97,7 @@
                 <button class="nav-link active" id="controllers-tab" data-bs-toggle="tab" data-bs-target="#controllers-tab-pane" type="button" role="tab" aria-controls="controllers-tab-pane" aria-selected="true">Controllers</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ais-tab" data-bs-toggle="tab" data-bs-target="#ais-tab-pane" type="button" role="tab" aria-controls="ais-tab-pane" aria-selected="false">AIS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="cns-tab" data-bs-toggle="tab" data-bs-target="#cns-tab-pane" type="button" role="tab" aria-controls="cns-tab-pane" aria-selected="false">CNS</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="aftn-tab" data-bs-toggle="tab" data-bs-target="#aftn-tab-pane" type="button" role="tab" aria-controls="aftn-tab-pane" aria-selected="false">AFTN</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="opsstaff-tab" data-bs-toggle="tab" data-bs-target="#opsstaff-tab-pane" type="button" role="tab" aria-controls="opsstaff-tab-pane" aria-selected="false">Ops Staff & Admin</button>
+                <button class="nav-link" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees-tab-pane" type="button" role="tab" aria-controls="employees-tab-pane" aria-selected="false">Employees & Operation Staff</button>
             </li>
         </ul>
 
@@ -109,17 +106,8 @@
             <div class="tab-pane fade show active" id="controllers-tab-pane" role="tabpanel" aria-labelledby="controllers-tab" tabindex="0">
                 @await Html.PartialAsync("_ControllerLicensesPartial", Model.ControllerLicenses)
             </div>
-            <div class="tab-pane fade" id="ais-tab-pane" role="tabpanel" aria-labelledby="ais-tab" tabindex="0">
-                @await Html.PartialAsync("_AISLicensesPartial", Model.AISLicenses)
-            </div>
-            <div class="tab-pane fade" id="cns-tab-pane" role="tabpanel" aria-labelledby="cns-tab" tabindex="0">
-                @await Html.PartialAsync("_CNSLicensesPartial", Model.CNSLicenses)
-            </div>
-            <div class="tab-pane fade" id="aftn-tab-pane" role="tabpanel" aria-labelledby="aftn-tab" tabindex="0">
-                @await Html.PartialAsync("_AFTNLicensesPartial", Model.AFTNLicenses)
-            </div>
-            <div class="tab-pane fade" id="opsstaff-tab-pane" role="tabpanel" aria-labelledby="opsstaff-tab" tabindex="0">
-                @await Html.PartialAsync("_OpsStaffLicensesPartial", Model.OpsStaffLicenses)
+            <div class="tab-pane fade" id="employees-tab-pane" role="tabpanel" aria-labelledby="employees-tab" tabindex="0">
+                @await Html.PartialAsync("_EmployeesAndOpsStaffLicensesPartial", Model.EmployeesAndOpsStaffLicenses)
             </div>
         </div>
     </div>
@@ -159,20 +147,11 @@
                 case 'Controller':
                     tableId = '#controllerLicensesTable';
                     break;
-                case 'AIS':
-                    tableId = '#aisLicensesTable';
-                    break;
-                case 'CNS':
-                    tableId = '#cnsLicensesTable';
-                    break;
-                case 'AFTN':
-                    tableId = '#aftnLicensesTable';
-                    break;
-                case 'OpsStaff':
-                    tableId = '#opsstaffLicensesTable';
+                case 'Employees':
+                    tableId = '#employeesLicensesTable';
                     break;
                 default:
-                    tableId = '#employeeLicensesTable';
+                    tableId = '#employeesLicensesTable';
             }
             
             const filterInputs = document.querySelectorAll(`${tableId} .filters .filter-input`);
@@ -204,6 +183,31 @@
             a.click();
             document.body.removeChild(a);
         }
+
+        // Tab switching logic for buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const controllersTab = document.getElementById('controllers-tab');
+            const employeesTab = document.getElementById('employees-tab');
+            const addControllerLicense = document.getElementById('add-controller-license');
+            const addEmployeeLicense = document.getElementById('add-employee-license');
+
+            function updateButtons(activeTab) {
+                if (activeTab === 'controllers') {
+                    addControllerLicense.style.display = 'inline-block';
+                    addEmployeeLicense.style.display = 'none';
+                } else {
+                    addControllerLicense.style.display = 'none';
+                    addEmployeeLicense.style.display = 'inline-block';
+                }
+            }
+
+            // Listen for tab changes
+            controllersTab.addEventListener('click', () => updateButtons('controllers'));
+            employeesTab.addEventListener('click', () => updateButtons('employees'));
+
+            // Set initial state
+            updateButtons('controllers');
+        });
 
         // Modal logic
         const licenseDetailsModal = document.getElementById('licenseDetailsModal');
