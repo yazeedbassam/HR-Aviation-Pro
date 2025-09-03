@@ -235,7 +235,7 @@ namespace WebApplication1.DataAccess
                     new NpgsqlParameter("@fullname", user.FullName),
                     new NpgsqlParameter("@email", user.Email),
                     new NpgsqlParameter("@role", user.Role),
-                    new NpgsqlParameter("@department", user.Department),
+                    new NpgsqlParameter("@department", user.CurrentDepartment),
                     new NpgsqlParameter("@isactive", user.IsActive),
                     new NpgsqlParameter("@created_at", DateTime.Now)
                 };
@@ -265,7 +265,7 @@ namespace WebApplication1.DataAccess
                     new NpgsqlParameter("@fullname", user.FullName),
                     new NpgsqlParameter("@email", user.Email),
                     new NpgsqlParameter("@role", user.Role),
-                    new NpgsqlParameter("@department", user.Department),
+                    new NpgsqlParameter("@department", user.CurrentDepartment),
                     new NpgsqlParameter("@isactive", user.IsActive)
                 };
 
