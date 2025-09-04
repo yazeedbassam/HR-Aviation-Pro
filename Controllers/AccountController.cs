@@ -756,12 +756,17 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 
         try
         {
+            _logger.LogInformation("🔍 Login attempt started for user: {Username}, DatabaseType: {DatabaseType}", model.Username, model.DatabaseType);
+            
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("❌ ModelState is invalid. Errors: {Errors}", string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 // Log failed login attempt
                 _ = Task.Run(async () => await _loggerService.LogUserLoginAsync(0, model.Username, ipAddress, userAgent, false, "Invalid model state"));
                 return View(model);
             }
+            
+            _logger.LogInformation("✅ ModelState is valid, proceeding with authentication");
 
             // Set default database type if not selected
             if (string.IsNullOrEmpty(model.DatabaseType))
@@ -885,12 +890,15 @@ using Microsoft.AspNetCore.Authentication.Cookies;
             
             if (!isValidCredentials)
             {
+                _logger.LogWarning("❌ Authentication failed for user: {Username}", model.Username);
                 // Log failed login attempt
                 _ = Task.Run(async () => await _loggerService.LogUserLoginAsync(0, model.Username, ipAddress, userAgent, false, "Invalid credentials"));
                 
                 ModelState.AddModelError("", "Invalid username or password.");
                 return View(model);
             }
+            
+            _logger.LogInformation("✅ Authentication successful for user: {Username}, UserId: {UserId}, Role: {Role}", model.Username, userId, role);
 
             var claims = new List<Claim>
             {
@@ -931,12 +939,16 @@ using Microsoft.AspNetCore.Authentication.Cookies;
             }
 
             // بعد النجاح:
+            _logger.LogInformation("🎉 Login successful! Redirecting user...");
+            
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
             {
+                _logger.LogInformation("🔄 Redirecting to ReturnUrl: {ReturnUrl}", model.ReturnUrl);
                 return Redirect(model.ReturnUrl);
             }
 
             // بناءً على الرول:
+            _logger.LogInformation("🏠 Redirecting to Home page");
             return RedirectToAction("Index", "Home");
         }
         catch (Exception ex)
