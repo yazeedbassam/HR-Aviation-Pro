@@ -193,17 +193,25 @@ namespace WebApplication1.DataAccess
                     var storedPassword = row["PasswordHash"].ToString();
                     Console.WriteLine($"🔍 Found user, stored password hash: {storedPassword.Substring(0, Math.Min(20, storedPassword.Length))}...");
                     
-                    // Verify password using BCrypt
-                    if (BCrypt.Net.BCrypt.Verify(password, storedPassword))
+                    // Verify password using ASP.NET Core Identity Password Hasher
+                    if (_passwordHasher != null)
                     {
-                        userId = Convert.ToInt32(row["id"]);
-                        role = row["RoleName"].ToString();
-                        Console.WriteLine($"✅ Password verified successfully. UserId: {userId}, Role: {role}");
-                        return true;
+                        var result = _passwordHasher.VerifyHashedPassword(null, storedPassword, password);
+                        if (result == PasswordVerificationResult.Success)
+                        {
+                            userId = Convert.ToInt32(row["id"]);
+                            role = row["RoleName"].ToString();
+                            Console.WriteLine($"✅ Password verified successfully. UserId: {userId}, Role: {role}");
+                            return true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("❌ Password verification failed");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("❌ Password verification failed");
+                        Console.WriteLine("❌ Password hasher not available");
                     }
                 }
                 else
