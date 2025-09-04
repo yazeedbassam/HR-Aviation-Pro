@@ -39,8 +39,27 @@ Console.WriteLine($"🔧 Application Name: {builder.Environment.ApplicationName}
 builder.Services.AddHealthChecks();
 
 // Configure Data Protection with database persistence
-var connectionString = builder.Configuration.GetConnectionString("SupabaseConnection") 
+// Build connection string from Railway environment variables
+var pgHost = builder.Configuration["PGHOST"];
+var pgPort = builder.Configuration["PGPORT"];
+var pgUser = builder.Configuration["PGUSER"];
+var pgPass = builder.Configuration["PGPASSWORD"];
+var pgDb = builder.Configuration["PGDATABASE"];
+
+// Try to build Railway connection string first
+string connectionString = null;
+if (!string.IsNullOrEmpty(pgHost) && !string.IsNullOrEmpty(pgPort) && 
+    !string.IsNullOrEmpty(pgUser) && !string.IsNullOrEmpty(pgPass) && 
+    !string.IsNullOrEmpty(pgDb))
+{
+    connectionString = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPass};SslMode=Require;";
+}
+else
+{
+    // Fallback to configuration connection strings
+    connectionString = builder.Configuration.GetConnectionString("SupabaseConnection") 
                     ?? builder.Configuration.GetConnectionString("PostgreSQLConnection");
+}
 
 if (!string.IsNullOrEmpty(connectionString))
 {
