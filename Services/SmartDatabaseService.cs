@@ -179,7 +179,7 @@ namespace WebApplication1.Services
                             if (ex is NpgsqlException npgsqlEx)
                             {
                                 _logger.LogWarning($"⚠️ PostgreSQL Error Code: {npgsqlEx.SqlState}");
-                                _logger.LogWarning($"⚠️ PostgreSQL Error Detail: {npgsqlEx.Detail}");
+                                _logger.LogWarning($"⚠️ PostgreSQL Error Message: {npgsqlEx.Message}");
                             }
                             
                             if (ex is System.Net.Sockets.SocketException socketEx)
