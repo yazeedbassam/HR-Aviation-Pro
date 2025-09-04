@@ -193,25 +193,17 @@ namespace WebApplication1.DataAccess
                     var storedPassword = row["PasswordHash"].ToString();
                     Console.WriteLine($"🔍 Found user, stored password hash: {storedPassword.Substring(0, Math.Min(20, storedPassword.Length))}...");
                     
-                    // Verify password using ASP.NET Core Identity Password Hasher
-                    if (_passwordHasher != null)
+                    // Simple plain text password comparison - no encryption
+                    if (storedPassword == password)
                     {
-                        var verificationResult = _passwordHasher.VerifyHashedPassword(null, storedPassword, password);
-                        if (verificationResult == PasswordVerificationResult.Success)
-                        {
-                            userId = Convert.ToInt32(row["id"]);
-                            role = row["RoleName"].ToString();
-                            Console.WriteLine($"✅ Password verified successfully. UserId: {userId}, Role: {role}");
-                            return true;
-                        }
-                        else
-                        {
-                            Console.WriteLine("❌ Password verification failed");
-                        }
+                        userId = Convert.ToInt32(row["id"]);
+                        role = row["RoleName"].ToString();
+                        Console.WriteLine($"✅ Password verified successfully. UserId: {userId}, Role: {role}");
+                        return true;
                     }
                     else
                     {
-                        Console.WriteLine("❌ Password hasher not available");
+                        Console.WriteLine("❌ Password verification failed");
                     }
                 }
                 else
@@ -260,7 +252,7 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                var hashedPassword = _passwordHasher.HashPassword(null, password);
+                // Store password as plain text - no encryption
                 
                 var sql = @"
                     INSERT INTO ""Users"" (""Username"", ""PasswordHash"", ""RoleName"")
@@ -269,7 +261,7 @@ namespace WebApplication1.DataAccess
                 var parameters = new[]
                 {
                     new NpgsqlParameter("@username", user.Username),
-                    new NpgsqlParameter("@password", hashedPassword),
+                    new NpgsqlParameter("@password", password), // Store password as plain text
                     new NpgsqlParameter("@role", user.Role)
                 };
 
@@ -565,10 +557,10 @@ namespace WebApplication1.DataAccess
             }
         }
 
-        // HashPassword: Helper method to hash passwords using ASP.NET Core PasswordHasher (same as SQL Server)
+        // HashPassword: Helper method - returns password as plain text (no encryption)
         public string HashPassword(string password)
         {
-            return _passwordHasher.HashPassword(null, password);
+            return password; // Return password as plain text
         }
     }
 }

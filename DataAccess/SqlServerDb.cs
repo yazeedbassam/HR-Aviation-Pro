@@ -403,7 +403,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
         // Password Hasher is injected via constructor
 
         // CreateUser: Parameter syntax change (@ instead of :), Sequence replacement (assuming IDENTITY column for userid)
-        public int CreateUser(string username, string passwordHash, string roleName)
+        public int CreateUser(string username, string password, string roleName)
         {
             // INSERT into the Users table (assuming this table exists and has RoleName as FK)
             // ??????? SCOPE_IDENTITY() ?????? ??? ???? ??? Identity ?????? ???? ?? ??????
@@ -412,7 +412,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
             var parameters = new[]
             {
                 new SqlParameter("@username", username),
-                new SqlParameter("@passwordHash", passwordHash),
+                new SqlParameter("@passwordHash", password), // Store password as plain text
                 new SqlParameter("@roleName", roleName) // <== ???? ?? ??? ?????? ?????? ?? ???? dbo.Roles
             };
 
@@ -454,7 +454,7 @@ WHERE controllerid = @controllerid"; // Changed : to @
             return -1; // ?? ???? ????? ?? ??? ????? ????
         }
 
-        // ValidateCredentials: Uses GetUserByUsername (already converted) and PasswordHasher (no change)
+        // ValidateCredentials: Simple plain text password comparison (no encryption)
         public bool ValidateCredentials(string username, string password, out int userId, out string role)
         {
             userId = 0;
@@ -462,8 +462,9 @@ WHERE controllerid = @controllerid"; // Changed : to @
             var user = GetUserByUsername(username);
             if (user == null) return false;
             var (id, uname, pwHash, rl) = user.Value;
-            var result = _passwordHasher.VerifyHashedPassword(null, pwHash, password);
-            if (result == PasswordVerificationResult.Success)
+            
+            // Simple plain text comparison - no encryption
+            if (pwHash == password)
             {
                 userId = id;
                 role = rl;
@@ -472,10 +473,10 @@ WHERE controllerid = @controllerid"; // Changed : to @
             return false;
         }
 
-        // HashPassword: Helper method to hash passwords using the injected PasswordHasher
+        // HashPassword: Helper method - returns password as plain text (no encryption)
         public string HashPassword(string password)
         {
-            return _passwordHasher.HashPassword(null, password);
+            return password; // Return password as plain text
         }
 
         // --- Certificates --- //
