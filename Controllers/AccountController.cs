@@ -575,6 +575,122 @@ using Microsoft.AspNetCore.Authentication.Cookies;
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
+    // Temporary endpoint to get hashed password for "123"
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult GetHashedPassword()
+    {
+        try
+        {
+            var hashedPassword = _db.HashPassword("123");
+            return Json(new { 
+                success = true, 
+                password = "123",
+                hashedPassword = hashedPassword,
+                message = "Use this hashed password to update the admin user in database"
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { 
+                success = false, 
+                message = $"Error hashing password: {ex.Message}" 
+            });
+        }
+    }
+
+    // Temporary endpoint to recreate admin user with correct password
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult RecreateAdminUser()
+    {
+        try
+        {
+            // Delete existing admin user
+            string deleteSql = "DELETE FROM users WHERE username = 'admin'";
+            using (var connection = new SqlConnection(_db.ConnectionString))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(deleteSql, connection))
+                {
+                    int deletedRows = command.ExecuteNonQuery();
+                    
+                    // Create new admin user with properly hashed password
+                    var hashedPassword = _db.HashPassword("123");
+                    int newUserId = _db.CreateUser("admin", hashedPassword, "Admin");
+                    
+                    return Json(new { 
+                        success = true, 
+                        message = "Admin user recreated successfully!",
+                        deletedRows = deletedRows,
+                        newUserId = newUserId,
+                        hashedPassword = hashedPassword
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return Json(new { 
+                success = false, 
+                message = $"Error recreating admin user: {ex.Message}" 
+            });
+        }
+    }
+
+    // Temporary endpoint to fix admin password
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult FixAdminPassword()
+    {
+        try
+        {
+            // Hash the password "123" using the same PasswordHasher
+            var hashedPassword = _db.HashPassword("123");
+            
+            // Update the admin user's password in the database
+            string sql = "UPDATE Users SET PasswordHash = @passwordHash WHERE Username = 'admin'";
+            var parameters = new[]
+            {
+                new SqlParameter("@passwordHash", hashedPassword)
+            };
+            
+            using (var connection = new SqlConnection(_db.ConnectionString))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddRange(parameters);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    
+                    if (rowsAffected > 0)
+                    {
+                        return Json(new { 
+                            success = true, 
+                            message = "Admin password updated successfully!",
+                            hashedPassword = hashedPassword,
+                            rowsAffected = rowsAffected
+                        });
+                    }
+                    else
+                    {
+                        return Json(new { 
+                            success = false, 
+                            message = "No admin user found to update" 
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return Json(new { 
+                success = false, 
+                message = $"Error updating admin password: {ex.Message}" 
+            });
+        }
+    }
+
     [AllowAnonymous]
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)

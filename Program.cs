@@ -334,7 +334,8 @@ app.Lifetime.ApplicationStarted.Register(async () => {
                     var sqlServerDb = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
                     if (sqlServerDb.GetUserByUsername("admin") == null)
                     {
-                        sqlServerDb.CreateUser("admin", "123", "Admin");
+                        var hashedPassword = sqlServerDb.HashPassword("123");
+                        sqlServerDb.CreateUser("admin", hashedPassword, "Admin");
                         logger.LogInformation("👤 Admin user created successfully in SQL Server");
                     }
                     else

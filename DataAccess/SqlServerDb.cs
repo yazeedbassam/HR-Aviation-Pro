@@ -472,6 +472,12 @@ WHERE controllerid = @controllerid"; // Changed : to @
             return false;
         }
 
+        // HashPassword: Helper method to hash passwords using the injected PasswordHasher
+        public string HashPassword(string password)
+        {
+            return _passwordHasher.HashPassword(null, password);
+        }
+
         // --- Certificates --- //
 
         // GetAllCertificates: SQL is standard, no changes needed
