@@ -410,6 +410,90 @@ namespace WebApplication1.Services
         }
 
         /// <summary>
+        /// الحصول على عدد الإشعارات للمستخدم
+        /// </summary>
+        public int GetNotificationCount(int userId)
+        {
+            try
+            {
+                using (var connection = GetConnection())
+                {
+                    connection.Open();
+                    
+                    string sql = "";
+                    IDbCommand command;
+                    
+                    switch (_currentDatabase.ToLower())
+                    {
+                        case "local":
+                            sql = "SELECT COUNT(*) FROM notifications WHERE userid = @userId AND is_read = 0";
+                            command = new SqlCommand(sql, (SqlConnection)connection);
+                            ((SqlCommand)command).Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+                            break;
+                            
+                        case "postgresql":
+                            sql = "SELECT COUNT(*) FROM \"notifications\" WHERE \"userid\" = @userId AND \"is_read\" = false";
+                            command = new Npgsql.NpgsqlCommand(sql, (Npgsql.NpgsqlConnection)connection);
+                            ((Npgsql.NpgsqlCommand)command).Parameters.Add(new Npgsql.NpgsqlParameter("@userId", NpgsqlTypes.NpgsqlDbType.Integer) { Value = userId });
+                            break;
+                            
+                        default:
+                            return 0;
+                    }
+                    
+                    var result = command.ExecuteScalar();
+                    return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting notification count for user {UserId}", userId);
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// الحصول على العدد الإجمالي للأشخاص الذين يحتاجون رخص
+        /// </summary>
+        public int GetTotalNeedingLicensesCount()
+        {
+            try
+            {
+                using (var connection = GetConnection())
+                {
+                    connection.Open();
+                    
+                    string sql = "";
+                    IDbCommand command;
+                    
+                    switch (_currentDatabase.ToLower())
+                    {
+                        case "local":
+                            sql = "SELECT COUNT(*) FROM employees WHERE license_expiry_date < DATEADD(day, 30, GETDATE())";
+                            command = new SqlCommand(sql, (SqlConnection)connection);
+                            break;
+                            
+                        case "postgresql":
+                            sql = "SELECT COUNT(*) FROM \"employees\" WHERE \"license_expiry_date\" < (CURRENT_DATE + INTERVAL '30 days')";
+                            command = new Npgsql.NpgsqlCommand(sql, (Npgsql.NpgsqlConnection)connection);
+                            break;
+                            
+                        default:
+                            return 0;
+                    }
+                    
+                    var result = command.ExecuteScalar();
+                    return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting total needing licenses count");
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// استبدال متغيرات البيئة في connection string
         /// </summary>
         private string ReplaceEnvironmentVariables(string connectionString)

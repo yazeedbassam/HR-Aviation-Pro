@@ -8,12 +8,12 @@ using WebApplication1.Services;
 
 public class NotificationCountViewComponent : ViewComponent
 {
-    private readonly SqlServerDb _db;
+    private readonly SmartDatabaseService _smartDbService;
     private readonly ILicenseNotificationService _licenseNotificationService;
 
-    public NotificationCountViewComponent(SqlServerDb db, ILicenseNotificationService licenseNotificationService)
+    public NotificationCountViewComponent(SmartDatabaseService smartDbService, ILicenseNotificationService licenseNotificationService)
     {
-        _db = db;
+        _smartDbService = smartDbService;
         _licenseNotificationService = licenseNotificationService;
     }
 
@@ -35,31 +35,32 @@ public class NotificationCountViewComponent : ViewComponent
 
         int notificationCount = 0; // تهيئة عدد الإشعارات
 
-        // استخدام SqlConnection و SqlCommand و SqlParameter
-        // نفترض أن _db.GetConnection() ترجع SqlConnection
-        using (var connection = _db.GetConnection())
+        try
         {
-            connection.Open();
-            // تم تعديل SQL: :userId إلى @userId
-            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM notifications WHERE userid = @userId AND is_read = 0", connection))
-            {
-                // تعريف المعامل باستخدام Microsoft.Data.SqlClient.SqlParameter
-                cmd.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@userId", SqlDbType.Int) { Value = userId }); // <== تم التعديل
-
-                // استخدام ExecuteScalar لجلب قيمة واحدة (COUNT(*)) بكفاءة أكبر
-                object result = cmd.ExecuteScalar();
-
-                if (result != DBNull.Value && result != null)
-                {
-                    notificationCount = Convert.ToInt32(result);
-                }
-            }
+            // استخدام SmartDatabaseService للحصول على عدد الإشعارات
+            notificationCount = _smartDbService.GetNotificationCount(userId);
+        }
+        catch (Exception ex)
+        {
+            // في حالة فشل الاتصال بقاعدة البيانات، إرجاع 0
+            notificationCount = 0;
         }
 
         // إضافة عداد الإشعارات الجديدة للمراقبين والموظفين الذين يحتاجون رخص
         int controllersNeedingLicensesCount = _licenseNotificationService.GetControllersNeedingLicensesCount();
-        int employeesNeedingLicensesCount = _db.GetTotalNeedingLicensesCount() - controllersNeedingLicensesCount;
+        int employeesNeedingLicensesCount = 0;
         int inactiveControllersCount = _licenseNotificationService.GetInactiveControllersCount();
+        
+        try
+        {
+            // استخدام SmartDatabaseService للحصول على عدد الموظفين الذين يحتاجون رخص
+            employeesNeedingLicensesCount = _smartDbService.GetTotalNeedingLicensesCount() - controllersNeedingLicensesCount;
+        }
+        catch (Exception ex)
+        {
+            // في حالة فشل الاتصال بقاعدة البيانات، إرجاع 0
+            employeesNeedingLicensesCount = 0;
+        }
 
         // إجمالي عدد الإشعارات
         int totalNotifications = notificationCount + controllersNeedingLicensesCount + employeesNeedingLicensesCount + inactiveControllersCount;
