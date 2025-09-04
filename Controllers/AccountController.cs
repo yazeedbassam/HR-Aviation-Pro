@@ -1907,151 +1907,134 @@ using Microsoft.AspNetCore.Authentication.Cookies;
         {
             var smartDb = HttpContext.RequestServices.GetRequiredService<SmartDatabaseService>();
             
-            // SQL script to grant all permissions to admin
-            var sqlScript = @"
-                -- 1. Ensure admin user exists
-                INSERT INTO controller_users (username, password_hash, role, is_active, created_at, updated_at)
-                VALUES ('admin', '123', 'SuperAdmin', true, NOW(), NOW())
-                ON CONFLICT (username) DO UPDATE SET
-                    role = 'SuperAdmin',
-                    is_active = true,
-                    updated_at = NOW();
+                                            // SQL script to grant all permissions to admin - Fixed for correct table names
+                var sqlScript = @"
+                    -- 1. Ensure admin user exists
+                    INSERT INTO ""Users"" (""Username"", ""PasswordHash"", ""RoleName"", ""IsActive"", ""CreatedDate"")
+                    VALUES ('admin', '123', 'SuperAdmin', true, NOW())
+                    ON CONFLICT (""Username"") DO UPDATE SET
+                        ""RoleName"" = 'SuperAdmin',
+                        ""IsActive"" = true;
 
-                -- 2. Grant all basic permissions
-                INSERT INTO user_permissions (user_id, permission_key, is_granted, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    p.permission_key,
-                    true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                CROSS JOIN permissions p
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id, permission_key) DO UPDATE SET
-                    is_granted = true,
-                    updated_at = NOW();
+                    -- 2. Grant all basic permissions (if Permissions table exists)
+                    INSERT INTO ""UserPermissions"" (""UserId"", ""PermissionKey"", ""IsGranted"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        p.""PermissionKey"",
+                        true,
+                        NOW()
+                    FROM ""Users"" u
+                    CROSS JOIN ""Permissions"" p
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"", ""PermissionKey"") DO UPDATE SET
+                        ""IsGranted"" = true;
 
-                -- 3. Grant department permissions
-                INSERT INTO user_department_permissions (user_id, department_id, can_view, can_edit, can_delete, can_manage_users, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    d.id,
-                    true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                CROSS JOIN departments d
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id, department_id) DO UPDATE SET
-                    can_view = true,
-                    can_edit = true,
-                    can_delete = true,
-                    can_manage_users = true,
-                    updated_at = NOW();
+                    -- 3. Grant department permissions (if UserDepartmentPermissions table exists)
+                    INSERT INTO ""UserDepartmentPermissions"" (""UserId"", ""DepartmentId"", ""CanView"", ""CanEdit"", ""CanDelete"", ""CanManageUsers"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        d.""DepartmentId"",
+                        true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    CROSS JOIN ""Departments"" d
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"", ""DepartmentId"") DO UPDATE SET
+                        ""CanView"" = true,
+                        ""CanEdit"" = true,
+                        ""CanDelete"" = true,
+                        ""CanManageUsers"" = true;
 
-                -- 4. Grant certificate permissions
-                INSERT INTO user_certificate_permissions (user_id, certificate_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
-                    true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id, certificate_type) DO UPDATE SET
-                    can_view = true,
-                    can_edit = true,
-                    can_delete = true,
-                    can_approve = true,
-                    updated_at = NOW();
+                    -- 4. Grant certificate permissions (if UserCertificatePermissions table exists)
+                    INSERT INTO ""UserCertificatePermissions"" (""UserId"", ""CertificateType"", ""CanView"", ""CanEdit"", ""CanDelete"", ""CanApprove"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                        true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"", ""CertificateType"") DO UPDATE SET
+                        ""CanView"" = true,
+                        ""CanEdit"" = true,
+                        ""CanDelete"" = true,
+                        ""CanApprove"" = true;
 
-                -- 5. Grant license permissions
-                INSERT INTO user_license_permissions (user_id, license_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
-                    true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id, license_type) DO UPDATE SET
-                    can_view = true,
-                    can_edit = true,
-                    can_delete = true,
-                    can_approve = true,
-                    updated_at = NOW();
+                    -- 5. Grant license permissions (if UserLicensePermissions table exists)
+                    INSERT INTO ""UserLicensePermissions"" (""UserId"", ""LicenseType"", ""CanView"", ""CanEdit"", ""CanDelete"", ""CanApprove"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                        true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"", ""LicenseType"") DO UPDATE SET
+                        ""CanView"" = true,
+                        ""CanEdit"" = true,
+                        ""CanDelete"" = true,
+                        ""CanApprove"" = true;
 
-                -- 6. Grant observation permissions
-                INSERT INTO user_observation_permissions (user_id, observation_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
-                    true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id, observation_type) DO UPDATE SET
-                    can_view = true,
-                    can_edit = true,
-                    can_delete = true,
-                    can_approve = true,
-                    updated_at = NOW();
+                    -- 6. Grant observation permissions (if UserObservationPermissions table exists)
+                    INSERT INTO ""UserObservationPermissions"" (""UserId"", ""ObservationType"", ""CanView"", ""CanEdit"", ""CanDelete"", ""CanApprove"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                        true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"", ""ObservationType"") DO UPDATE SET
+                        ""CanView"" = true,
+                        ""CanEdit"" = true,
+                        ""CanDelete"" = true,
+                        ""CanApprove"" = true;
 
-                -- 7. Grant employee permissions
-                INSERT INTO user_employee_permissions (user_id, can_view_all, can_edit_all, can_delete_all, can_manage_salary, can_manage_contract, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    true, true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id) DO UPDATE SET
-                    can_view_all = true,
-                    can_edit_all = true,
-                    can_delete_all = true,
-                    can_manage_salary = true,
-                    can_manage_contract = true,
-                    updated_at = NOW();
+                    -- 7. Grant employee permissions (if UserEmployeePermissions table exists)
+                    INSERT INTO ""UserEmployeePermissions"" (""UserId"", ""CanViewAll"", ""CanEditAll"", ""CanDeleteAll"", ""CanManageSalary"", ""CanManageContract"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        true, true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"") DO UPDATE SET
+                        ""CanViewAll"" = true,
+                        ""CanEditAll"" = true,
+                        ""CanDeleteAll"" = true,
+                        ""CanManageSalary"" = true,
+                        ""CanManageContract"" = true;
 
-                -- 8. Grant system permissions
-                INSERT INTO user_system_permissions (user_id, can_manage_users, can_manage_roles, can_manage_permissions, can_view_logs, can_manage_config, can_backup_restore, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    true, true, true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id) DO UPDATE SET
-                    can_manage_users = true,
-                    can_manage_roles = true,
-                    can_manage_permissions = true,
-                    can_view_logs = true,
-                    can_manage_config = true,
-                    can_backup_restore = true,
-                    updated_at = NOW();
+                    -- 8. Grant system permissions (if UserSystemPermissions table exists)
+                    INSERT INTO ""UserSystemPermissions"" (""UserId"", ""CanManageUsers"", ""CanManageRoles"", ""CanManagePermissions"", ""CanViewLogs"", ""CanManageConfig"", ""CanBackupRestore"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        true, true, true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"") DO UPDATE SET
+                        ""CanManageUsers"" = true,
+                        ""CanManageRoles"" = true,
+                        ""CanManagePermissions"" = true,
+                        ""CanViewLogs"" = true,
+                        ""CanManageConfig"" = true,
+                        ""CanBackupRestore"" = true;
 
-                -- 9. Grant report permissions
-                INSERT INTO user_report_permissions (user_id, can_view_all_reports, can_export_reports, can_schedule_reports, can_manage_report_templates, created_at, updated_at)
-                SELECT 
-                    cu.id,
-                    true, true, true, true,
-                    NOW(),
-                    NOW()
-                FROM controller_users cu
-                WHERE cu.username = 'admin'
-                ON CONFLICT (user_id) DO UPDATE SET
-                    can_view_all_reports = true,
-                    can_export_reports = true,
-                    can_schedule_reports = true,
-                    can_manage_report_templates = true,
-                    updated_at = NOW();
-            ";
+                    -- 9. Grant report permissions (if UserReportPermissions table exists)
+                    INSERT INTO ""UserReportPermissions"" (""UserId"", ""CanViewAllReports"", ""CanExportReports"", ""CanScheduleReports"", ""CanManageReportTemplates"", ""CreatedDate"")
+                    SELECT 
+                        u.""id"",
+                        true, true, true, true,
+                        NOW()
+                    FROM ""Users"" u
+                    WHERE u.""Username"" = 'admin'
+                    ON CONFLICT (""UserId"") DO UPDATE SET
+                        ""CanViewAllReports"" = true,
+                        ""CanExportReports"" = true,
+                        ""CanScheduleReports"" = true,
+                        ""CanManageReportTemplates"" = true;
+                ";
 
             // Execute the script
             using (var connection = smartDb.GetConnection())
