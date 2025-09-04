@@ -49,6 +49,30 @@ git push -u origin main
    - Database name
    - Username
    - Password
+   - API Key
+
+#### 3. إعداد Netlify
+1. اذهب إلى [netlify.com](https://netlify.com)
+2. انقر "New site from Git"
+3. اختر GitHub واختر repository الخاص بك
+4. إعدادات البناء:
+   - **Build command**: `dotnet publish -c Release -o ./publish`
+   - **Publish directory**: `./publish/wwwroot`
+   - **Environment variables**:
+     ```
+     ASPNETCORE_ENVIRONMENT=Production
+     SUPABASE_URL=https://your-project.supabase.co
+     SUPABASE_ANON_KEY=your-anon-key
+     SUPABASE_SERVICE_KEY=your-service-key
+     ```
+
+#### 4. إعداد متغيرات البيئة في Netlify
+في Netlify Dashboard → Site settings → Environment variables:
+- `ASPNETCORE_ENVIRONMENT`: `Production`
+- `SUPABASE_URL`: `https://hzweniqfssqorruiujwc.supabase.co`
+- `SUPABASE_ANON_KEY`: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+- `SUPABASE_SERVICE_KEY`: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+   - Password
    - Port
 
 #### 3. إعداد Netlify

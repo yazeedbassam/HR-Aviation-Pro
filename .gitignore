@@ -154,4 +154,10 @@ Properties/PublishProfiles/
 *.cer
 
 # Supabase
-.supabase/ 
+.supabase/
+
+# Netlify
+.netlify/
+publish/
+dist/
+build/ 

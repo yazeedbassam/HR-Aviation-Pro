@@ -14,8 +14,9 @@ using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// تعيين البيئة بشكل صريح
-builder.Environment.EnvironmentName = "Development";
+// تعيين البيئة بناءً على متغير البيئة
+var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+builder.Environment.EnvironmentName = environment;
 
 // Add logging
 builder.Logging.AddConsole();
@@ -32,9 +33,8 @@ builder.Services.AddHealthChecks();
 // Configure Data Protection for production
 if (!builder.Environment.IsDevelopment())
 {
-    // Use file system for key storage in production
+    // For Netlify, use memory-based key storage since file system is ephemeral
     builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
         .SetApplicationName("HR-Aviation");
 }
 
@@ -311,8 +311,8 @@ if (!app.Environment.IsDevelopment())
     app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 }
 
-// Only use HTTPS redirection in development
-if (app.Environment.IsDevelopment())
+// Use HTTPS redirection in production (Netlify handles SSL)
+if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
