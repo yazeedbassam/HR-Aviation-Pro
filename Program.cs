@@ -182,7 +182,7 @@ app.Lifetime.ApplicationStarted.Register(async () => {
         var isAvailable = false;
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
             isAvailable = await databaseService.IsDatabaseAvailableAsync(currentDbType);
         }
         catch (Exception dbEx)
@@ -374,7 +374,7 @@ app.MapGet("/health", async () => {
         var dbAvailable = false;
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // 10 second timeout
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)); // 20 second timeout
             dbAvailable = await databaseService.IsDatabaseAvailableAsync();
         }
         catch (Exception dbEx)

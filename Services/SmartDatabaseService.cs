@@ -151,15 +151,15 @@ namespace WebApplication1.Services
                             using var connection = new NpgsqlConnection(connectionString);
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
-                            // Open connection with shorter timeout
-                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                            // Open connection with longer timeout for Railway
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                             await connection.OpenAsync(cts.Token);
                             _logger.LogInformation("✅ Supabase connection opened successfully");
                             
                             using var command = connection.CreateCommand();
                             command.CommandText = "SELECT 1";
                             command.CommandType = CommandType.Text;
-                            command.CommandTimeout = 10; // 10 seconds timeout
+                            command.CommandTimeout = 20; // 20 seconds timeout
                             
                             var result = await command.ExecuteScalarAsync(cts.Token);
                             _logger.LogInformation($"✅ Supabase test query result: {result}");
@@ -182,7 +182,7 @@ namespace WebApplication1.Services
                             }
                             
                             // Wait before retry
-                            await Task.Delay(1000); // 1 second delay
+                            await Task.Delay(3000); // 3 seconds delay
                         }
                     }
                 }
