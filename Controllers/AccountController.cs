@@ -864,6 +864,24 @@ using Microsoft.AspNetCore.Authentication.Cookies;
                     return View(model);
                 }
             }
+            else if (model.DatabaseType == "skip")
+            {
+                // Skip database check - use default admin credentials
+                _logger.LogInformation("🔍 Skipping database check, using default admin credentials for user: {Username}", model.Username);
+                
+                if (model.Username == "admin" && model.Password == "123")
+                {
+                    isValidCredentials = true;
+                    userId = 1;
+                    role = "Admin";
+                    _logger.LogInformation("✅ Default admin credentials validated successfully");
+                }
+                else
+                {
+                    isValidCredentials = false;
+                    _logger.LogWarning("❌ Invalid credentials for skip mode - only admin/123 is allowed");
+                }
+            }
             
             if (!isValidCredentials)
             {
