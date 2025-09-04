@@ -196,8 +196,8 @@ namespace WebApplication1.DataAccess
                     // Verify password using ASP.NET Core Identity Password Hasher
                     if (_passwordHasher != null)
                     {
-                        var result = _passwordHasher.VerifyHashedPassword(null, storedPassword, password);
-                        if (result == PasswordVerificationResult.Success)
+                        var verificationResult = _passwordHasher.VerifyHashedPassword(null, storedPassword, password);
+                        if (verificationResult == PasswordVerificationResult.Success)
                         {
                             userId = Convert.ToInt32(row["id"]);
                             role = row["RoleName"].ToString();
