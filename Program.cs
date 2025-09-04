@@ -108,7 +108,12 @@ builder.Services.Configure<EmailConfiguration>(options =>
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add Logger Service
-builder.Services.AddScoped<ILoggerService, LoggerService>();
+builder.Services.AddScoped<ILoggerService>(serviceProvider =>
+{
+    var supabaseDb = serviceProvider.GetRequiredService<SupabaseDb>();
+    var logger = serviceProvider.GetRequiredService<ILogger<LoggerService>>();
+    return new LoggerService(supabaseDb, logger);
+});
 
 // Add Permission Services
 builder.Services.AddHttpContextAccessor();

@@ -2,15 +2,16 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using WebApplication1.DataAccess;
+using Npgsql;
 
 namespace WebApplication1.Services
 {
     public class LoggerService : ILoggerService
     {
-        private readonly SqlServerDb _db;
+        private readonly SupabaseDb _db;
         private readonly ILogger<LoggerService> _logger;
 
-        public LoggerService(SqlServerDb db, ILogger<LoggerService> logger)
+        public LoggerService(SupabaseDb db, ILogger<LoggerService> logger)
         {
             _db = db;
             _logger = logger;
@@ -21,20 +22,21 @@ namespace WebApplication1.Services
             try
             {
                 var sql = @"
-                    INSERT INTO UserActivityLogs (UserId, UserName, Action, EntityType, EntityId, Details, IpAddress, UserAgent, IsSuccessful, ErrorMessage)
-                    VALUES (@UserId, @UserName, @Action, @EntityType, @EntityId, @Details, @IpAddress, @UserAgent, @IsSuccessful, @ErrorMessage)";
+                    INSERT INTO ""UserActivityLogs"" (""UserId"", ""UserName"", ""Action"", ""EntityType"", ""EntityId"", ""Details"", ""IpAddress"", ""UserAgent"", ""IsSuccessful"", ""ErrorMessage"", ""Timestamp"")
+                    VALUES (@UserId, @UserName, @Action, @EntityType, @EntityId, @Details, @IpAddress, @UserAgent, @IsSuccessful, @ErrorMessage, @Timestamp)";
 
                 await Task.Run(() => _db.ExecuteNonQuery(sql,
-                    new Microsoft.Data.SqlClient.SqlParameter("@UserId", userId),
-                    new Microsoft.Data.SqlClient.SqlParameter("@UserName", userName),
-                    new Microsoft.Data.SqlClient.SqlParameter("@Action", action),
-                    new Microsoft.Data.SqlClient.SqlParameter("@EntityType", entityType),
-                    new Microsoft.Data.SqlClient.SqlParameter("@EntityId", entityId ?? (object)DBNull.Value),
-                    new Microsoft.Data.SqlClient.SqlParameter("@Details", details ?? (object)DBNull.Value),
-                    new Microsoft.Data.SqlClient.SqlParameter("@IpAddress", ipAddress ?? (object)DBNull.Value),
-                    new Microsoft.Data.SqlClient.SqlParameter("@UserAgent", userAgent ?? (object)DBNull.Value),
-                    new Microsoft.Data.SqlClient.SqlParameter("@IsSuccessful", isSuccessful),
-                    new Microsoft.Data.SqlClient.SqlParameter("@ErrorMessage", errorMessage ?? (object)DBNull.Value)
+                    new Npgsql.NpgsqlParameter("@UserId", userId),
+                    new Npgsql.NpgsqlParameter("@UserName", userName),
+                    new Npgsql.NpgsqlParameter("@Action", action),
+                    new Npgsql.NpgsqlParameter("@EntityType", entityType),
+                    new Npgsql.NpgsqlParameter("@EntityId", entityId ?? (object)DBNull.Value),
+                    new Npgsql.NpgsqlParameter("@Details", details ?? (object)DBNull.Value),
+                    new Npgsql.NpgsqlParameter("@IpAddress", ipAddress ?? (object)DBNull.Value),
+                    new Npgsql.NpgsqlParameter("@UserAgent", userAgent ?? (object)DBNull.Value),
+                    new Npgsql.NpgsqlParameter("@IsSuccessful", isSuccessful),
+                    new Npgsql.NpgsqlParameter("@ErrorMessage", errorMessage ?? (object)DBNull.Value),
+                    new Npgsql.NpgsqlParameter("@Timestamp", DateTime.Now)
                 ));
 
                 _logger.LogDebug("User activity logged: {Action} on {EntityType} by {UserName}", action, entityType, userName);

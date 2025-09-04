@@ -515,7 +515,7 @@ namespace WebApplication1.DataAccess
                     Console.WriteLine("🔧 Admin user not found in Supabase, creating...");
                     
                     // إنشاء مستخدم admin - استخدام نفس hash الموجود في الجدول
-                    var hashedPassword = "$2a$11$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj2/4QyQKqK2";
+                    var hashedPassword = "$2a$11$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi";
                     Console.WriteLine($"🔧 Using existing password hash: {hashedPassword.Substring(0, Math.Min(20, hashedPassword.Length))}...");
                     
                     var insertSql = @"
