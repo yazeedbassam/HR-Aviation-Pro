@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using WebApplication1.DataAccess;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
@@ -14,13 +15,13 @@ namespace WebApplication1.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly SqlServerDb _db;
+        private readonly SmartDatabaseService _smartDbService;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public HomeController(ILogger<HomeController> logger, SqlServerDb db, IWebHostEnvironment webHostEnvironment)
+        public HomeController(ILogger<HomeController> logger, SmartDatabaseService smartDbService, IWebHostEnvironment webHostEnvironment)
         {
             _logger = logger;
-            _db = db;
+            _smartDbService = smartDbService;
             _webHostEnvironment = webHostEnvironment;
         }
 
