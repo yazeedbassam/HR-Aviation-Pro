@@ -1896,4 +1896,197 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 
 
     #endregion
+
+    #region Admin Permission Management
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> GrantAdminAllPermissions()
+    {
+        try
+        {
+            var smartDb = HttpContext.RequestServices.GetRequiredService<SmartDatabaseService>();
+            
+            // SQL script to grant all permissions to admin
+            var sqlScript = @"
+                -- 1. Ensure admin user exists
+                INSERT INTO controller_users (username, password_hash, role, is_active, created_at, updated_at)
+                VALUES ('admin', '123', 'SuperAdmin', true, NOW(), NOW())
+                ON CONFLICT (username) DO UPDATE SET
+                    role = 'SuperAdmin',
+                    is_active = true,
+                    updated_at = NOW();
+
+                -- 2. Grant all basic permissions
+                INSERT INTO user_permissions (user_id, permission_key, is_granted, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    p.permission_key,
+                    true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                CROSS JOIN permissions p
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id, permission_key) DO UPDATE SET
+                    is_granted = true,
+                    updated_at = NOW();
+
+                -- 3. Grant department permissions
+                INSERT INTO user_department_permissions (user_id, department_id, can_view, can_edit, can_delete, can_manage_users, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    d.id,
+                    true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                CROSS JOIN departments d
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id, department_id) DO UPDATE SET
+                    can_view = true,
+                    can_edit = true,
+                    can_delete = true,
+                    can_manage_users = true,
+                    updated_at = NOW();
+
+                -- 4. Grant certificate permissions
+                INSERT INTO user_certificate_permissions (user_id, certificate_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                    true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id, certificate_type) DO UPDATE SET
+                    can_view = true,
+                    can_edit = true,
+                    can_delete = true,
+                    can_approve = true,
+                    updated_at = NOW();
+
+                -- 5. Grant license permissions
+                INSERT INTO user_license_permissions (user_id, license_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                    true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id, license_type) DO UPDATE SET
+                    can_view = true,
+                    can_edit = true,
+                    can_delete = true,
+                    can_approve = true,
+                    updated_at = NOW();
+
+                -- 6. Grant observation permissions
+                INSERT INTO user_observation_permissions (user_id, observation_type, can_view, can_edit, can_delete, can_approve, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    unnest(ARRAY['AFTN', 'AIS', 'CNS', 'ATFM', 'Meteorology', 'Airport', 'Ground', 'Maintenance', 'Security', 'General']),
+                    true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id, observation_type) DO UPDATE SET
+                    can_view = true,
+                    can_edit = true,
+                    can_delete = true,
+                    can_approve = true,
+                    updated_at = NOW();
+
+                -- 7. Grant employee permissions
+                INSERT INTO user_employee_permissions (user_id, can_view_all, can_edit_all, can_delete_all, can_manage_salary, can_manage_contract, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    true, true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id) DO UPDATE SET
+                    can_view_all = true,
+                    can_edit_all = true,
+                    can_delete_all = true,
+                    can_manage_salary = true,
+                    can_manage_contract = true,
+                    updated_at = NOW();
+
+                -- 8. Grant system permissions
+                INSERT INTO user_system_permissions (user_id, can_manage_users, can_manage_roles, can_manage_permissions, can_view_logs, can_manage_config, can_backup_restore, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    true, true, true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id) DO UPDATE SET
+                    can_manage_users = true,
+                    can_manage_roles = true,
+                    can_manage_permissions = true,
+                    can_view_logs = true,
+                    can_manage_config = true,
+                    can_backup_restore = true,
+                    updated_at = NOW();
+
+                -- 9. Grant report permissions
+                INSERT INTO user_report_permissions (user_id, can_view_all_reports, can_export_reports, can_schedule_reports, can_manage_report_templates, created_at, updated_at)
+                SELECT 
+                    cu.id,
+                    true, true, true, true,
+                    NOW(),
+                    NOW()
+                FROM controller_users cu
+                WHERE cu.username = 'admin'
+                ON CONFLICT (user_id) DO UPDATE SET
+                    can_view_all_reports = true,
+                    can_export_reports = true,
+                    can_schedule_reports = true,
+                    can_manage_report_templates = true,
+                    updated_at = NOW();
+            ";
+
+            // Execute the script
+            using (var connection = smartDb.GetConnection())
+            {
+                if (connection != null)
+                {
+                    connection.Open();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = sqlScript;
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            return Json(new { 
+                success = true, 
+                message = "✅ All permissions granted successfully to admin user!",
+                details = new {
+                    username = "admin",
+                    password = "123",
+                    role = "SuperAdmin",
+                    permissions = "All system permissions granted"
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { 
+                success = false, 
+                message = $"❌ Error granting permissions: {ex.Message}",
+                details = ex.ToString()
+            });
+        }
+    }
+
+    #endregion
 }
