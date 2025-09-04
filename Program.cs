@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -36,10 +38,24 @@ Console.WriteLine($"🔧 Application Name: {builder.Environment.ApplicationName}
 // Add health checks
 builder.Services.AddHealthChecks();
 
-// Configure Data Protection for production
-if (!builder.Environment.IsDevelopment())
+// Configure Data Protection with database persistence
+var connectionString = builder.Configuration.GetConnectionString("SupabaseConnection") 
+                    ?? builder.Configuration.GetConnectionString("PostgreSQLConnection");
+
+if (!string.IsNullOrEmpty(connectionString))
 {
-    // For Netlify, use memory-based key storage since file system is ephemeral
+    // Add DataProtection DbContext
+    builder.Services.AddDbContext<DataProtectionKeyContext>(options =>
+        options.UseNpgsql(connectionString));
+
+    // Configure Data Protection to persist keys in database
+    builder.Services.AddDataProtection()
+        .SetApplicationName("HR-Aviation")
+        .PersistKeysToDbContext<DataProtectionKeyContext>();
+}
+else
+{
+    // Fallback to memory-based storage if no database connection
     builder.Services.AddDataProtection()
         .SetApplicationName("HR-Aviation");
 }
