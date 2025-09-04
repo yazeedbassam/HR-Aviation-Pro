@@ -54,13 +54,13 @@ builder.Services.AddSingleton<SqlServerDb>(serviceProvider =>
     return new SqlServerDb(configuration, passwordHasher, logger);
 });
 
-// Add SupabaseDb service (now using PostgreSQL)
-builder.Services.AddSingleton<SupabaseDb>(serviceProvider =>
+// Add PostgreSQLDb service
+builder.Services.AddSingleton<PostgreSQLDb>(serviceProvider =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
     var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher<ControllerUser>>();
-    var logger = serviceProvider.GetRequiredService<ILogger<SupabaseDb>>();
-    return new SupabaseDb(configuration, passwordHasher, logger);
+    var logger = serviceProvider.GetRequiredService<ILogger<PostgreSQLDb>>();
+    return new PostgreSQLDb(configuration, passwordHasher, logger);
 });
 
 // تعليق خدمة الإيميلات الأوتوماتيكية
@@ -109,9 +109,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Add Logger Service
 builder.Services.AddScoped<ILoggerService>(serviceProvider =>
 {
-    var supabaseDb = serviceProvider.GetRequiredService<SupabaseDb>();
-    var logger = serviceProvider.GetRequiredService<ILogger<LoggerService>>();
-    return new LoggerService(supabaseDb, logger);
+            var postgresqlDb = serviceProvider.GetRequiredService<PostgreSQLDb>();
+        var logger = serviceProvider.GetRequiredService<ILogger<LoggerService>>();
+        return new LoggerService(postgresqlDb, logger);
 });
 
 // Add Permission Services
@@ -318,8 +318,8 @@ app.Lifetime.ApplicationStarted.Register(async () => {
                 if (currentDbType == "postgresql")
                 {
                     // For PostgreSQL, ensure admin user exists
-                    var supabaseDb = scope.ServiceProvider.GetRequiredService<SupabaseDb>();
-                    var adminCreated = await supabaseDb.EnsureAdminUserExistsAsync();
+                            var postgresqlDb = scope.ServiceProvider.GetRequiredService<PostgreSQLDb>();
+        var adminCreated = await postgresqlDb.EnsureAdminUserExistsAsync();
                     if (adminCreated)
                     {
                         logger.LogInformation("👤 Admin user ensured in PostgreSQL database");

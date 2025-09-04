@@ -8,10 +8,10 @@ namespace WebApplication1.Services
 {
     public class LoggerService : ILoggerService
     {
-        private readonly SupabaseDb _db;
+        private readonly PostgreSQLDb _db;
         private readonly ILogger<LoggerService> _logger;
 
-        public LoggerService(SupabaseDb db, ILogger<LoggerService> logger)
+        public LoggerService(PostgreSQLDb db, ILogger<LoggerService> logger)
         {
             _db = db;
             _logger = logger;

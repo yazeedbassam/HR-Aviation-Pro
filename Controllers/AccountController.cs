@@ -652,20 +652,20 @@ using Microsoft.AspNetCore.Authentication.Cookies;
                 // Use Supabase for authentication
                 try
                 {
-                    var supabaseDb = HttpContext.RequestServices.GetRequiredService<SupabaseDb>();
-                    _logger.LogInformation("🔍 Attempting Supabase authentication for user: {Username}", model.Username);
+                    var postgresqlDb = HttpContext.RequestServices.GetRequiredService<PostgreSQLDb>();
+                    _logger.LogInformation("🔍 Attempting PostgreSQL authentication for user: {Username}", model.Username);
                     
-                    // Test Supabase connection first
-                    if (supabaseDb.IsDatabaseAvailable())
+                    // Test PostgreSQL connection first
+                    if (postgresqlDb.IsDatabaseAvailable())
                     {
-                        _logger.LogInformation("✅ Supabase connection is available, proceeding with authentication");
-                        isValidCredentials = supabaseDb.ValidateCredentials(model.Username, model.Password, out userId, out role);
-                        _logger.LogInformation("🔍 Supabase authentication result: {IsValid}, UserId: {UserId}, Role: {Role}", isValidCredentials, userId, role);
+                        _logger.LogInformation("✅ PostgreSQL connection is available, proceeding with authentication");
+                        isValidCredentials = postgresqlDb.ValidateCredentials(model.Username, model.Password, out userId, out role);
+                        _logger.LogInformation("🔍 PostgreSQL authentication result: {IsValid}, UserId: {UserId}, Role: {Role}", isValidCredentials, userId, role);
                     }
                     else
                     {
-                        _logger.LogError("❌ Supabase connection is not available");
-                        ModelState.AddModelError("", "Supabase database is not available. Please check your connection.");
+                        _logger.LogError("❌ PostgreSQL connection is not available");
+                        ModelState.AddModelError("", "PostgreSQL database is not available. Please check your connection.");
                         return View(model);
                     }
                 }

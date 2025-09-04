@@ -12,14 +12,14 @@ using WebApplication1.ViewModels;
 
 namespace WebApplication1.DataAccess
 {
-    public class SupabaseDb
+    public class PostgreSQLDb
     {
         private readonly string _connectionString;
         public string ConnectionString => _connectionString;
-        private readonly ILogger<SupabaseDb> _logger;
+        private readonly ILogger<PostgreSQLDb> _logger;
         private readonly IPasswordHasher<ControllerUser> _passwordHasher;
 
-        public SupabaseDb(IConfiguration configuration)
+        public PostgreSQLDb(IConfiguration configuration)
         {
             var connectionString = configuration.GetConnectionString("PostgreSQLConnection") 
                                 ?? throw new ArgumentNullException("Connection string 'PostgreSQLConnection' not found.");
@@ -36,7 +36,7 @@ namespace WebApplication1.DataAccess
             }
         }
 
-        public SupabaseDb(IConfiguration configuration, IPasswordHasher<ControllerUser> passwordHasher, ILogger<SupabaseDb> logger)
+        public PostgreSQLDb(IConfiguration configuration, IPasswordHasher<ControllerUser> passwordHasher, ILogger<PostgreSQLDb> logger)
         {
             var connectionString = configuration.GetConnectionString("PostgreSQLConnection")
                                 ?? throw new ArgumentNullException("Connection string 'PostgreSQLConnection' not found.");
@@ -74,13 +74,13 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                Console.WriteLine("🔍 Testing Supabase database connection...");
-                Console.WriteLine($"🔍 Connection string: {_connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
+                Console.WriteLine("🔍 Testing PostgreSQL database connection...");
+                Console.WriteLine($"🔍 Connection string: {_connectionString.Replace("Password=", "Password=***")}");
                 
                 using var connection = GetConnection();
                 Console.WriteLine("🔍 Connection created, attempting to open...");
                 connection.Open();
-                Console.WriteLine("✅ Supabase Database connection opened successfully");
+                Console.WriteLine("✅ PostgreSQL Database connection opened successfully");
                 
                 // Test if Users table exists
                 using var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"Users\"", connection);
@@ -89,12 +89,12 @@ namespace WebApplication1.DataAccess
                 Console.WriteLine($"✅ Users table exists with {count} records");
                 
                 connection.Close();
-                Console.WriteLine("✅ Supabase Database connection closed successfully");
+                Console.WriteLine("✅ PostgreSQL Database connection closed successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Supabase Database availability check failed: {ex.Message}");
+                Console.WriteLine($"❌ PostgreSQL Database availability check failed: {ex.Message}");
                 Console.WriteLine($"❌ Exception type: {ex.GetType().Name}");
                 Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 
@@ -510,7 +510,7 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                Console.WriteLine("🔧 Checking if admin user exists in Supabase...");
+                Console.WriteLine("🔧 Checking if admin user exists in PostgreSQL...");
                 
                 // التحقق من وجود مستخدم admin
                 var checkSql = "SELECT COUNT(*) FROM \"Users\" WHERE \"Username\" = @username";
@@ -521,7 +521,7 @@ namespace WebApplication1.DataAccess
 
                 if (!userExists)
                 {
-                    Console.WriteLine("🔧 Admin user not found in Supabase, creating...");
+                    Console.WriteLine("🔧 Admin user not found in PostgreSQL, creating...");
                     
                     // إنشاء مستخدم admin - استخدام نفس hash الموجود في الجدول
                     var hashedPassword = "$2a$11$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi";
@@ -542,18 +542,18 @@ namespace WebApplication1.DataAccess
                     
                     if (result > 0)
                     {
-                        Console.WriteLine("✅ Admin user created successfully in Supabase");
+                        Console.WriteLine("✅ Admin user created successfully in PostgreSQL");
                         return true;
                     }
                     else
                     {
-                        Console.WriteLine("❌ Failed to create admin user in Supabase");
+                        Console.WriteLine("❌ Failed to create admin user in PostgreSQL");
                         return false;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("✅ Admin user already exists in Supabase");
+                    Console.WriteLine("✅ Admin user already exists in PostgreSQL");
                     return true;
                 }
             }
@@ -565,4 +565,4 @@ namespace WebApplication1.DataAccess
             }
         }
     }
-} 
+}

@@ -415,11 +415,11 @@ namespace WebApplication1.Services
         private string ReplaceEnvironmentVariables(string connectionString)
         {
             return connectionString
-                .Replace("${SUPABASE_HOST}", Environment.GetEnvironmentVariable("SUPABASE_HOST") ?? "localhost")
-                .Replace("${SUPABASE_DB}", Environment.GetEnvironmentVariable("SUPABASE_DB") ?? "postgres")
-                .Replace("${SUPABASE_USER}", Environment.GetEnvironmentVariable("SUPABASE_USER") ?? "postgres")
-                .Replace("${SUPABASE_PASSWORD}", Environment.GetEnvironmentVariable("SUPABASE_PASSWORD") ?? "")
-                .Replace("${SUPABASE_PORT}", Environment.GetEnvironmentVariable("SUPABASE_PORT") ?? "5432");
+                .Replace("${PGHOST}", Environment.GetEnvironmentVariable("PGHOST") ?? "localhost")
+                .Replace("${PGDATABASE}", Environment.GetEnvironmentVariable("PGDATABASE") ?? "postgres")
+                .Replace("${PGUSER}", Environment.GetEnvironmentVariable("PGUSER") ?? "postgres")
+                .Replace("${PGPASSWORD}", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "")
+                .Replace("${PGPORT}", Environment.GetEnvironmentVariable("PGPORT") ?? "5432");
         }
     }
 } 
