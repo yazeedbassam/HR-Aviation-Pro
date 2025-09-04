@@ -145,12 +145,12 @@ namespace WebApplication1.Services
                     var safeConnectionString = connectionString.Replace($"Password={Environment.GetEnvironmentVariable("SUPABASE_PASSWORD")}", "Password=***");
                     _logger.LogInformation($"🔍 Connection string: {safeConnectionString}");
                     
-                    // Retry logic for connection with shorter timeouts
-                    for (int attempt = 1; attempt <= 2; attempt++)
+                    // Retry logic for connection with more attempts for Railway
+                    for (int attempt = 1; attempt <= 5; attempt++)
                     {
                         try
                         {
-                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/2)...");
+                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/5)...");
                             
                             using var connection = new NpgsqlConnection(connectionString);
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
@@ -188,14 +188,16 @@ namespace WebApplication1.Services
                                 _logger.LogWarning($"⚠️ Socket Error Message: {socketEx.Message}");
                             }
                             
-                            if (attempt == 2) // Last attempt
+                            if (attempt == 5) // Last attempt
                             {
-                                _logger.LogError(ex, "❌ Supabase connection test failed after 2 attempts: {Message}", ex.Message);
+                                _logger.LogError(ex, "❌ Supabase connection test failed after 5 attempts: {Message}", ex.Message);
                                 return false;
                             }
                             
-                            // Wait before retry
-                            await Task.Delay(3000); // 3 seconds delay
+                            // Wait before retry with exponential backoff
+                            var delay = Math.Min(3000 * attempt, 15000); // Max 15 seconds
+                            _logger.LogInformation($"⏳ Waiting {delay}ms before retry...");
+                            await Task.Delay(delay);
                         }
                     }
                 }
