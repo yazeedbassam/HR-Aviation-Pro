@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://hr-aviation-pro.netlify.app/sitemap.xml
+
+# Disallow admin areas
+Disallow: /Admin/
+Disallow: /Account/Login
+Disallow: /Account/Register

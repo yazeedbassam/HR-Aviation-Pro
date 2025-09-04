@@ -1,0 +1,20 @@
+{
+  "name": "AVIATION HR PRO",
+  "short_name": "HR Aviation",
+  "description": "نظام إدارة الموارد البشرية للطيران",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#764ba2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "ar",
+  "dir": "rtl"
+}
