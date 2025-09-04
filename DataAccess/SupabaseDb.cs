@@ -60,6 +60,7 @@ namespace WebApplication1.DataAccess
             try
             {
                 var connection = new NpgsqlConnection(_connectionString);
+                connection.ConnectionTimeout = 30;
                 Console.WriteLine("Supabase connection created successfully");
                 return connection;
             }

@@ -346,27 +346,30 @@ app.MapGet("/ping", () => Results.Text("pong", "text/plain"));
 app.MapGet("/ready", () => Results.Text("ready", "text/plain"));
 
 // Health check endpoint for Railway (single endpoint)
-app.MapGet("/health", () => {
+app.MapGet("/health", async () => {
     try
     {
         using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
-        var dbAvailable = db.IsDatabaseAvailable();
+        var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+        var currentDbType = databaseService.GetCurrentDatabase();
+        var dbAvailable = await databaseService.IsDatabaseAvailableAsync();
         
         return Results.Json(new { 
             message = "AVIATION HR PRO is running!",
             status = dbAvailable ? "healthy" : "degraded",
             database = dbAvailable ? "connected" : "disconnected",
+            databaseType = currentDbType,
             timestamp = DateTime.UtcNow,
             environment = app.Environment.EnvironmentName
         });
     }
-    catch
+    catch (Exception ex)
     {
         return Results.Json(new { 
             message = "AVIATION HR PRO is running!",
             status = "unhealthy",
             database = "error",
+            error = ex.Message,
             timestamp = DateTime.UtcNow,
             environment = app.Environment.EnvironmentName
         });
