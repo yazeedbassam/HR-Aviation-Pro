@@ -339,6 +339,8 @@ app.UseMiddleware<AutoCacheClearMiddleware>();
 // Map health check endpoints FIRST - before any other routing
 app.MapGet("/ping", () => Results.Text("pong", "text/plain"));
 app.MapGet("/ready", () => Results.Text("ready", "text/plain"));
+
+// Health check endpoint for Railway (single endpoint)
 app.MapGet("/health", () => {
     try
     {
@@ -347,6 +349,7 @@ app.MapGet("/health", () => {
         var dbAvailable = db.IsDatabaseAvailable();
         
         return Results.Json(new { 
+            message = "AVIATION HR PRO is running!",
             status = dbAvailable ? "healthy" : "degraded",
             database = dbAvailable ? "connected" : "disconnected",
             timestamp = DateTime.UtcNow,
@@ -356,6 +359,7 @@ app.MapGet("/health", () => {
     catch
     {
         return Results.Json(new { 
+            message = "AVIATION HR PRO is running!",
             status = "unhealthy",
             database = "error",
             timestamp = DateTime.UtcNow,
@@ -363,13 +367,6 @@ app.MapGet("/health", () => {
         });
     }
 });
-// Health check endpoint for Railway
-app.MapGet("/health", () => Results.Json(new { 
-    message = "AVIATION HR PRO is running!",
-    status = "healthy",
-    timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName
-}));
 
 // Redirect root to Home page (after login)
 app.MapGet("/", () => Results.Redirect("/Home/Index"));
