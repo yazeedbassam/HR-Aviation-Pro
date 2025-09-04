@@ -141,36 +141,51 @@ namespace WebApplication1.Services
                     // Replace environment variables in connection string
                     connectionString = ReplaceEnvironmentVariables(connectionString);
                     
-                    try
+                    // Retry logic for connection
+                    for (int attempt = 1; attempt <= 3; attempt++)
                     {
-                        _logger.LogInformation("🔍 Testing Supabase connection...");
-                        _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=admin123", "Password=***")}");
-                        
-                        using var connection = new NpgsqlConnection(connectionString);
-                        _logger.LogInformation("🔍 Connection created, attempting to open...");
-                        connection.Open();
-                        _logger.LogInformation("✅ Supabase connection opened successfully");
-                        
-                        using var command = connection.CreateCommand();
-                        command.CommandText = "SELECT 1";
-                        command.CommandType = CommandType.Text;
-                        command.CommandTimeout = 30; // 30 seconds timeout
-                        
-                        var result = command.ExecuteScalar();
-                        _logger.LogInformation($"✅ Supabase test query result: {result}");
-                        
-                        _logger.LogInformation("✅ Supabase connection test successful");
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "❌ Supabase connection test failed: {Message}", ex.Message);
-                        if (ex is NpgsqlException npgsqlEx)
+                        try
                         {
-                            _logger.LogError("❌ PostgreSQL Error Code: {SqlState}", npgsqlEx.SqlState);
-                            _logger.LogError("❌ PostgreSQL Error Detail: {Detail}", npgsqlEx.Data);
+                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/3)...");
+                            _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=admin123", "Password=***")}");
+                            
+                            using var connection = new NpgsqlConnection(connectionString);
+                            _logger.LogInformation("🔍 Connection created, attempting to open...");
+                            
+                            // Set connection timeout
+                            connection.ConnectionString += ";Timeout=30;CommandTimeout=30;";
+                            connection.Open();
+                            _logger.LogInformation("✅ Supabase connection opened successfully");
+                            
+                            using var command = connection.CreateCommand();
+                            command.CommandText = "SELECT 1";
+                            command.CommandType = CommandType.Text;
+                            command.CommandTimeout = 30; // 30 seconds timeout
+                            
+                            var result = command.ExecuteScalar();
+                            _logger.LogInformation($"✅ Supabase test query result: {result}");
+                            
+                            _logger.LogInformation("✅ Supabase connection test successful");
+                            return true;
                         }
-                        return false;
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning($"⚠️ Supabase connection attempt {attempt} failed: {ex.Message}");
+                            
+                            if (attempt == 3) // Last attempt
+                            {
+                                _logger.LogError(ex, "❌ Supabase connection test failed after 3 attempts: {Message}", ex.Message);
+                                if (ex is NpgsqlException npgsqlEx)
+                                {
+                                    _logger.LogError("❌ PostgreSQL Error Code: {SqlState}", npgsqlEx.SqlState);
+                                    _logger.LogError("❌ PostgreSQL Error Detail: {Detail}", npgsqlEx.Data);
+                                }
+                                return false;
+                            }
+                            
+                            // Wait before retry
+                            await Task.Delay(2000 * attempt); // 2s, 4s, 6s
+                        }
                     }
                 }
                 else if (databaseType == "mysql")
