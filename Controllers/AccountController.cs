@@ -1914,7 +1914,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
                     VALUES ('admin', '123', 'SuperAdmin', true, NOW())
                     ON CONFLICT (""Username"") DO UPDATE SET
                         ""RoleName"" = 'SuperAdmin',
-                        ""IsActive"" = true;
+                        ""IsActive"" = true,
+                        ""PasswordHash"" = '123';
 
                     -- 2. Grant all basic permissions (if Permissions table exists)
                     INSERT INTO ""UserPermissions"" (""UserId"", ""PermissionKey"", ""IsGranted"", ""CreatedDate"")
