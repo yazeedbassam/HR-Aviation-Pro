@@ -18,6 +18,13 @@ var builder = WebApplication.CreateBuilder(args);
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 builder.Environment.EnvironmentName = environment;
 
+// تكوين الـ PORT للـ Railway
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 // Add logging
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
