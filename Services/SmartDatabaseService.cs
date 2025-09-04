@@ -147,13 +147,12 @@ namespace WebApplication1.Services
                         try
                         {
                             _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/3)...");
-                            _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=admin123", "Password=***")}");
+                            _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
                             
                             using var connection = new NpgsqlConnection(connectionString);
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
-                            // Set connection properties for better reliability
-                            connection.ConnectionTimeout = 30;
+                            // Open connection (timeout is set in connection string)
                             connection.Open();
                             _logger.LogInformation("✅ Supabase connection opened successfully");
                             

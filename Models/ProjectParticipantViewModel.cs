@@ -2,10 +2,10 @@
 {
     public class ProjectParticipantViewModel
     {
-        public string Name { get; set; }
-        public string Type { get; set; } // سيكون "Controller" أو "Employee"
-        public string AvatarText { get; set; }
-        public string AvatarCssClass { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty; // سيكون "Controller" أو "Employee"
+        public string AvatarText { get; set; } = string.Empty;
+        public string AvatarCssClass { get; set; } = string.Empty;
         public string? Role { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace WebApplication1.ViewModels
     /// </summary>
     public class EmployeeDetailViewModel
     {
-        public Employee Employee { get; set; }
+        public Employee Employee { get; set; } = new Employee { FullName = string.Empty };
         public List<License> Licenses { get; set; }
         public List<CertificateViewModel> Certificates { get; set; }
         public List<Observation> Observations { get; set; }

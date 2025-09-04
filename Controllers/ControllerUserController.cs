@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using OfficeOpenXml;
@@ -13,24 +12,17 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using SendGrid.Helpers.Mail;
 using System;
-//using Oracle.ManagedDataAccess.Client;
-using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data; // Required for DBNull.Value
-using System.Data.SqlClient; // ???? ?? ??????? ??? ??? namespace
-using System.Drawing; // ??????? ?????? ??? ????
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using WebApplication1.DataAccess;
-using WebApplication1.DataAccess; // ???? ?? ??? ?????? SqlDb ???
-using WebApplication1.DataAccess; // Assume _db is of type SqlDb
-using WebApplication1.Models;
 using WebApplication1.Models;
 using WebApplication1.Services;
 using WebApplication1.Attributes;
-using Color = System.Drawing.Color; // Assume 'model' is of a Controller-related type
+using Color = System.Drawing.Color;
 
 
 [Authorize]

@@ -38,12 +38,12 @@ namespace WebApplication1.ViewModels
     /// </summary>
     public class KpiViewModel
     {
-        public string Title { get; set; }
-        public string Value { get; set; }
-        public string Subtitle { get; set; }
-        public string IconCssClass { get; set; }
-        public string ColorCssClass { get; set; }
-        public string DetailsUrl { get; set; } // URL to see the detailed data
+        public string Title { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
+        public string IconCssClass { get; set; } = string.Empty;
+        public string ColorCssClass { get; set; } = string.Empty;
+        public string DetailsUrl { get; set; } = string.Empty; // URL to see the detailed data
     }
 
     /// <summary>
@@ -51,10 +51,10 @@ namespace WebApplication1.ViewModels
     /// </summary>
     public class SwotSectionViewModel
     {
-        public KpiViewModel Strengths { get; set; }      // e.g., Total active projects, Recently certified staff
-        public KpiViewModel Weaknesses { get; set; }     // e.g., Expired licenses, Overdue projects
-        public KpiViewModel Opportunities { get; set; }  // e.g., Staff in new courses, New high-value projects
-        public KpiViewModel Threats { get; set; }        // e.g., Licenses expiring soon
+        public KpiViewModel Strengths { get; set; } = new KpiViewModel();      // e.g., Total active projects, Recently certified staff
+        public KpiViewModel Weaknesses { get; set; } = new KpiViewModel();     // e.g., Expired licenses, Overdue projects
+        public KpiViewModel Opportunities { get; set; } = new KpiViewModel();  // e.g., Staff in new courses, New high-value projects
+        public KpiViewModel Threats { get; set; } = new KpiViewModel();        // e.g., Licenses expiring soon
     }
 
     #endregion
@@ -68,7 +68,7 @@ namespace WebApplication1.ViewModels
     {
         public int TotalDivisions { get; set; }
         public int TotalPersonnel { get; set; }
-        public List<ChartData> PersonnelByDivisionChart { get; set; }
+        public List<ChartData> PersonnelByDivisionChart { get; set; } = new List<ChartData>();
         // When clicked, this will show a modal with a detailed list of personnel per division.
     }
 
@@ -80,7 +80,7 @@ namespace WebApplication1.ViewModels
         public int TotalLicenses { get; set; }
         public int ExpiredToday { get; set; }
         public int ExpiringSoon { get; set; }
-        public List<ChartData> LicensesByTypeChart { get; set; }
+        public List<ChartData> LicensesByTypeChart { get; set; } = new List<ChartData>();
         // Each part of the summary is clickable for details.
     }
 
@@ -92,7 +92,7 @@ namespace WebApplication1.ViewModels
         public int TotalCertificates { get; set; }
         public int ValidPercentage { get; set; }
         public int ExpiredPercentage { get; set; }
-        public List<ChartData> CertificatesByPersonChart { get; set; } // Top 5 staff with most certs
+        public List<ChartData> CertificatesByPersonChart { get; set; } = new List<ChartData>(); // Top 5 staff with most certs
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ namespace WebApplication1.ViewModels
     {
         public int TotalTrips { get; set; }
         public int TotalDays { get; set; }
-        public List<ChartData> TripsByPersonChart { get; set; } // Top 5 staff with most trips
+        public List<ChartData> TripsByPersonChart { get; set; } = new List<ChartData>(); // Top 5 staff with most trips
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ namespace WebApplication1.ViewModels
     {
         public int TotalProjects { get; set; }
         public int InProgressCount { get; set; }
-        public List<ChartData> ProjectsByStatusChart { get; set; }
+        public List<ChartData> ProjectsByStatusChart { get; set; } = new List<ChartData>();
     }
 
     #endregion
@@ -124,10 +124,10 @@ namespace WebApplication1.ViewModels
     /// </summary>
     public class ChartData
     {
-        public string Label { get; set; }   // e.g., "Planning", "Amman TACC", "Lina Murad"
+        public string Label { get; set; } = string.Empty;   // e.g., "Planning", "Amman TACC", "Lina Murad"
         public int Value { get; set; }      // e.g., 5, 20, 15
-        public string Color { get; set; }   // Optional: e.g., "rgba(255, 193, 7, 0.7)"
-        public string DetailsUrl { get; set; } // Optional: URL to navigate to when a segment is clicked
+        public string Color { get; set; } = string.Empty;   // Optional: e.g., "rgba(255, 193, 7, 0.7)"
+        public string DetailsUrl { get; set; } = string.Empty; // Optional: URL to navigate to when a segment is clicked
     }
 
     #endregion

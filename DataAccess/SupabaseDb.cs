@@ -60,7 +60,6 @@ namespace WebApplication1.DataAccess
             try
             {
                 var connection = new NpgsqlConnection(_connectionString);
-                connection.ConnectionTimeout = 30;
                 Console.WriteLine("Supabase connection created successfully");
                 return connection;
             }
@@ -137,6 +136,7 @@ namespace WebApplication1.DataAccess
             conn.Open();
             
             using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.CommandTimeout = 30; // Add timeout
             if (parameters != null)
             {
                 foreach (var param in parameters)

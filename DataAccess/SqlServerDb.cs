@@ -1,14 +1,12 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc; // Assuming this namespace remains the same
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;using System.Data;
+using Microsoft.Data.SqlClient;
+using System.Data;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using WebApplication1.DataAccess; // ???? ?? ??? ?????? SqlDb ???
 using WebApplication1.Models;
 using WebApplication1.ViewModels;
 

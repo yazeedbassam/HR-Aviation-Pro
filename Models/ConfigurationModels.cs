@@ -11,11 +11,11 @@ namespace WebApplication1.Models
         
         [Required]
         [StringLength(100)]
-        public string CategoryName { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
         
         [Required]
         [StringLength(100)]
-        public string DisplayName { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
         
         [StringLength(500)]
         public string? Description { get; set; }
@@ -41,11 +41,11 @@ namespace WebApplication1.Models
         
         [Required]
         [StringLength(100)]
-        public string ValueKey { get; set; }
+        public string ValueKey { get; set; } = string.Empty;
         
         [Required]
         [StringLength(200)]
-        public string ValueText { get; set; }
+        public string ValueText { get; set; } = string.Empty;
         
         public int DisplayOrder { get; set; } = 0;
         
@@ -62,7 +62,7 @@ namespace WebApplication1.Models
         public DateTime? ModifiedDate { get; set; }
         
         // Navigation Property
-        public virtual ConfigurationCategory Category { get; set; }
+        public virtual ConfigurationCategory Category { get; set; } = new ConfigurationCategory();
     }
 
     // نموذج سجل التغييرات
@@ -91,8 +91,8 @@ namespace WebApplication1.Models
     // نموذج ViewModel للقوائم المنسدلة
     public class ConfigurationSelectListItem
     {
-        public string Value { get; set; }
-        public string Text { get; set; }
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
         public int DisplayOrder { get; set; }
         public bool IsActive { get; set; }
     }

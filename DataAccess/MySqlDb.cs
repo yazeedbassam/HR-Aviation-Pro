@@ -6,7 +6,6 @@ using System.Data;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using WebApplication1.Models;
 using WebApplication1.ViewModels;
@@ -17,8 +16,8 @@ namespace WebApplication1.DataAccess
     {
         private readonly string _connectionString;
         public string ConnectionString => _connectionString;
-        private readonly ILogger<MySqlDb> _logger;
-        private readonly IPasswordHasher<ControllerUser> _passwordHasher;
+        private readonly ILogger<MySqlDb>? _logger;
+        private readonly IPasswordHasher<ControllerUser>? _passwordHasher;
 
         public MySqlDb(IConfiguration configuration)
         {

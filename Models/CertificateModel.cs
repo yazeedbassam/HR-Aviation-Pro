@@ -1,6 +1,6 @@
 ﻿public class CertificateModel
 {
-    public string CertificateId { get; set; }
+    public string CertificateId { get; set; } = string.Empty;
     public string? ControllerId { get; set; }
     public string? FullName { get; set; }          // اسم المراقب
     public string? TypeName { get; set; }          // نوع الشهادة (نص واضح)
