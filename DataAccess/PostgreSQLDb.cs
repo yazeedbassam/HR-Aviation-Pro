@@ -260,7 +260,7 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+                var hashedPassword = _passwordHasher.HashPassword(null, password);
                 
                 var sql = @"
                     INSERT INTO ""Users"" (""Username"", ""PasswordHash"", ""RoleName"")
@@ -563,6 +563,12 @@ namespace WebApplication1.DataAccess
                 Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 return false;
             }
+        }
+
+        // HashPassword: Helper method to hash passwords using ASP.NET Core PasswordHasher (same as SQL Server)
+        public string HashPassword(string password)
+        {
+            return _passwordHasher.HashPassword(null, password);
         }
     }
 }

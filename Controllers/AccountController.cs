@@ -575,6 +575,62 @@ using Microsoft.AspNetCore.Authentication.Cookies;
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
+    // Temporary endpoint to fix admin password in PostgreSQL
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult FixAdminPasswordInPostgreSQL()
+    {
+        try
+        {
+            var postgresqlDb = HttpContext.RequestServices.GetRequiredService<PostgreSQLDb>();
+            
+            // Hash the password "123" using BCrypt (same as PostgreSQL uses)
+            var hashedPassword = postgresqlDb.HashPassword("123");
+            
+            // Update the admin user's password in PostgreSQL database
+            string sql = @"UPDATE ""Users"" SET ""PasswordHash"" = @passwordHash WHERE ""Username"" = 'admin'";
+            var parameters = new[]
+            {
+                new Npgsql.NpgsqlParameter("@passwordHash", hashedPassword)
+            };
+            
+            using (var connection = new Npgsql.NpgsqlConnection(postgresqlDb.ConnectionString))
+            {
+                connection.Open();
+                using (var command = new Npgsql.NpgsqlCommand(sql, connection))
+                {
+                    command.Parameters.AddRange(parameters);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    
+                    if (rowsAffected > 0)
+                    {
+                        return Json(new { 
+                            success = true, 
+                            message = "Admin password updated successfully in PostgreSQL!",
+                            hashedPassword = hashedPassword,
+                            rowsAffected = rowsAffected,
+                            note = "Password '123' hashed with BCrypt for PostgreSQL"
+                        });
+                    }
+                    else
+                    {
+                        return Json(new { 
+                            success = false, 
+                            message = "No admin user found to update in PostgreSQL" 
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return Json(new { 
+                success = false, 
+                message = $"Error updating admin password in PostgreSQL: {ex.Message}" 
+            });
+        }
+    }
+
     // Temporary endpoint to get hashed password for "123"
     [AllowAnonymous]
     [HttpGet]
