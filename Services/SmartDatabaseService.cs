@@ -152,8 +152,8 @@ namespace WebApplication1.Services
                             using var connection = new NpgsqlConnection(connectionString);
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
-                            // Set connection timeout
-                            connection.ConnectionString += ";Timeout=30;CommandTimeout=30;";
+                            // Set connection properties for better reliability
+                            connection.ConnectionTimeout = 30;
                             connection.Open();
                             _logger.LogInformation("✅ Supabase connection opened successfully");
                             
