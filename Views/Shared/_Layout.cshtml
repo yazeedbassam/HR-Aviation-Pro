@@ -99,6 +99,14 @@
             <!-- Sidebar Content -->
             <div class="sidebar-content">
                 <ul class="sidebar-nav">
+                <!-- Home - Always visible for authenticated users -->
+                <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                       asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house"></i> Home
+                    </a>
+                </li>
+                
                 @if (canViewDashboard)
                 {
                     <li>

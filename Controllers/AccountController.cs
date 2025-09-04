@@ -742,7 +742,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
             }
 
             // بناءً على الرول:
-            return RedirectToAction("Dashboard", "Dashboard");
+            return RedirectToAction("Index", "Home");
         }
         catch (Exception ex)
         {
