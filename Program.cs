@@ -160,6 +160,7 @@ builder.Services.AddScoped<ILicenseNotificationService, LicenseNotificationServi
 
 // Add Smart Database Service
 builder.Services.AddScoped<IDatabaseService, SmartDatabaseService>();
+builder.Services.AddScoped<SmartDatabaseService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
