@@ -141,27 +141,27 @@ namespace WebApplication1.Services
                     // Replace environment variables in connection string
                     connectionString = ReplaceEnvironmentVariables(connectionString);
                     
-                    // Retry logic for connection
-                    for (int attempt = 1; attempt <= 3; attempt++)
+                    // Retry logic for connection with shorter timeouts
+                    for (int attempt = 1; attempt <= 2; attempt++)
                     {
                         try
                         {
-                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/3)...");
-                            _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
+                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/2)...");
                             
                             using var connection = new NpgsqlConnection(connectionString);
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
-                            // Open connection (timeout is set in connection string)
-                            connection.Open();
+                            // Open connection with shorter timeout
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                            await connection.OpenAsync(cts.Token);
                             _logger.LogInformation("✅ Supabase connection opened successfully");
                             
                             using var command = connection.CreateCommand();
                             command.CommandText = "SELECT 1";
                             command.CommandType = CommandType.Text;
-                            command.CommandTimeout = 30; // 30 seconds timeout
+                            command.CommandTimeout = 10; // 10 seconds timeout
                             
-                            var result = command.ExecuteScalar();
+                            var result = await command.ExecuteScalarAsync(cts.Token);
                             _logger.LogInformation($"✅ Supabase test query result: {result}");
                             
                             _logger.LogInformation("✅ Supabase connection test successful");
@@ -171,19 +171,18 @@ namespace WebApplication1.Services
                         {
                             _logger.LogWarning($"⚠️ Supabase connection attempt {attempt} failed: {ex.Message}");
                             
-                            if (attempt == 3) // Last attempt
+                            if (attempt == 2) // Last attempt
                             {
-                                _logger.LogError(ex, "❌ Supabase connection test failed after 3 attempts: {Message}", ex.Message);
+                                _logger.LogError(ex, "❌ Supabase connection test failed after 2 attempts: {Message}", ex.Message);
                                 if (ex is NpgsqlException npgsqlEx)
                                 {
                                     _logger.LogError("❌ PostgreSQL Error Code: {SqlState}", npgsqlEx.SqlState);
-                                    _logger.LogError("❌ PostgreSQL Error Detail: {Detail}", npgsqlEx.Data);
                                 }
                                 return false;
                             }
                             
                             // Wait before retry
-                            await Task.Delay(2000 * attempt); // 2s, 4s, 6s
+                            await Task.Delay(1000); // 1 second delay
                         }
                     }
                 }
