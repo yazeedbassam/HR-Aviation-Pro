@@ -1,24 +1,25 @@
-# Redirect all requests to index.html for SPA-like behavior
-/*    /index.html   200
+# Redirect all requests to login page
+/*    /Account/Login.html   200
 
 # Specific redirects for common routes
-/Home    /index.html    200
-/Account    /index.html    200
-/Dashboard    /index.html    200
-/Employees    /index.html    200
-/Certificate    /index.html    200
-/Projects    /index.html    200
-/AdvancedObservations    /index.html    200
-/AdvancedPermission    /index.html    200
-/Airport    /index.html    200
-/Configuration    /index.html    200
-/ControllerUser    /index.html    200
-/Country    /index.html    200
-/DataDetails    /index.html    200
-/License    /index.html    200
-/Notification    /index.html    200
-/Observations    /index.html    200
-/Permission    /index.html    200
-/PermissionManager    /index.html    200
-/SimplifiedPermission    /index.html    200
-/SystemLogs    /index.html    200
+/    /Account/Login.html    200
+/Home    /Account/Login.html    200
+/Account    /Account/Login.html    200
+/Dashboard    /Account/Login.html    200
+/Employees    /Account/Login.html    200
+/Certificate    /Account/Login.html    200
+/Projects    /Account/Login.html    200
+/AdvancedObservations    /Account/Login.html    200
+/AdvancedPermission    /Account/Login.html    200
+/Airport    /Account/Login.html    200
+/Configuration    /Account/Login.html    200
+/ControllerUser    /Account/Login.html    200
+/Country    /Account/Login.html    200
+/DataDetails    /Account/Login.html    200
+/License    /Account/Login.html    200
+/Notification    /Account/Login.html    200
+/Observations    /Account/Login.html    200
+/Permission    /Account/Login.html    200
+/PermissionManager    /Account/Login.html    200
+/SimplifiedPermission    /Account/Login.html    200
+/SystemLogs    /Account/Login.html    200

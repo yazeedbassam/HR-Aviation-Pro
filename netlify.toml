@@ -13,23 +13,23 @@
 # Redirect rules for ASP.NET Core MVC
 [[redirects]]
   from = "/"
-  to = "/index.html"
+  to = "/Account/Login.html"
   status = 200
 
 # Handle ASP.NET Core routes
 [[redirects]]
   from = "/Home/*"
-  to = "/index.html"
+  to = "/Account/Login.html"
   status = 200
 
 [[redirects]]
   from = "/Account/*"
-  to = "/index.html"
+  to = "/Account/Login.html"
   status = 200
 
 [[redirects]]
   from = "/Dashboard/*"
-  to = "/index.html"
+  to = "/Account/Login.html"
   status = 200
 
 # Headers for security
