@@ -723,6 +723,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 
             // Log successful login
             _ = Task.Run(async () => await _loggerService.LogUserLoginAsync(userId, model.Username, ipAddress, userAgent, true));
+            
+            // Debug: Check if user is authenticated
+            _logger.LogInformation($"🔍 User authenticated: {HttpContext.User.Identity?.IsAuthenticated}");
+            _logger.LogInformation($"🔍 User name: {HttpContext.User.Identity?.Name}");
+            _logger.LogInformation($"🔍 User roles: {string.Join(", ", HttpContext.User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value))}");
 
             // Clear user permission cache on login to ensure fresh permissions
             try

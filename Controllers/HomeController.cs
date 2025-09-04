@@ -26,6 +26,11 @@ namespace WebApplication1.Controllers
 
         public IActionResult Index()
         {
+            // Debug: Check authentication status
+            _logger.LogInformation($"🔍 HomeController - User authenticated: {User.Identity?.IsAuthenticated}");
+            _logger.LogInformation($"🔍 HomeController - User name: {User.Identity?.Name}");
+            _logger.LogInformation($"🔍 HomeController - User roles: {string.Join(", ", User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value))}");
+            
             return View();
         }
 
