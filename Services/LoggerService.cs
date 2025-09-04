@@ -21,12 +21,24 @@ namespace WebApplication1.Services
         {
             try
             {
+                // إذا كان userId = 0، نحاول الحصول على معرف المستخدم الصحيح من قاعدة البيانات
+                int actualUserId = userId;
+                if (userId == 0 && !string.IsNullOrEmpty(userName))
+                {
+                    actualUserId = await GetUserIdByUsernameAsync(userName);
+                    if (actualUserId == 0)
+                    {
+                        _logger.LogWarning("Could not find user ID for username: {UserName}, skipping activity log", userName);
+                        return;
+                    }
+                }
+
                 var sql = @"
                     INSERT INTO ""UserActivityLogs"" (""UserId"", ""UserName"", ""Action"", ""EntityType"", ""EntityId"", ""Details"", ""IpAddress"", ""UserAgent"", ""IsSuccessful"", ""ErrorMessage"", ""Timestamp"")
                     VALUES (@UserId, @UserName, @Action, @EntityType, @EntityId, @Details, @IpAddress, @UserAgent, @IsSuccessful, @ErrorMessage, @Timestamp)";
 
                 await Task.Run(() => _db.ExecuteNonQuery(sql,
-                    new Npgsql.NpgsqlParameter("@UserId", userId),
+                    new Npgsql.NpgsqlParameter("@UserId", actualUserId),
                     new Npgsql.NpgsqlParameter("@UserName", userName),
                     new Npgsql.NpgsqlParameter("@Action", action),
                     new Npgsql.NpgsqlParameter("@EntityType", entityType),
@@ -39,11 +51,26 @@ namespace WebApplication1.Services
                     new Npgsql.NpgsqlParameter("@Timestamp", DateTime.Now)
                 ));
 
-                _logger.LogDebug("User activity logged: {Action} on {EntityType} by {UserName}", action, entityType, userName);
+                _logger.LogDebug("User activity logged: {Action} on {EntityType} by {UserName} (UserId: {UserId})", action, entityType, userName, actualUserId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to log user activity for user {UserName}", userName);
+            }
+        }
+
+        private async Task<int> GetUserIdByUsernameAsync(string username)
+        {
+            try
+            {
+                var sql = "SELECT id FROM \"Users\" WHERE \"Username\" = @username";
+                var result = await Task.Run(() => _db.ExecuteScalar(sql, new Npgsql.NpgsqlParameter("@username", username)));
+                return result != null ? Convert.ToInt32(result) : 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get user ID for username: {UserName}", username);
+                return 0;
             }
         }
 
