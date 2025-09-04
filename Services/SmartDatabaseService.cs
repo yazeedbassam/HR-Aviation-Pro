@@ -141,6 +141,10 @@ namespace WebApplication1.Services
                     // Replace environment variables in connection string
                     connectionString = ReplaceEnvironmentVariables(connectionString);
                     
+                    // Log connection string (without password)
+                    var safeConnectionString = connectionString.Replace($"Password={Environment.GetEnvironmentVariable("SUPABASE_PASSWORD")}", "Password=***");
+                    _logger.LogInformation($"🔍 Connection string: {safeConnectionString}");
+                    
                     // Retry logic for connection with shorter timeouts
                     for (int attempt = 1; attempt <= 2; attempt++)
                     {
@@ -170,14 +174,23 @@ namespace WebApplication1.Services
                         catch (Exception ex)
                         {
                             _logger.LogWarning($"⚠️ Supabase connection attempt {attempt} failed: {ex.Message}");
+                            _logger.LogWarning($"⚠️ Exception type: {ex.GetType().Name}");
+                            
+                            if (ex is NpgsqlException npgsqlEx)
+                            {
+                                _logger.LogWarning($"⚠️ PostgreSQL Error Code: {npgsqlEx.SqlState}");
+                                _logger.LogWarning($"⚠️ PostgreSQL Error Detail: {npgsqlEx.Detail}");
+                            }
+                            
+                            if (ex is System.Net.Sockets.SocketException socketEx)
+                            {
+                                _logger.LogWarning($"⚠️ Socket Error Code: {socketEx.ErrorCode}");
+                                _logger.LogWarning($"⚠️ Socket Error Message: {socketEx.Message}");
+                            }
                             
                             if (attempt == 2) // Last attempt
                             {
                                 _logger.LogError(ex, "❌ Supabase connection test failed after 2 attempts: {Message}", ex.Message);
-                                if (ex is NpgsqlException npgsqlEx)
-                                {
-                                    _logger.LogError("❌ PostgreSQL Error Code: {SqlState}", npgsqlEx.SqlState);
-                                }
                                 return false;
                             }
                             
