@@ -54,7 +54,7 @@ builder.Services.AddSingleton<SqlServerDb>(serviceProvider =>
     return new SqlServerDb(configuration, passwordHasher, logger);
 });
 
-// Add SupabaseDb service
+// Add SupabaseDb service (now using PostgreSQL)
 builder.Services.AddSingleton<SupabaseDb>(serviceProvider =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -166,24 +166,24 @@ app.Lifetime.ApplicationStarted.Register(() => {
     logger.LogInformation("🔧 ASPNETCORE_URLS: {Value}", Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "NOT SET");
     logger.LogInformation("🔧 PORT: {Value}", Environment.GetEnvironmentVariable("PORT") ?? "NOT SET");
     
-    // Log Supabase environment variables
-    logger.LogInformation("🗄️ SUPABASE_HOST: {Value}", Environment.GetEnvironmentVariable("SUPABASE_HOST") ?? "NOT SET");
-    logger.LogInformation("🗄️ SUPABASE_PORT: {Value}", Environment.GetEnvironmentVariable("SUPABASE_PORT") ?? "NOT SET");
-    logger.LogInformation("🗄️ SUPABASE_DB: {Value}", Environment.GetEnvironmentVariable("SUPABASE_DB") ?? "NOT SET");
-    logger.LogInformation("🗄️ SUPABASE_USER: {Value}", Environment.GetEnvironmentVariable("SUPABASE_USER") ?? "NOT SET");
-    logger.LogInformation("🗄️ SUPABASE_PASSWORD: {Value}", string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PASSWORD")) ? "NOT SET" : "***SET***");
+    // Log PostgreSQL environment variables
+    logger.LogInformation("🗄️ PGHOST: {Value}", Environment.GetEnvironmentVariable("PGHOST") ?? "NOT SET");
+    logger.LogInformation("🗄️ PGPORT: {Value}", Environment.GetEnvironmentVariable("PGPORT") ?? "NOT SET");
+    logger.LogInformation("🗄️ PGDATABASE: {Value}", Environment.GetEnvironmentVariable("PGDATABASE") ?? "NOT SET");
+    logger.LogInformation("🗄️ PGUSER: {Value}", Environment.GetEnvironmentVariable("PGUSER") ?? "NOT SET");
+    logger.LogInformation("🗄️ PGPASSWORD: {Value}", string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGPASSWORD")) ? "NOT SET" : "***SET***");
     
-    // Check if Supabase variables are missing
+    // Check if PostgreSQL variables are missing
     var missingVars = new List<string>();
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_HOST"))) missingVars.Add("SUPABASE_HOST");
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PORT"))) missingVars.Add("SUPABASE_PORT");
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_DB"))) missingVars.Add("SUPABASE_DB");
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_USER"))) missingVars.Add("SUPABASE_USER");
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PASSWORD"))) missingVars.Add("SUPABASE_PASSWORD");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGHOST"))) missingVars.Add("PGHOST");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGPORT"))) missingVars.Add("PGPORT");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGDATABASE"))) missingVars.Add("PGDATABASE");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGUSER"))) missingVars.Add("PGUSER");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PGPASSWORD"))) missingVars.Add("PGPASSWORD");
     
     if (missingVars.Any())
     {
-        logger.LogWarning("⚠️ WARNING: Supabase environment variables are missing!");
+        logger.LogWarning("⚠️ WARNING: PostgreSQL environment variables are missing!");
         logger.LogWarning("⚠️ Missing variables: {MissingVars}", string.Join(", ", missingVars));
         logger.LogWarning("⚠️ Please configure these variables in Railway Dashboard > Variables");
     }
@@ -315,18 +315,18 @@ app.Lifetime.ApplicationStarted.Register(async () => {
                 // Get the appropriate database service based on current database type
                 var currentDbType = databaseService.GetCurrentDatabase();
                 
-                if (currentDbType == "supabase")
+                if (currentDbType == "postgresql")
                 {
-                    // For Supabase, ensure admin user exists
+                    // For PostgreSQL, ensure admin user exists
                     var supabaseDb = scope.ServiceProvider.GetRequiredService<SupabaseDb>();
                     var adminCreated = await supabaseDb.EnsureAdminUserExistsAsync();
                     if (adminCreated)
                     {
-                        logger.LogInformation("👤 Admin user ensured in Supabase database");
+                        logger.LogInformation("👤 Admin user ensured in PostgreSQL database");
                     }
                     else
                     {
-                        logger.LogWarning("⚠️ Failed to ensure admin user in Supabase database");
+                        logger.LogWarning("⚠️ Failed to ensure admin user in PostgreSQL database");
                     }
                 }
                 else if (currentDbType == "local")

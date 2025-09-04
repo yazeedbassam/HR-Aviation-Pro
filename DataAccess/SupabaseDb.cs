@@ -21,8 +21,8 @@ namespace WebApplication1.DataAccess
 
         public SupabaseDb(IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("SupabaseConnection") 
-                                ?? throw new ArgumentNullException("Connection string 'SupabaseConnection' not found.");
+            var connectionString = configuration.GetConnectionString("PostgreSQLConnection") 
+                                ?? throw new ArgumentNullException("Connection string 'PostgreSQLConnection' not found.");
             
             _connectionString = ReplaceEnvironmentVariables(connectionString);
             
@@ -32,14 +32,14 @@ namespace WebApplication1.DataAccess
                 var parts = connectionStringForLogging.Split(';');
                 var safeParts = parts.Where(p => !p.ToLower().Contains("password") && !p.ToLower().Contains("pwd"));
                 var safeConnectionString = string.Join(";", safeParts);
-                Console.WriteLine($"Supabase Database connection configured: {safeConnectionString}");
+                Console.WriteLine($"PostgreSQL Database connection configured: {safeConnectionString}");
             }
         }
 
         public SupabaseDb(IConfiguration configuration, IPasswordHasher<ControllerUser> passwordHasher, ILogger<SupabaseDb> logger)
         {
-            var connectionString = configuration.GetConnectionString("SupabaseConnection")
-                                ?? throw new ArgumentNullException("Connection string 'SupabaseConnection' not found.");
+            var connectionString = configuration.GetConnectionString("PostgreSQLConnection")
+                                ?? throw new ArgumentNullException("Connection string 'PostgreSQLConnection' not found.");
             _connectionString = ReplaceEnvironmentVariables(connectionString);
             _passwordHasher = passwordHasher;
             _logger = logger;
@@ -48,11 +48,11 @@ namespace WebApplication1.DataAccess
         private string ReplaceEnvironmentVariables(string connectionString)
         {
             return connectionString
-                .Replace("${SUPABASE_HOST}", Environment.GetEnvironmentVariable("SUPABASE_HOST") ?? "localhost")
-                .Replace("${SUPABASE_DB}", Environment.GetEnvironmentVariable("SUPABASE_DB") ?? "postgres")
-                .Replace("${SUPABASE_USER}", Environment.GetEnvironmentVariable("SUPABASE_USER") ?? "postgres")
-                .Replace("${SUPABASE_PASSWORD}", Environment.GetEnvironmentVariable("SUPABASE_PASSWORD") ?? "")
-                .Replace("${SUPABASE_PORT}", Environment.GetEnvironmentVariable("SUPABASE_PORT") ?? "5432");
+                .Replace("${PGHOST}", Environment.GetEnvironmentVariable("PGHOST") ?? "localhost")
+                .Replace("${PGDATABASE}", Environment.GetEnvironmentVariable("PGDATABASE") ?? "railway")
+                .Replace("${PGUSER}", Environment.GetEnvironmentVariable("PGUSER") ?? "postgres")
+                .Replace("${PGPASSWORD}", Environment.GetEnvironmentVariable("PGPASSWORD") ?? "")
+                .Replace("${PGPORT}", Environment.GetEnvironmentVariable("PGPORT") ?? "5432");
         }
 
         public NpgsqlConnection GetConnection()
@@ -60,12 +60,12 @@ namespace WebApplication1.DataAccess
             try
             {
                 var connection = new NpgsqlConnection(_connectionString);
-                Console.WriteLine("Supabase connection created successfully");
+                Console.WriteLine("PostgreSQL connection created successfully");
                 return connection;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating Supabase connection: {ex.Message}");
+                Console.WriteLine($"Error creating PostgreSQL connection: {ex.Message}");
                 throw;
             }
         }

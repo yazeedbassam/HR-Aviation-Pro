@@ -29,7 +29,7 @@ namespace WebApplication1.Services
             _logger = logger;
             
             // تحديد قاعدة البيانات الافتراضية
-            _currentDatabase = _configuration["DatabaseSettings:DefaultDatabase"] ?? "SqlServer";
+            _currentDatabase = _configuration["DatabaseSettings:DefaultDatabase"] ?? "postgresql";
             
             _logger.LogInformation("SmartDatabaseService initialized with default database: {DatabaseType}", _currentDatabase);
         }
@@ -63,16 +63,16 @@ namespace WebApplication1.Services
                         _logger.LogDebug("Created SQL Server connection");
                         break;
 
-                    case "supabase":
-                        var supabaseConnectionString = _configuration.GetConnectionString("SupabaseConnection");
-                        if (string.IsNullOrEmpty(supabaseConnectionString))
+                    case "postgresql":
+                        var postgresqlConnectionString = _configuration.GetConnectionString("PostgreSQLConnection");
+                        if (string.IsNullOrEmpty(postgresqlConnectionString))
                         {
-                            throw new InvalidOperationException("Supabase connection string is not configured");
+                            throw new InvalidOperationException("PostgreSQL connection string is not configured");
                         }
                         // Replace environment variables in connection string
-                        supabaseConnectionString = ReplaceEnvironmentVariables(supabaseConnectionString);
-                        connection = new NpgsqlConnection(supabaseConnectionString);
-                        _logger.LogDebug("Created Supabase connection");
+                        postgresqlConnectionString = ReplaceEnvironmentVariables(postgresqlConnectionString);
+                        connection = new NpgsqlConnection(postgresqlConnectionString);
+                        _logger.LogDebug("Created PostgreSQL connection");
                         break;
 
                     case "mysql":
@@ -128,13 +128,13 @@ namespace WebApplication1.Services
                     _logger.LogDebug("Local SQL Server connection test successful");
                     return true;
                 }
-                else if (databaseType == "supabase")
+                else if (databaseType == "postgresql")
                 {
-                    // اختبار Supabase
-                    var connectionString = _configuration.GetConnectionString("SupabaseConnection");
+                    // اختبار PostgreSQL (Railway)
+                    var connectionString = _configuration.GetConnectionString("PostgreSQLConnection");
                     if (string.IsNullOrEmpty(connectionString))
                     {
-                        _logger.LogWarning("Supabase connection string is not configured");
+                        _logger.LogWarning("PostgreSQL connection string is not configured");
                         return false;
                     }
                     
@@ -142,51 +142,39 @@ namespace WebApplication1.Services
                     connectionString = ReplaceEnvironmentVariables(connectionString);
                     
                     // Log connection string (without password)
-                    var safeConnectionString = connectionString.Replace($"Password={Environment.GetEnvironmentVariable("SUPABASE_PASSWORD")}", "Password=***");
+                    var safeConnectionString = connectionString.Replace($"Password={Environment.GetEnvironmentVariable("PGPASSWORD")}", "Password=***");
                     _logger.LogInformation($"🔍 Connection string: {safeConnectionString}");
                     
-                    // Retry logic for connection with more attempts for Railway
-                    for (int attempt = 1; attempt <= 5; attempt++)
+                    // Retry logic for connection
+                    for (int attempt = 1; attempt <= 3; attempt++)
                     {
                         try
                         {
-                            _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/5)...");
+                            _logger.LogInformation($"🔍 Testing PostgreSQL connection (attempt {attempt}/3)...");
                             
                             using var connection = new NpgsqlConnection(connectionString);
                             
-                            // Force IPv4 resolution
-                            connection.ConnectionString += ";HostRecheckSeconds=0;";
-                            
-                            // Force IPv4 for Railway compatibility
-                            connection.ConnectionString += ";Tcp Keepalive=true;";
-                            
-                            // Force IPv4 for Railway compatibility
-                            connection.ConnectionString += ";Tcp Keepalive Time=30;";
-                            
-                            // Force IPv4 for Railway compatibility
-                            connection.ConnectionString += ";Tcp Keepalive Interval=5;";
-                            
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
-                            // Open connection with longer timeout for Railway
-                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+                            // Open connection with timeout
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                             await connection.OpenAsync(cts.Token);
-                            _logger.LogInformation("✅ Supabase connection opened successfully");
+                            _logger.LogInformation("✅ PostgreSQL connection opened successfully");
                             
                             using var command = connection.CreateCommand();
                             command.CommandText = "SELECT 1";
                             command.CommandType = CommandType.Text;
-                            command.CommandTimeout = 60; // 60 seconds timeout
+                            command.CommandTimeout = 30;
                             
                             var result = await command.ExecuteScalarAsync(cts.Token);
-                            _logger.LogInformation($"✅ Supabase test query result: {result}");
+                            _logger.LogInformation($"✅ PostgreSQL test query result: {result}");
                             
-                            _logger.LogInformation("✅ Supabase connection test successful");
+                            _logger.LogInformation("✅ PostgreSQL connection test successful");
                             return true;
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning($"⚠️ Supabase connection attempt {attempt} failed: {ex.Message}");
+                            _logger.LogWarning($"⚠️ PostgreSQL connection attempt {attempt} failed: {ex.Message}");
                             _logger.LogWarning($"⚠️ Exception type: {ex.GetType().Name}");
                             
                             if (ex is NpgsqlException npgsqlEx)
@@ -201,14 +189,14 @@ namespace WebApplication1.Services
                                 _logger.LogWarning($"⚠️ Socket Error Message: {socketEx.Message}");
                             }
                             
-                            if (attempt == 5) // Last attempt
+                            if (attempt == 3) // Last attempt
                             {
-                                _logger.LogError(ex, "❌ Supabase connection test failed after 5 attempts: {Message}", ex.Message);
+                                _logger.LogError(ex, "❌ PostgreSQL connection test failed after 3 attempts: {Message}", ex.Message);
                                 return false;
                             }
                             
-                            // Wait before retry with exponential backoff
-                            var delay = Math.Min(3000 * attempt, 15000); // Max 15 seconds
+                            // Wait before retry
+                            var delay = 2000 * attempt; // 2, 4 seconds
                             _logger.LogInformation($"⏳ Waiting {delay}ms before retry...");
                             await Task.Delay(delay);
                         }
@@ -295,7 +283,7 @@ namespace WebApplication1.Services
         /// </summary>
         public void SwitchDatabase(string databaseType)
         {
-            var validTypes = new[] { "local", "supabase", "mysql" };
+            var validTypes = new[] { "local", "postgresql", "mysql" };
             
             if (!validTypes.Contains(databaseType, StringComparer.OrdinalIgnoreCase))
             {
@@ -316,8 +304,8 @@ namespace WebApplication1.Services
             return _currentDatabase.ToLower() switch
             {
                 "local" => "SELECT 1",
-                "supabase" => "SELECT 1",
-                "demo" => "SELECT 1",
+                "postgresql" => "SELECT 1",
+                "mysql" => "SELECT 1",
                 _ => "SELECT 1"
             };
         }
@@ -330,8 +318,8 @@ namespace WebApplication1.Services
             return _currentDatabase.ToLower() switch
             {
                 "local" => "SELECT @@VERSION",
-                "supabase" => "SELECT version()",
-                "demo" => "SELECT version()",
+                "postgresql" => "SELECT version()",
+                "mysql" => "SELECT VERSION()",
                 _ => "SELECT 1"
             };
         }
@@ -346,8 +334,8 @@ namespace WebApplication1.Services
             // تحديد اسم سلسلة الاتصال بناءً على نوع قاعدة البيانات
             switch (_currentDatabase.ToLower())
             {
-                case "supabase":
-                    connectionStringName = "SupabaseConnection";
+                case "postgresql":
+                    connectionStringName = "PostgreSQLConnection";
                     break;
                 case "local":
                     connectionStringName = "SqlServerDbConnection";
