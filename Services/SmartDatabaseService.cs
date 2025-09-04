@@ -169,9 +169,6 @@ namespace WebApplication1.Services
                             // Force IPv4 for Railway compatibility
                             connection.ConnectionString += ";Tcp Keepalive Interval=5;";
                             
-                            // Force IPv4 for Railway compatibility
-                            connection.ConnectionString += ";Tcp Keepalive Retries=3;";
-                            
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
                             // Open connection with longer timeout for Railway
