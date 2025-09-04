@@ -1,0 +1,34 @@
+# Ignore development files
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+*.tmp
+
+# Ignore IDE files
+.vs/
+.vscode/
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore Git
+.git/
+.gitignore
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore test files
+*Test*/
+*Tests*/
+
+# Ignore Netlify files (we're using Railway now)
+netlify.toml
+wwwroot/index.html
+wwwroot/_redirects

@@ -356,7 +356,16 @@ app.MapGet("/health", () => {
         });
     }
 });
-app.MapGet("/", () => Results.Redirect("/Home/Index"));
+// Railway health check endpoint
+app.MapGet("/", () => Results.Json(new { 
+    message = "AVIATION HR PRO is running!",
+    status = "healthy",
+    timestamp = DateTime.UtcNow,
+    environment = app.Environment.EnvironmentName
+}));
+
+// Redirect to login page
+app.MapGet("/home", () => Results.Redirect("/Account/Login"));
 
 // Map controllers AFTER health check endpoints
 app.MapControllers();
