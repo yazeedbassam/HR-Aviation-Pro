@@ -63,7 +63,7 @@ namespace WebApplication1.Services
         {
             try
             {
-                var sql = "SELECT id FROM \"Users\" WHERE \"Username\" = @username";
+                var sql = "SELECT \"UserId\" FROM \"Users\" WHERE \"Username\" = @username";
                 var result = await Task.Run(() => _db.ExecuteScalar(sql, new Npgsql.NpgsqlParameter("@username", username)));
                 return result != null ? Convert.ToInt32(result) : 0;
             }
