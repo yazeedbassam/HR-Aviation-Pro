@@ -69,6 +69,8 @@ namespace WebApplication1.Services
                         {
                             throw new InvalidOperationException("Supabase connection string is not configured");
                         }
+                        // Replace environment variables in connection string
+                        supabaseConnectionString = ReplaceEnvironmentVariables(supabaseConnectionString);
                         connection = new NpgsqlConnection(supabaseConnectionString);
                         _logger.LogDebug("Created Supabase connection");
                         break;
@@ -136,10 +138,13 @@ namespace WebApplication1.Services
                         return false;
                     }
                     
+                    // Replace environment variables in connection string
+                    connectionString = ReplaceEnvironmentVariables(connectionString);
+                    
                     try
                     {
                         _logger.LogInformation("🔍 Testing Supabase connection...");
-                        _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
+                        _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=admin123", "Password=***")}");
                         
                         using var connection = new NpgsqlConnection(connectionString);
                         _logger.LogInformation("🔍 Connection created, attempting to open...");
@@ -373,6 +378,19 @@ namespace WebApplication1.Services
             _currentDatabase = tempDatabase;
             _logger.LogWarning("Auto-switch failed, reverting to {DatabaseType}", _currentDatabase);
             return false;
+        }
+
+        /// <summary>
+        /// استبدال متغيرات البيئة في connection string
+        /// </summary>
+        private string ReplaceEnvironmentVariables(string connectionString)
+        {
+            return connectionString
+                .Replace("${SUPABASE_HOST}", Environment.GetEnvironmentVariable("SUPABASE_HOST") ?? "localhost")
+                .Replace("${SUPABASE_DB}", Environment.GetEnvironmentVariable("SUPABASE_DB") ?? "postgres")
+                .Replace("${SUPABASE_USER}", Environment.GetEnvironmentVariable("SUPABASE_USER") ?? "postgres")
+                .Replace("${SUPABASE_PASSWORD}", Environment.GetEnvironmentVariable("SUPABASE_PASSWORD") ?? "")
+                .Replace("${SUPABASE_PORT}", Environment.GetEnvironmentVariable("SUPABASE_PORT") ?? "5432");
         }
     }
 } 
