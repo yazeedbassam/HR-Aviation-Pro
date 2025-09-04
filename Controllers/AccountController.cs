@@ -763,11 +763,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
                 return View(model);
             }
 
-            // Validate database type selection
+            // Set default database type if not selected
             if (string.IsNullOrEmpty(model.DatabaseType))
             {
-                ModelState.AddModelError("DatabaseType", "Please select a database connection type.");
-                return View(model);
+                model.DatabaseType = "supabase"; // Default to Supabase
+                _logger.LogInformation("🔧 No database type selected, defaulting to: {DatabaseType}", model.DatabaseType);
             }
 
             // Store database selection in session for later use
