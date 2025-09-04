@@ -154,9 +154,6 @@ namespace WebApplication1.Services
                             
                             using var connection = new NpgsqlConnection(connectionString);
                             
-                            // Force IPv4 for Railway compatibility
-                            connection.ConnectionString += ";Target Session Attributes=read-write;";
-                            
                             // Force IPv4 resolution
                             connection.ConnectionString += ";HostRecheckSeconds=0;";
                             
