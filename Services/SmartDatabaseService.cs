@@ -157,9 +157,6 @@ namespace WebApplication1.Services
                             // Force IPv4 for Railway compatibility
                             connection.ConnectionString += ";Target Session Attributes=read-write;";
                             
-                            // Set connection preferences for Railway
-                            connection.ConnectionString += ";Preload Reader=true;";
-                            
                             // Force IPv4 resolution
                             connection.ConnectionString += ";HostRecheckSeconds=0;";
                             
