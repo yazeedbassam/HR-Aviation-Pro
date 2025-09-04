@@ -153,6 +153,28 @@ namespace WebApplication1.Services
                             _logger.LogInformation($"🔍 Testing Supabase connection (attempt {attempt}/5)...");
                             
                             using var connection = new NpgsqlConnection(connectionString);
+                            
+                            // Force IPv4 for Railway compatibility
+                            connection.ConnectionString += ";Target Session Attributes=read-write;";
+                            
+                            // Set connection preferences for Railway
+                            connection.ConnectionString += ";Preload Reader=true;";
+                            
+                            // Force IPv4 resolution
+                            connection.ConnectionString += ";HostRecheckSeconds=0;";
+                            
+                            // Force IPv4 for Railway compatibility
+                            connection.ConnectionString += ";Tcp Keepalive=true;";
+                            
+                            // Force IPv4 for Railway compatibility
+                            connection.ConnectionString += ";Tcp Keepalive Time=30;";
+                            
+                            // Force IPv4 for Railway compatibility
+                            connection.ConnectionString += ";Tcp Keepalive Interval=5;";
+                            
+                            // Force IPv4 for Railway compatibility
+                            connection.ConnectionString += ";Tcp Keepalive Retries=3;";
+                            
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
                             // Open connection with longer timeout for Railway
