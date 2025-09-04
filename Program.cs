@@ -364,8 +364,8 @@ app.MapGet("/health", () => Results.Json(new {
     environment = app.Environment.EnvironmentName
 }));
 
-// Redirect root to login page
-app.MapGet("/", () => Results.Redirect("/Account/Login"));
+// Redirect root to Home page (after login)
+app.MapGet("/", () => Results.Redirect("/Home/Index"));
 
 // Map controllers AFTER health check endpoints
 app.MapControllers();
