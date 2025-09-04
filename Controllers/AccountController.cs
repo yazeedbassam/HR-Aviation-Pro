@@ -605,6 +605,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
             if (model.DatabaseType != "skip")
             {
                 _databaseService.SwitchDatabase(model.DatabaseType);
+                _logger.LogInformation("🔄 Database switched to: {DatabaseType}", model.DatabaseType);
             }
 
             // Check if database is available based on selection
@@ -612,7 +613,17 @@ using Microsoft.AspNetCore.Authentication.Cookies;
             
             if (model.DatabaseType != "skip")
             {
+                _logger.LogInformation("🔍 Testing connection to: {DatabaseType}", model.DatabaseType);
                 isDatabaseAvailable = await _databaseService.IsDatabaseAvailableAsync(model.DatabaseType);
+                
+                if (isDatabaseAvailable)
+                {
+                    _logger.LogInformation("✅ Connection to {DatabaseType} successful", model.DatabaseType);
+                }
+                else
+                {
+                    _logger.LogWarning("❌ Connection to {DatabaseType} failed", model.DatabaseType);
+                }
             }
 
             if (!isDatabaseAvailable)
@@ -631,7 +642,58 @@ using Microsoft.AspNetCore.Authentication.Cookies;
                 return View(model);
             }
             
-            if (!_db.ValidateCredentials(model.Username, model.Password, out var userId, out var role))
+            // Validate credentials using the selected database
+            bool isValidCredentials = false;
+            int userId = 0;
+            string role = "";
+            
+            if (model.DatabaseType == "supabase")
+            {
+                // Use Supabase for authentication
+                try
+                {
+                    var supabaseDb = HttpContext.RequestServices.GetRequiredService<SupabaseDb>();
+                    _logger.LogInformation("🔍 Attempting Supabase authentication for user: {Username}", model.Username);
+                    
+                    // Test Supabase connection first
+                    if (supabaseDb.IsDatabaseAvailable())
+                    {
+                        _logger.LogInformation("✅ Supabase connection is available, proceeding with authentication");
+                        isValidCredentials = supabaseDb.ValidateCredentials(model.Username, model.Password, out userId, out role);
+                        _logger.LogInformation("🔍 Supabase authentication result: {IsValid}, UserId: {UserId}, Role: {Role}", isValidCredentials, userId, role);
+                    }
+                    else
+                    {
+                        _logger.LogError("❌ Supabase connection is not available");
+                        ModelState.AddModelError("", "Supabase database is not available. Please check your connection.");
+                        return View(model);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Error during Supabase authentication for user: {Username}", model.Username);
+                    ModelState.AddModelError("", "Error connecting to Supabase database. Please try again.");
+                    return View(model);
+                }
+            }
+            else if (model.DatabaseType == "local")
+            {
+                // Use SQL Server for authentication
+                try
+                {
+                    _logger.LogInformation("🔍 Attempting SQL Server authentication for user: {Username}", model.Username);
+                    isValidCredentials = _db.ValidateCredentials(model.Username, model.Password, out userId, out role);
+                    _logger.LogInformation("🔍 SQL Server authentication result: {IsValid}, UserId: {UserId}, Role: {Role}", isValidCredentials, userId, role);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Error during SQL Server authentication for user: {Username}", model.Username);
+                    ModelState.AddModelError("", "Error connecting to SQL Server database. Please try again.");
+                    return View(model);
+                }
+            }
+            
+            if (!isValidCredentials)
             {
                 // Log failed login attempt
                 _ = Task.Run(async () => await _loggerService.LogUserLoginAsync(0, model.Username, ipAddress, userAgent, false, "Invalid credentials"));

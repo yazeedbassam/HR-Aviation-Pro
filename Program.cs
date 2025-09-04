@@ -48,6 +48,15 @@ builder.Services.AddSingleton<SqlServerDb>(serviceProvider =>
     return new SqlServerDb(configuration, passwordHasher, logger);
 });
 
+// Add SupabaseDb service
+builder.Services.AddSingleton<SupabaseDb>(serviceProvider =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher<ControllerUser>>();
+    var logger = serviceProvider.GetRequiredService<ILogger<SupabaseDb>>();
+    return new SupabaseDb(configuration, passwordHasher, logger);
+});
+
 // تعليق خدمة الإيميلات الأوتوماتيكية
 // builder.Services.AddHostedService<LicenseExpiryNotificationService>();
 builder.Services.AddScoped<LicenseExpiryNotificationService>();
@@ -149,11 +158,17 @@ app.Lifetime.ApplicationStarted.Register(async () => {
     try
     {
         using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+        var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         
-        logger.LogInformation("🔍 Testing SQL Server database connection...");
-        var isAvailable = db.IsDatabaseAvailable();
+        logger.LogInformation("🔍 Testing database connection...");
+        
+        // Get the current database type
+        var currentDbType = databaseService.GetCurrentDatabase();
+        logger.LogInformation("🔍 Current database type: {DatabaseType}", currentDbType);
+        
+        // Test connection based on current database type
+        var isAvailable = await databaseService.IsDatabaseAvailableAsync(currentDbType);
         
         if (isAvailable)
         {
@@ -162,24 +177,10 @@ app.Lifetime.ApplicationStarted.Register(async () => {
             // Test basic operations
             try
             {
-                // Check which table exists and count users
-                var usersExists = db.ExecuteScalar("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'Users'");
-                var controllersExists = db.ExecuteScalar("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'Controllers'");
-                
-                if (Convert.ToInt32(usersExists) > 0)
-                {
-                    var userCount = db.ExecuteScalar("SELECT COUNT(*) FROM Users");
-                    logger.LogInformation("📊 Database contains {UserCount} users (from Users table)", userCount);
-                }
-                else if (Convert.ToInt32(controllersExists) > 0)
-                {
-                    var userCount = db.ExecuteScalar("SELECT COUNT(*) FROM Controllers");
-                    logger.LogInformation("📊 Database contains {UserCount} users (from Controllers table)", userCount);
-                }
-                else
-                {
-                    logger.LogInformation("📊 No user tables found in database");
-                }
+                var dbInfo = await databaseService.GetDatabaseInfoAsync();
+                logger.LogInformation("📊 Database Type: {DatabaseType}", dbInfo.DatabaseType);
+                logger.LogInformation("📊 Database Version: {Version}", dbInfo.Version);
+                logger.LogInformation("📊 Database Status: {Status}", dbInfo.Status);
             }
             catch (Exception ex)
             {
@@ -249,22 +250,43 @@ app.Lifetime.ApplicationStarted.Register(async () => {
     try
     {
         using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+        var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         
         // Check if database is available
-        if (db.IsDatabaseAvailable())
+        if (await databaseService.IsDatabaseAvailableAsync())
         {
             if (app.Environment.IsDevelopment())
             {
-                if (db.GetUserByUsername("admin") == null)
+                // Get the appropriate database service based on current database type
+                var currentDbType = databaseService.GetCurrentDatabase();
+                
+                if (currentDbType == "supabase")
                 {
-                    db.CreateUser("admin", "123", "Admin");
-                    logger.LogInformation("👤 Admin user created successfully");
+                    // For Supabase, ensure admin user exists
+                    var supabaseDb = scope.ServiceProvider.GetRequiredService<SupabaseDb>();
+                    var adminCreated = await supabaseDb.EnsureAdminUserExistsAsync();
+                    if (adminCreated)
+                    {
+                        logger.LogInformation("👤 Admin user ensured in Supabase database");
+                    }
+                    else
+                    {
+                        logger.LogWarning("⚠️ Failed to ensure admin user in Supabase database");
+                    }
                 }
-                else
+                else if (currentDbType == "local")
                 {
-                    logger.LogInformation("👤 Admin user already exists");
+                    var sqlServerDb = scope.ServiceProvider.GetRequiredService<SqlServerDb>();
+                    if (sqlServerDb.GetUserByUsername("admin") == null)
+                    {
+                        sqlServerDb.CreateUser("admin", "123", "Admin");
+                        logger.LogInformation("👤 Admin user created successfully in SQL Server");
+                    }
+                    else
+                    {
+                        logger.LogInformation("👤 Admin user already exists in SQL Server");
+                    }
                 }
             }
         }

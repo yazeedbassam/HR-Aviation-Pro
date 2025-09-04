@@ -75,21 +75,36 @@ namespace WebApplication1.DataAccess
             try
             {
                 Console.WriteLine("🔍 Testing Supabase database connection...");
-                Console.WriteLine($"🔍 Connection string: {_connectionString}");
+                Console.WriteLine($"🔍 Connection string: {_connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
                 
                 using var connection = GetConnection();
                 Console.WriteLine("🔍 Connection created, attempting to open...");
                 connection.Open();
                 Console.WriteLine("✅ Supabase Database connection opened successfully");
+                
+                // Test if Users table exists
+                using var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"Users\"", connection);
+                cmd.CommandTimeout = 30;
+                var count = cmd.ExecuteScalar();
+                Console.WriteLine($"✅ Users table exists with {count} records");
+                
                 connection.Close();
                 Console.WriteLine("✅ Supabase Database connection closed successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"? Supabase Database availability check failed: {ex.Message}");
-                Console.WriteLine($"? Exception type: {ex.GetType().Name}");
-                Console.WriteLine($"? Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"❌ Supabase Database availability check failed: {ex.Message}");
+                Console.WriteLine($"❌ Exception type: {ex.GetType().Name}");
+                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+                
+                // Additional debugging for specific error types
+                if (ex is NpgsqlException npgsqlEx)
+                {
+                    Console.WriteLine($"❌ PostgreSQL Error Code: {npgsqlEx.SqlState}");
+                    Console.WriteLine($"❌ PostgreSQL Error Detail: {npgsqlEx.Data}");
+                }
+                
                 return false;
             }
         }
@@ -156,10 +171,12 @@ namespace WebApplication1.DataAccess
 
             try
             {
+                Console.WriteLine($"🔍 Validating credentials for user: {username}");
+                
                 var sql = @"
-                    SELECT userid, password, role 
-                    FROM controller_users 
-                    WHERE username = @username AND isactive = 1";
+                    SELECT id, ""PasswordHash"", ""RoleName"" 
+                    FROM ""Users"" 
+                    WHERE ""Username"" = @username";
 
                 var parameters = new[]
                 {
@@ -167,26 +184,38 @@ namespace WebApplication1.DataAccess
                 };
 
                 var result = ExecuteQuery(sql, parameters);
+                Console.WriteLine($"🔍 Query returned {result.Rows.Count} rows");
 
                 if (result.Rows.Count > 0)
                 {
                     var row = result.Rows[0];
-                    var storedPassword = row["password"].ToString();
+                    var storedPassword = row["PasswordHash"].ToString();
+                    Console.WriteLine($"🔍 Found user, stored password hash: {storedPassword.Substring(0, Math.Min(20, storedPassword.Length))}...");
                     
                     // Verify password using BCrypt
                     if (BCrypt.Net.BCrypt.Verify(password, storedPassword))
                     {
-                        userId = Convert.ToInt32(row["userid"]);
-                        role = row["role"].ToString();
+                        userId = Convert.ToInt32(row["id"]);
+                        role = row["RoleName"].ToString();
+                        Console.WriteLine($"✅ Password verified successfully. UserId: {userId}, Role: {role}");
                         return true;
                     }
+                    else
+                    {
+                        Console.WriteLine("❌ Password verification failed");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("❌ No user found with this username");
                 }
 
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error validating credentials: {ex.Message}");
+                Console.WriteLine($"❌ Error validating credentials: {ex.Message}");
+                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 return false;
             }
         }
@@ -197,17 +226,17 @@ namespace WebApplication1.DataAccess
             {
                 var sql = @"
                     SELECT 
-                        userid,
-                        username,
-                        fullname,
-                        email,
-                        role,
-                        department,
-                        isactive,
-                        created_at,
-                        last_login
-                    FROM controller_users 
-                    ORDER BY fullname";
+                        id as userid,
+                        ""Username"" as username,
+                        ""Username"" as fullname,
+                        ""Username"" as email,
+                        ""RoleName"" as role,
+                        'IT' as department,
+                        true as isactive,
+                        CURRENT_TIMESTAMP as created_at,
+                        NULL as last_login
+                    FROM ""Users"" 
+                    ORDER BY ""Username""";
 
                 return await Task.Run(() => ExecuteQuery(sql));
             }
@@ -225,19 +254,14 @@ namespace WebApplication1.DataAccess
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
                 
                 var sql = @"
-                    INSERT INTO controller_users (username, password, fullname, email, role, department, isactive, created_at)
-                    VALUES (@username, @password, @fullname, @email, @role, @department, @isactive, @created_at)";
+                    INSERT INTO ""Users"" (""Username"", ""PasswordHash"", ""RoleName"")
+                    VALUES (@username, @password, @role)";
 
                 var parameters = new[]
                 {
                     new NpgsqlParameter("@username", user.Username),
                     new NpgsqlParameter("@password", hashedPassword),
-                    new NpgsqlParameter("@fullname", user.FullName),
-                    new NpgsqlParameter("@email", user.Email),
-                    new NpgsqlParameter("@role", user.Role),
-                    new NpgsqlParameter("@department", user.CurrentDepartment),
-                    new NpgsqlParameter("@isactive", user.IsActive),
-                    new NpgsqlParameter("@created_at", DateTime.Now)
+                    new NpgsqlParameter("@role", user.Role)
                 };
 
                 var result = await Task.Run(() => ExecuteNonQuery(sql, parameters));
@@ -255,18 +279,14 @@ namespace WebApplication1.DataAccess
             try
             {
                 var sql = @"
-                    UPDATE controller_users 
-                    SET fullname = @fullname, email = @email, role = @role, department = @department, isactive = @isactive
-                    WHERE userid = @userid";
+                    UPDATE ""Users"" 
+                    SET ""RoleName"" = @role
+                    WHERE id = @userid";
 
                 var parameters = new[]
                 {
                     new NpgsqlParameter("@userid", user.UserId),
-                    new NpgsqlParameter("@fullname", user.FullName),
-                    new NpgsqlParameter("@email", user.Email),
-                    new NpgsqlParameter("@role", user.Role),
-                    new NpgsqlParameter("@department", user.CurrentDepartment),
-                    new NpgsqlParameter("@isactive", user.IsActive)
+                    new NpgsqlParameter("@role", user.Role)
                 };
 
                 var result = await Task.Run(() => ExecuteNonQuery(sql, parameters));
@@ -283,7 +303,7 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                var sql = "DELETE FROM controller_users WHERE userid = @userid";
+                var sql = "DELETE FROM \"Users\" WHERE id = @userid";
                 var parameters = new[] { new NpgsqlParameter("@userid", userId) };
 
                 var result = await Task.Run(() => ExecuteNonQuery(sql, parameters));
@@ -302,16 +322,16 @@ namespace WebApplication1.DataAccess
             {
                 var sql = @"
                     SELECT 
-                        employeeid,
-                        fullname,
-                        position,
-                        department,
-                        hire_date,
-                        email,
-                        phone,
-                        isactive
-                    FROM employees 
-                    ORDER BY fullname";
+                        ""EmployeeId"" as employeeid,
+                        ""FirstName"" || ' ' || ""LastName"" as fullname,
+                        ""Position"" as position,
+                        ""Department"" as department,
+                        ""HireDate"" as hire_date,
+                        ""Email"" as email,
+                        ""Phone"" as phone,
+                        ""IsActive"" as isactive
+                    FROM ""Employees"" 
+                    ORDER BY ""FirstName""";
 
                 return await Task.Run(() => ExecuteQuery(sql));
             }
@@ -328,15 +348,15 @@ namespace WebApplication1.DataAccess
             {
                 var sql = @"
                     SELECT 
-                        certificateid,
-                        employeeid,
-                        certificatetype,
-                        issuedate,
-                        expirydate,
-                        status,
-                        notes
-                    FROM certificates 
-                    ORDER BY issuedate DESC";
+                        ""CertificateId"" as certificateid,
+                        ""EmployeeId"" as employeeid,
+                        ""CertificateType"" as certificatetype,
+                        ""IssueDate"" as issuedate,
+                        ""ExpiryDate"" as expirydate,
+                        ""Status"" as status,
+                        ""Notes"" as notes
+                    FROM ""Certificates"" 
+                    ORDER BY ""IssueDate"" DESC";
 
                 return await Task.Run(() => ExecuteQuery(sql));
             }
@@ -353,15 +373,15 @@ namespace WebApplication1.DataAccess
             {
                 var sql = @"
                     SELECT 
-                        observationid,
-                        employeeid,
-                        observationtype,
-                        observationdate,
-                        description,
-                        status,
-                        created_at
-                    FROM observations 
-                    ORDER BY observationdate DESC";
+                        ""ObservationId"" as observationid,
+                        ""EmployeeId"" as employeeid,
+                        ""ObservationType"" as observationtype,
+                        ""ObservationDate"" as observationdate,
+                        ""Description"" as description,
+                        ""Status"" as status,
+                        ""CreatedDate"" as created_at
+                    FROM ""Observations"" 
+                    ORDER BY ""ObservationDate"" DESC";
 
                 return await Task.Run(() => ExecuteQuery(sql));
             }
@@ -378,16 +398,16 @@ namespace WebApplication1.DataAccess
             {
                 var sql = @"
                     SELECT 
-                        projectid,
-                        projectname,
-                        description,
-                        startdate,
-                        enddate,
-                        status,
-                        managerid,
-                        created_at
-                    FROM projects 
-                    ORDER BY startdate DESC";
+                        ""ProjectId"" as projectid,
+                        ""ProjectName"" as projectname,
+                        ""Description"" as description,
+                        ""StartDate"" as startdate,
+                        ""EndDate"" as enddate,
+                        ""Status"" as status,
+                        ""ManagerId"" as managerid,
+                        ""CreatedDate"" as created_at
+                    FROM ""Projects"" 
+                    ORDER BY ""StartDate"" DESC";
 
                 return await Task.Run(() => ExecuteQuery(sql));
             }
@@ -403,13 +423,12 @@ namespace WebApplication1.DataAccess
             try
             {
                 var sql = @"
-                    INSERT INTO user_activity_log (userid, username, action, details, ip_address, user_agent, created_at)
-                    VALUES (@userid, @username, @action, @details, @ipaddress, @useragent, @created_at)";
+                    INSERT INTO ""UserActivityLogs"" (""UserId"", ""Action"", ""Details"", ""IpAddress"", ""UserAgent"", ""CreatedDate"")
+                    VALUES (@userid, @action, @details, @ipaddress, @useragent, @created_at)";
 
                 var parameters = new[]
                 {
                     new NpgsqlParameter("@userid", userId),
-                    new NpgsqlParameter("@username", username),
                     new NpgsqlParameter("@action", action),
                     new NpgsqlParameter("@details", details),
                     new NpgsqlParameter("@ipaddress", ipAddress),
@@ -437,16 +456,16 @@ namespace WebApplication1.DataAccess
                 if (userId > 0)
                 {
                     sql = @"
-                        SELECT * FROM notifications 
-                        WHERE userid = @userid 
-                        ORDER BY created_at DESC";
+                        SELECT * FROM ""Notifications"" 
+                        WHERE ""UserId"" = @userid 
+                        ORDER BY ""CreatedDate"" DESC";
                     parameters.Add(new NpgsqlParameter("@userid", userId));
                 }
                 else
                 {
                     sql = @"
-                        SELECT * FROM notifications 
-                        ORDER BY created_at DESC";
+                        SELECT * FROM ""Notifications"" 
+                        ORDER BY ""CreatedDate"" DESC";
                 }
 
                 return await Task.Run(() => ExecuteQuery(sql, parameters.ToArray()));
@@ -462,7 +481,7 @@ namespace WebApplication1.DataAccess
         {
             try
             {
-                var sql = "UPDATE notifications SET is_read = true WHERE notificationid = @notificationid";
+                var sql = "UPDATE \"Notifications\" SET \"IsRead\" = true WHERE \"NotificationId\" = @notificationid";
                 var parameters = new[] { new NpgsqlParameter("@notificationid", notificationId) };
 
                 var result = await Task.Run(() => ExecuteNonQuery(sql, parameters));
@@ -471,6 +490,68 @@ namespace WebApplication1.DataAccess
             catch (Exception ex)
             {
                 Console.WriteLine($"Error marking notification as read: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// إنشاء مستخدم admin إذا لم يكن موجوداً
+        /// </summary>
+        public async Task<bool> EnsureAdminUserExistsAsync()
+        {
+            try
+            {
+                Console.WriteLine("🔧 Checking if admin user exists in Supabase...");
+                
+                // التحقق من وجود مستخدم admin
+                var checkSql = "SELECT COUNT(*) FROM \"Users\" WHERE \"Username\" = @username";
+                var checkParams = new[] { new NpgsqlParameter("@username", "admin") };
+                
+                var count = await Task.Run(() => ExecuteScalar(checkSql, checkParams));
+                var userExists = Convert.ToInt32(count) > 0;
+
+                if (!userExists)
+                {
+                    Console.WriteLine("🔧 Admin user not found in Supabase, creating...");
+                    
+                    // إنشاء مستخدم admin - استخدام نفس hash الموجود في الجدول
+                    var hashedPassword = "$2a$11$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj2/4QyQKqK2";
+                    Console.WriteLine($"🔧 Using existing password hash: {hashedPassword.Substring(0, Math.Min(20, hashedPassword.Length))}...");
+                    
+                    var insertSql = @"
+                        INSERT INTO ""Users"" (""Username"", ""PasswordHash"", ""RoleName"")
+                        VALUES (@username, @password, @role)";
+                    
+                    var insertParams = new[]
+                    {
+                        new NpgsqlParameter("@username", "admin"),
+                        new NpgsqlParameter("@password", hashedPassword),
+                        new NpgsqlParameter("@role", "Admin")
+                    };
+
+                    var result = await Task.Run(() => ExecuteNonQuery(insertSql, insertParams));
+                    
+                    if (result > 0)
+                    {
+                        Console.WriteLine("✅ Admin user created successfully in Supabase");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ Failed to create admin user in Supabase");
+                        return false;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("✅ Admin user already exists in Supabase");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error ensuring admin user exists: {ex.Message}");
+                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 return false;
             }
         }

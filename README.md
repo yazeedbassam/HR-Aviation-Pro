@@ -193,20 +193,20 @@ CREATE TABLE user_activity_log (
 - SQL Server أو MySQL أو PostgreSQL
 
 ### التشغيل
-```bash
+   ```bash
 # استنساخ المشروع
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd YOUR_REPO_NAME
 
 # استعادة الحزم
-dotnet restore
+   dotnet restore
 
 # البناء
-dotnet build
+   dotnet build
 
 # التشغيل
-dotnet run
-```
+   dotnet run
+   ```
 
 ### إعداد قاعدة البيانات المحلية
 1. عدّل `appsettings.json` بإعدادات قاعدة البيانات المحلية

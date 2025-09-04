@@ -1,87 +1,57 @@
-# Supabase Database Setup Instructions
+# Supabase Setup Instructions
 
-## 🚀 **الخطوات المطلوبة لإنشاء قاعدة البيانات:**
+## المشكلة
+النظام يبحث عن جدول `controller_users` في Supabase لكن هذا الجدول غير موجود.
 
-### **1. اذهب إلى Supabase Dashboard:**
-- افتح [https://supabase.com/dashboard](https://supabase.com/dashboard)
-- اختر مشروعك: **HR-Aviation-Pro**
+## الحل
+1. افتح Supabase Dashboard
+2. اذهب إلى SQL Editor
+3. انسخ والصق الكود التالي:
 
-### **2. اذهب إلى SQL Editor:**
-- في الشريط الجانبي الأيسر، اضغط على **"SQL Editor"**
-- اضغط على **"New query"**
+```sql
+-- Create controller_users table
+CREATE TABLE IF NOT EXISTS controller_users (
+    userid SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    fullname VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    role VARCHAR(50) NOT NULL DEFAULT 'Controller',
+    department VARCHAR(100),
+    isactive BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL
+);
 
-### **3. انسخ والصق السكريبت:**
-- انسخ محتوى ملف `Supabase_Schema.sql`
-- الصقه في SQL Editor
-
-### **4. نفذ السكريبت:**
-- اضغط على زر **"Run"** (أو Ctrl+Enter)
-- انتظر حتى ينتهي التنفيذ
-
-### **5. تحقق من إنشاء الجداول:**
-- اذهب إلى **"Table Editor"** في الشريط الجانبي
-- تأكد من وجود الجداول التالية:
-  - Users
-  - Employees
-  - Certificates
-  - Projects
-  - Notifications
-  - UserActivityLog
-  - Permissions
-  - UserPermissions
-  - Airports
-  - Countries
-  - Observations
-  - Licenses
-  - Configuration
-
----
-
-## 📋 **بيانات الاتصال المطلوبة:**
-
-### **Connection String:**
-```
-Host=db.hzweniqfssqorruiujwc.supabase.co
-Port=5432
-Database=postgres
-Username=postgres
-Password=Y@Z105213eed
-SSL Mode=Require
-Trust Server Certificate=true
+-- Create admin user with hashed password (password: admin123)
+INSERT INTO controller_users (username, password, fullname, email, role, department, isactive, created_at) 
+VALUES ('admin', '$2a$11$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@aviation.com', 'Admin', 'IT', true, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO UPDATE SET 
+    password = EXCLUDED.password,
+    fullname = EXCLUDED.fullname,
+    email = EXCLUDED.email,
+    role = EXCLUDED.role,
+    department = EXCLUDED.department,
+    isactive = EXCLUDED.isactive;
 ```
 
-### **API Keys:**
-- **Project URL**: `https://hzweniqfssqorruiujwc.supabase.co`
-- **Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
-- **Service Role Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+4. اضغط Run
+5. تأكد من أن الجدول تم إنشاؤه بنجاح
 
----
+## بيانات تسجيل الدخول
+- **اسم المستخدم**: `admin`
+- **كلمة المرور**: `admin123`
+- **نوع قاعدة البيانات**: `Supabase Online`
 
-## ✅ **بعد تنفيذ السكريبت:**
+## التحقق من النجاح
+بعد تشغيل السكريبت، يجب أن ترى:
+- جدول `controller_users` في قائمة الجداول
+- مستخدم admin في الجدول
+- إمكانية تسجيل الدخول بنجاح
 
-1. **سيتم إنشاء جميع الجداول المطلوبة**
-2. **سيتم إدخال مستخدم Admin افتراضي:**
-   - Username: `admin`
-   - Password: `password`
-   - Email: `admin@aviation.com`
-
-3. **سيتم إنشاء الصلاحيات الأساسية**
-4. **سيتم إدخال بيانات عينة (دول ومطارات)**
-
----
-
-## 🔧 **اختبار الاتصال:**
-
-بعد إنشاء الجداول، يمكنك اختبار الاتصال من خلال:
-1. **تسجيل الدخول** باستخدام `admin` / `password`
-2. **اختيار "Supabase Online"** من قائمة أنواع قاعدة البيانات
-3. **التحقق من عمل النظام**
-
----
-
-## 📞 **إذا واجهت أي مشاكل:**
-
-1. تأكد من أن كلمة المرور صحيحة
-2. تأكد من أن المشروع نشط
-3. تحقق من رسائل الخطأ في SQL Editor
-4. تأكد من أن جميع الجداول تم إنشاؤها بنجاح 
+## استكشاف الأخطاء
+إذا لم يعمل:
+1. تأكد من أن Supabase يعمل
+2. تحقق من سلسلة الاتصال في appsettings.json
+3. تأكد من أن الجدول تم إنشاؤه بنجاح
+4. تحقق من الـ console logs في التطبيق

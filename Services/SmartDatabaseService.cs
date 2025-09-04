@@ -138,21 +138,33 @@ namespace WebApplication1.Services
                     
                     try
                     {
+                        _logger.LogInformation("🔍 Testing Supabase connection...");
+                        _logger.LogInformation($"🔍 Connection string: {connectionString.Replace("Password=Y@Z105213eed", "Password=***")}");
+                        
                         using var connection = new NpgsqlConnection(connectionString);
+                        _logger.LogInformation("🔍 Connection created, attempting to open...");
                         connection.Open();
+                        _logger.LogInformation("✅ Supabase connection opened successfully");
                         
                         using var command = connection.CreateCommand();
                         command.CommandText = "SELECT 1";
                         command.CommandType = CommandType.Text;
+                        command.CommandTimeout = 30; // 30 seconds timeout
                         
-                        command.ExecuteScalar();
+                        var result = command.ExecuteScalar();
+                        _logger.LogInformation($"✅ Supabase test query result: {result}");
                         
-                        _logger.LogDebug("Supabase connection test successful");
+                        _logger.LogInformation("✅ Supabase connection test successful");
                         return true;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Supabase connection test failed");
+                        _logger.LogError(ex, "❌ Supabase connection test failed: {Message}", ex.Message);
+                        if (ex is NpgsqlException npgsqlEx)
+                        {
+                            _logger.LogError("❌ PostgreSQL Error Code: {SqlState}", npgsqlEx.SqlState);
+                            _logger.LogError("❌ PostgreSQL Error Detail: {Detail}", npgsqlEx.Data);
+                        }
                         return false;
                     }
                 }
@@ -237,7 +249,7 @@ namespace WebApplication1.Services
         /// </summary>
         public void SwitchDatabase(string databaseType)
         {
-            var validTypes = new[] { "local", "demo" };
+            var validTypes = new[] { "local", "supabase", "mysql" };
             
             if (!validTypes.Contains(databaseType, StringComparer.OrdinalIgnoreCase))
             {
@@ -258,6 +270,7 @@ namespace WebApplication1.Services
             return _currentDatabase.ToLower() switch
             {
                 "local" => "SELECT 1",
+                "supabase" => "SELECT 1",
                 "demo" => "SELECT 1",
                 _ => "SELECT 1"
             };
@@ -271,6 +284,7 @@ namespace WebApplication1.Services
             return _currentDatabase.ToLower() switch
             {
                 "local" => "SELECT @@VERSION",
+                "supabase" => "SELECT version()",
                 "demo" => "SELECT version()",
                 _ => "SELECT 1"
             };
@@ -281,7 +295,26 @@ namespace WebApplication1.Services
         /// </summary>
         private string GetMaskedConnectionString()
         {
-            var connectionString = _configuration.GetConnectionString($"{_currentDatabase}Connection");
+            string connectionStringName;
+            
+            // تحديد اسم سلسلة الاتصال بناءً على نوع قاعدة البيانات
+            switch (_currentDatabase.ToLower())
+            {
+                case "supabase":
+                    connectionStringName = "SupabaseConnection";
+                    break;
+                case "local":
+                    connectionStringName = "SqlServerDbConnection";
+                    break;
+                case "mysql":
+                    connectionStringName = "MySqlDbConnection";
+                    break;
+                default:
+                    connectionStringName = $"{_currentDatabase}Connection";
+                    break;
+            }
+            
+            var connectionString = _configuration.GetConnectionString(connectionStringName);
             if (string.IsNullOrEmpty(connectionString))
                 return "Not configured";
 
@@ -308,7 +341,21 @@ namespace WebApplication1.Services
                 return false;
 
             var currentType = _currentDatabase;
-            var otherType = currentType.Equals("local", StringComparison.OrdinalIgnoreCase) ? "demo" : "local";
+            string otherType;
+            
+            // تحديد قاعدة البيانات البديلة بناءً على النوع الحالي
+            switch (currentType.ToLower())
+            {
+                case "supabase":
+                    otherType = "local";
+                    break;
+                case "local":
+                    otherType = "supabase";
+                    break;
+                default:
+                    otherType = "local";
+                    break;
+            }
 
             _logger.LogInformation("Attempting auto-switch from {CurrentType} to {OtherType}", currentType, otherType);
 
