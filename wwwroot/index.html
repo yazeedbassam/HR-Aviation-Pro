@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVIATION HR PRO - نظام إدارة الموارد البشرية للطيران</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+        .title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        .status {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+        .status.warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        .button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .info {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">✈️</div>
+        <h1 class="title">AVIATION HR PRO</h1>
+        <p class="subtitle">نظام إدارة الموارد البشرية للطيران</p>
+        
+        <div class="status success">
+            <h3>✅ النشر نجح!</h3>
+            <p>تم نشر التطبيق بنجاح على Netlify</p>
+        </div>
+        
+        <div class="status warning">
+            <h3>⚠️ تحذير</h3>
+            <p>هذا تطبيق ASP.NET Core MVC يتطلب خادم ويب</p>
+            <p>Netlify مخصص للمواقع الثابتة</p>
+        </div>
+        
+        <div class="spinner"></div>
+        <p>جاري إعادة التوجيه...</p>
+        
+        <div class="info">
+            <p><strong>الحلول المقترحة:</strong></p>
+            <p>1. استخدام Railway أو Render للنشر</p>
+            <p>2. استخدام Azure App Service</p>
+            <p>3. استخدام Heroku</p>
+            <p>4. استخدام DigitalOcean App Platform</p>
+        </div>
+        
+        <a href="https://railway.app" class="button" target="_blank">🚂 Railway</a>
+        <a href="https://render.com" class="button" target="_blank">🎨 Render</a>
+        <a href="https://azure.microsoft.com" class="button" target="_blank">☁️ Azure</a>
+    </div>
+
+    <script>
+        // إعادة التوجيه بعد 5 ثوان
+        setTimeout(() => {
+            window.location.href = '/Home/Index';
+        }, 5000);
+        
+        // محاولة إعادة التوجيه فوراً
+        setTimeout(() => {
+            window.location.href = '/Home/Index';
+        }, 1000);
+    </script>
+</body>
+</html>

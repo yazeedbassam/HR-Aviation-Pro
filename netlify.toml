@@ -10,9 +10,25 @@
     ASPNETCORE_ENVIRONMENT = "Production"
     DOTNET_VERSION = "8.0"
 
-# Redirect rules for SPA routing
+# Redirect rules for ASP.NET Core MVC
 [[redirects]]
-  from = "/*"
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# Handle ASP.NET Core routes
+[[redirects]]
+  from = "/Home/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/Account/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/Dashboard/*"
   to = "/index.html"
   status = 200
 

@@ -1,0 +1,10 @@
+# Redirect all requests to index.html for SPA-like behavior
+/*    /index.html   200
+
+# Specific redirects for common routes
+/Home    /index.html    200
+/Account    /index.html    200
+/Dashboard    /index.html    200
+/Employees    /index.html    200
+/Certificate    /index.html    200
+/Projects    /index.html    200
