@@ -159,6 +159,35 @@ var app = builder.Build();
 // Configure application to handle startup gracefully
 app.Lifetime.ApplicationStarted.Register(() => {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    
+    // Log environment variables for debugging
+    logger.LogInformation("🌍 Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Not Set");
+    logger.LogInformation("🔧 ASPNETCORE_ENVIRONMENT: {Value}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "NOT SET");
+    logger.LogInformation("🔧 ASPNETCORE_URLS: {Value}", Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "NOT SET");
+    logger.LogInformation("🔧 PORT: {Value}", Environment.GetEnvironmentVariable("PORT") ?? "NOT SET");
+    
+    // Log Supabase environment variables
+    logger.LogInformation("🗄️ SUPABASE_HOST: {Value}", Environment.GetEnvironmentVariable("SUPABASE_HOST") ?? "NOT SET");
+    logger.LogInformation("🗄️ SUPABASE_PORT: {Value}", Environment.GetEnvironmentVariable("SUPABASE_PORT") ?? "NOT SET");
+    logger.LogInformation("🗄️ SUPABASE_DB: {Value}", Environment.GetEnvironmentVariable("SUPABASE_DB") ?? "NOT SET");
+    logger.LogInformation("🗄️ SUPABASE_USER: {Value}", Environment.GetEnvironmentVariable("SUPABASE_USER") ?? "NOT SET");
+    logger.LogInformation("🗄️ SUPABASE_PASSWORD: {Value}", string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PASSWORD")) ? "NOT SET" : "***SET***");
+    
+    // Check if Supabase variables are missing
+    var missingVars = new List<string>();
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_HOST"))) missingVars.Add("SUPABASE_HOST");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PORT"))) missingVars.Add("SUPABASE_PORT");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_DB"))) missingVars.Add("SUPABASE_DB");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_USER"))) missingVars.Add("SUPABASE_USER");
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SUPABASE_PASSWORD"))) missingVars.Add("SUPABASE_PASSWORD");
+    
+    if (missingVars.Any())
+    {
+        logger.LogWarning("⚠️ WARNING: Supabase environment variables are missing!");
+        logger.LogWarning("⚠️ Missing variables: {MissingVars}", string.Join(", ", missingVars));
+        logger.LogWarning("⚠️ Please configure these variables in Railway Dashboard > Variables");
+    }
+    
     logger.LogInformation("🚀 Application has started successfully!");
     logger.LogInformation("🔍 Health check endpoints are ready!");
     logger.LogInformation("📍 Available endpoints: /, /health, /ping, /ready");
