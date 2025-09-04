@@ -152,14 +152,14 @@ namespace WebApplication1.Services
                             _logger.LogInformation("🔍 Connection created, attempting to open...");
                             
                             // Open connection with longer timeout for Railway
-                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
                             await connection.OpenAsync(cts.Token);
                             _logger.LogInformation("✅ Supabase connection opened successfully");
                             
                             using var command = connection.CreateCommand();
                             command.CommandText = "SELECT 1";
                             command.CommandType = CommandType.Text;
-                            command.CommandTimeout = 20; // 20 seconds timeout
+                            command.CommandTimeout = 60; // 60 seconds timeout
                             
                             var result = await command.ExecuteScalarAsync(cts.Token);
                             _logger.LogInformation($"✅ Supabase test query result: {result}");

@@ -1,0 +1,9 @@
+Railway Environment Variables يجب أن تكون:
+
+SUPABASE_HOST=hzweniqfssqorruiujwc.supabase.co
+SUPABASE_PORT=5432
+SUPABASE_DB=postgres
+SUPABASE_USER=postgres
+SUPABASE_PASSWORD=Y@Z105213eed
+
+تأكد من أن هذه المتغيرات موجودة في Railway Dashboard > Variables
