@@ -44,6 +44,8 @@ public class NotificationCountViewComponent : ViewComponent
         {
             // في حالة فشل الاتصال بقاعدة البيانات، إرجاع 0
             notificationCount = 0;
+            // Log the error for debugging
+            System.Diagnostics.Debug.WriteLine($"Error getting notification count: {ex.Message}");
         }
 
         // إضافة عداد الإشعارات الجديدة للمراقبين والموظفين الذين يحتاجون رخص
@@ -60,6 +62,8 @@ public class NotificationCountViewComponent : ViewComponent
         {
             // في حالة فشل الاتصال بقاعدة البيانات، إرجاع 0
             employeesNeedingLicensesCount = 0;
+            // Log the error for debugging
+            System.Diagnostics.Debug.WriteLine($"Error getting employees needing licenses count: {ex.Message}");
         }
 
         // إجمالي عدد الإشعارات

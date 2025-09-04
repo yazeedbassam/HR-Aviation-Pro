@@ -57,7 +57,8 @@ namespace WebApplication1.Services
                         var sqlServerConnectionString = _configuration.GetConnectionString("SqlServerDbConnection");
                         if (string.IsNullOrEmpty(sqlServerConnectionString))
                         {
-                            throw new InvalidOperationException("SQL Server connection string is not configured");
+                            _logger.LogWarning("SQL Server connection string is not configured, returning null");
+                            return null;
                         }
                         connection = new SqlConnection(sqlServerConnectionString);
                         _logger.LogDebug("Created SQL Server connection");
@@ -67,7 +68,8 @@ namespace WebApplication1.Services
                         var postgresqlConnectionString = _configuration.GetConnectionString("PostgreSQLConnection");
                         if (string.IsNullOrEmpty(postgresqlConnectionString))
                         {
-                            throw new InvalidOperationException("PostgreSQL connection string is not configured");
+                            _logger.LogWarning("PostgreSQL connection string is not configured, returning null");
+                            return null;
                         }
                         // Replace environment variables in connection string
                         postgresqlConnectionString = ReplaceEnvironmentVariables(postgresqlConnectionString);
@@ -418,6 +420,12 @@ namespace WebApplication1.Services
             {
                 using (var connection = GetConnection())
                 {
+                    if (connection == null)
+                    {
+                        _logger.LogWarning("Database connection is null, returning 0 for notification count");
+                        return 0;
+                    }
+                    
                     connection.Open();
                     
                     string sql = "";
@@ -448,6 +456,7 @@ namespace WebApplication1.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting notification count for user {UserId}", userId);
+                _logger.LogWarning("Database connection failed, returning 0 for notification count");
                 return 0;
             }
         }
@@ -461,6 +470,12 @@ namespace WebApplication1.Services
             {
                 using (var connection = GetConnection())
                 {
+                    if (connection == null)
+                    {
+                        _logger.LogWarning("Database connection is null, returning 0 for total needing licenses count");
+                        return 0;
+                    }
+                    
                     connection.Open();
                     
                     string sql = "";
